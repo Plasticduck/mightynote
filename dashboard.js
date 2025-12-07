@@ -3,6 +3,11 @@ let selectedNotes = new Set();
 let currentNotes = [];
 let currentSortOrder = 'newest';
 
+// Report selection state
+let reportSelectedNotes = new Set();
+let reportNotes = [];
+let reportSelectMode = false;
+
 // ===== Configuration =====
 const CONFIG = {
     locations: Array.from({ length: 31 }, (_, i) => i + 1),
@@ -496,6 +501,155 @@ function closeExportSelectedMenu() {
     if (menu) menu.classList.add('hidden');
 }
 
+// ===== Report Selection Functions =====
+function toggleReportSelectMode() {
+    reportSelectMode = !reportSelectMode;
+    const resultsSection = document.getElementById('reportResults');
+    const selectionBar = document.getElementById('reportSelectionBar');
+    const selectBtn = document.getElementById('toggleSelectMode');
+    
+    if (reportSelectMode) {
+        resultsSection.classList.add('select-mode');
+        selectionBar.classList.remove('hidden');
+        selectBtn.classList.add('active');
+        selectBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Cancel
+        `;
+    } else {
+        resultsSection.classList.remove('select-mode');
+        selectionBar.classList.add('hidden');
+        selectBtn.classList.remove('active');
+        selectBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 11 12 14 22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            Select
+        `;
+        // Clear selection when exiting select mode
+        reportSelectedNotes.clear();
+        updateReportSelectionUI();
+        renderReportNotes(reportNotes);
+    }
+}
+
+function toggleReportNoteSelection(noteId, isSelected) {
+    if (isSelected) {
+        reportSelectedNotes.add(noteId);
+    } else {
+        reportSelectedNotes.delete(noteId);
+    }
+    
+    const card = document.querySelector(`#reportRecordsContainer .record-card[data-id="${noteId}"]`);
+    if (card) {
+        card.classList.toggle('selected', isSelected);
+    }
+    
+    updateReportSelectionUI();
+}
+
+function selectAllReportNotes() {
+    const selectAll = document.getElementById('reportSelectAllCheckbox').checked;
+    
+    reportNotes.forEach(note => {
+        if (selectAll) {
+            reportSelectedNotes.add(note.id);
+        } else {
+            reportSelectedNotes.delete(note.id);
+        }
+    });
+    
+    document.querySelectorAll('#reportRecordsContainer .record-card').forEach(card => {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            checkbox.checked = selectAll;
+            card.classList.toggle('selected', selectAll);
+        }
+    });
+    
+    updateReportSelectionUI();
+}
+
+function updateReportSelectionUI() {
+    const count = reportSelectedNotes.size;
+    const countEl = document.getElementById('reportSelectionCount');
+    const selectAllCheckbox = document.getElementById('reportSelectAllCheckbox');
+    const exportBtn = document.getElementById('reportExportSelectedBtn');
+    const deleteBtn = document.getElementById('reportDeleteSelectedBtn');
+    
+    if (countEl) countEl.textContent = `${count} selected`;
+    
+    if (selectAllCheckbox && reportNotes.length > 0) {
+        const allSelected = reportNotes.every(note => reportSelectedNotes.has(note.id));
+        const someSelected = reportNotes.some(note => reportSelectedNotes.has(note.id));
+        selectAllCheckbox.checked = allSelected;
+        selectAllCheckbox.indeterminate = someSelected && !allSelected;
+    }
+    
+    if (exportBtn) exportBtn.disabled = count === 0;
+    if (deleteBtn) deleteBtn.disabled = count === 0;
+}
+
+async function deleteReportSelectedNotes() {
+    if (reportSelectedNotes.size === 0) {
+        showToast('No notes selected', true);
+        return;
+    }
+    
+    const count = reportSelectedNotes.size;
+    const confirmed = confirm(`Are you sure you want to delete ${count} note(s)? This cannot be undone.`);
+    
+    if (!confirmed) return;
+    
+    try {
+        const ids = Array.from(reportSelectedNotes);
+        const result = await deleteNotes(ids);
+        
+        showToast(`Deleted ${result.deleted} note(s)`);
+        reportSelectedNotes.clear();
+        
+        // Refresh both views
+        await updateStats();
+        await refreshNotesList();
+        await generateReport(); // Re-run the report
+    } catch (error) {
+        showToast('Error deleting notes', true);
+    }
+}
+
+function exportReportSelectedNotes(format) {
+    if (reportSelectedNotes.size === 0) {
+        showToast('No notes selected', true);
+        return;
+    }
+    
+    const selectedData = reportNotes.filter(note => reportSelectedNotes.has(note.id));
+    
+    if (format === 'pdf' || format === 'both') {
+        exportSelectedToPDF(selectedData);
+    }
+    
+    if (format === 'excel' || format === 'both') {
+        exportSelectedToExcel(selectedData);
+    }
+    
+    closeReportExportSelectedMenu();
+}
+
+function toggleReportExportSelectedMenu() {
+    const menu = document.getElementById('reportExportSelectedMenu');
+    if (menu) menu.classList.toggle('hidden');
+}
+
+function closeReportExportSelectedMenu() {
+    const menu = document.getElementById('reportExportSelectedMenu');
+    if (menu) menu.classList.add('hidden');
+}
+
 // ===== UI Functions =====
 function showToast(message, isError = false) {
     const toast = document.getElementById('toast');
@@ -599,20 +753,86 @@ async function generateReport() {
     const filters = getSelectedFilters();
     const notes = await getFilteredNotes(filters);
     
+    reportNotes = notes;
+    reportSelectedNotes.clear();
+    reportSelectMode = false;
+    
     // Show results section
-    document.getElementById('reportResults').classList.remove('hidden');
+    const resultsSection = document.getElementById('reportResults');
+    resultsSection.classList.remove('hidden');
+    resultsSection.classList.remove('select-mode');
+    
+    // Update stats
     document.getElementById('resultsCount').textContent = `${notes.length} records`;
+    document.getElementById('reportOpsCount').textContent = `${notes.filter(n => n.department === 'Operations').length} Ops`;
+    document.getElementById('reportSafetyCount').textContent = `${notes.filter(n => n.department === 'Safety').length} Safety`;
+    document.getElementById('reportAcctCount').textContent = `${notes.filter(n => n.department === 'Accounting').length} Acct`;
     
-    // Generate summary charts
-    renderLocationSummary(notes);
-    renderDepartmentSummary(notes);
-    renderNoteTypeSummary(notes);
+    // Reset select button
+    document.getElementById('toggleSelectMode').classList.remove('active');
+    document.getElementById('toggleSelectMode').innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 11 12 14 22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        Select
+    `;
     
-    // Render table
-    renderReportTable(notes);
+    // Hide selection bar
+    document.getElementById('reportSelectionBar').classList.add('hidden');
+    
+    // Render notes as cards
+    renderReportNotes(notes);
     
     // Scroll to results
-    document.getElementById('reportResults').scrollIntoView({ behavior: 'smooth' });
+    resultsSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderReportNotes(notes) {
+    const container = document.getElementById('reportRecordsContainer');
+    
+    if (notes.length === 0) {
+        container.innerHTML = '<p class="no-records">No records match the selected criteria</p>';
+        return;
+    }
+    
+    container.innerHTML = notes.map(note => {
+        const deptClass = `dept-${note.department.toLowerCase()}`;
+        const displayType = note.note_type === 'Other' && note.other_description 
+            ? `Other: ${note.other_description}` 
+            : note.note_type;
+        const isSelected = reportSelectedNotes.has(note.id);
+        
+        const imageBadge = note.has_image ? `
+            <a href="${getPhotoUrl(note.id)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                View Photo
+            </a>
+        ` : '';
+        
+        return `
+            <div class="record-card ${isSelected ? 'selected' : ''}" data-id="${note.id}">
+                <label class="record-checkbox" onclick="event.stopPropagation()">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleReportNoteSelection(${note.id}, this.checked)">
+                    <span class="record-check"></span>
+                </label>
+                <div class="record-header">
+                    <span class="record-type">${displayType}</span>
+                    <span class="record-timestamp">${formatDate(note.created_at)}</span>
+                </div>
+                <div class="record-meta">
+                    <span class="record-badge">Site ${note.location}</span>
+                    <span class="record-badge ${deptClass}">${note.department}</span>
+                    ${imageBadge}
+                </div>
+                ${note.additional_notes ? `<p class="record-notes">${note.additional_notes}</p>` : ''}
+            </div>
+        `;
+    }).join('');
 }
 
 function renderLocationSummary(notes) {
@@ -1364,6 +1584,46 @@ function setupNotesListeners() {
     // Close menus on outside click
     document.addEventListener('click', () => {
         closeExportSelectedMenu();
+        closeReportExportSelectedMenu();
+    });
+    
+    // Report selection handlers
+    const toggleSelectBtn = document.getElementById('toggleSelectMode');
+    const reportSelectAllCheckbox = document.getElementById('reportSelectAllCheckbox');
+    const reportCancelSelectBtn = document.getElementById('reportCancelSelectBtn');
+    const reportDeleteSelectedBtn = document.getElementById('reportDeleteSelectedBtn');
+    const reportExportSelectedBtn = document.getElementById('reportExportSelectedBtn');
+    
+    if (toggleSelectBtn) {
+        toggleSelectBtn.addEventListener('click', toggleReportSelectMode);
+    }
+    
+    if (reportSelectAllCheckbox) {
+        reportSelectAllCheckbox.addEventListener('change', selectAllReportNotes);
+    }
+    
+    if (reportCancelSelectBtn) {
+        reportCancelSelectBtn.addEventListener('click', toggleReportSelectMode);
+    }
+    
+    if (reportDeleteSelectedBtn) {
+        reportDeleteSelectedBtn.addEventListener('click', deleteReportSelectedNotes);
+    }
+    
+    if (reportExportSelectedBtn) {
+        reportExportSelectedBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleReportExportSelectedMenu();
+        });
+    }
+    
+    // Report export selected menu options
+    document.querySelectorAll('#reportExportSelectedMenu .export-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const format = e.currentTarget.dataset.format;
+            exportReportSelectedNotes(format);
+        });
     });
 }
 

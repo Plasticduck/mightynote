@@ -10,7 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Dashboard - Mighty Notes</title>
-    <link rel="stylesheet" href="styles.css?v=17">
+    <link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
     <div class="app-container">
@@ -245,46 +245,62 @@
                 <div class="report-results hidden" id="reportResults">
                     <div class="report-results-header">
                         <h3>Report Results</h3>
-                        <span class="results-count" id="resultsCount">0 records</span>
-                    </div>
-                    
-                    <!-- Summary by Department -->
-                    <div class="summary-section" id="departmentSummary">
-                        <h4>By Department</h4>
-                        <div class="summary-bars" id="departmentBars"></div>
-                    </div>
-
-                    <!-- Summary by Location -->
-                    <div class="summary-section" id="locationSummary">
-                        <h4>By Site</h4>
-                        <div class="summary-bars" id="locationBars"></div>
-                    </div>
-
-                    <!-- Summary by Note Type -->
-                    <div class="summary-section" id="noteTypeSummary">
-                        <h4>By Note Type</h4>
-                        <div class="summary-bars" id="noteTypeBars"></div>
-                    </div>
-
-                    <!-- Detailed Records Table -->
-                    <div class="report-table-container">
-                        <h4>Detailed Records</h4>
-                        <div class="table-wrapper">
-                            <table class="report-table" id="reportTable">
-                                <thead>
-                                    <tr>
-                                        <th>Date/Time</th>
-                                        <th>Site</th>
-                                        <th>Department</th>
-                                        <th>Note Type</th>
-                                        <th>Details</th>
-                                        <th>Photo</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="reportTableBody">
-                                </tbody>
-                            </table>
+                        <div class="report-stats">
+                            <span class="report-stat" id="resultsCount">0 records</span>
+                            <span class="report-stat stat-ops" id="reportOpsCount">0 Ops</span>
+                            <span class="report-stat stat-safety" id="reportSafetyCount">0 Safety</span>
+                            <span class="report-stat stat-acct" id="reportAcctCount">0 Acct</span>
                         </div>
+                        <button class="btn-select-mode" id="toggleSelectMode">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 11 12 14 22 4"/>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                            </svg>
+                            Select
+                        </button>
+                    </div>
+
+                    <!-- Selection Bar (hidden until Select clicked) -->
+                    <div class="selection-bar hidden" id="reportSelectionBar">
+                        <div class="selection-info">
+                            <label class="select-all-container">
+                                <input type="checkbox" id="reportSelectAllCheckbox">
+                                <span class="select-all-check"></span>
+                            </label>
+                            <span class="selection-count" id="reportSelectionCount">0 selected</span>
+                        </div>
+                        <div class="selection-actions">
+                            <div class="export-dropdown-inline">
+                                <button class="btn-action btn-export-selected" id="reportExportSelectedBtn">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    Export
+                                </button>
+                                <div class="export-menu hidden" id="reportExportSelectedMenu">
+                                    <button class="export-option" data-format="pdf">Export as PDF</button>
+                                    <button class="export-option" data-format="excel">Export as Excel</button>
+                                    <button class="export-option" data-format="both">Export Both</button>
+                                </div>
+                            </div>
+                            <button class="btn-action btn-delete-selected" id="reportDeleteSelectedBtn">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                                Delete
+                            </button>
+                            <button class="btn-action btn-clear-selection" id="reportCancelSelectBtn">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Report Notes List -->
+                    <div class="records-container" id="reportRecordsContainer">
+                        <p class="no-records">No records found</p>
                     </div>
                 </div>
             </div>
@@ -302,6 +318,6 @@
     <!-- jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <script src="dashboard.js?v=17"></script>
+    <script src="dashboard.js?v=18"></script>
 </body>
 </html>
