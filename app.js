@@ -1,3 +1,16 @@
+// ===== Authentication =====
+let currentUser = null;
+
+function checkAuth() {
+    const userStr = localStorage.getItem('mightyops_user');
+    if (!userStr) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    currentUser = JSON.parse(userStr);
+    return true;
+}
+
 // ===== Photo Upload State =====
 let currentPhotoData = null;
 
@@ -67,7 +80,9 @@ async function insertNote(location, department, noteType, otherDesc, additionalN
                 note_type: noteType,
                 other_description: otherDesc || null,
                 additional_notes: additionalNotes || null,
-                image_pdf: imagePdf
+                image_pdf: imagePdf,
+                submitted_by: currentUser ? currentUser.full_name : null,
+                user_id: currentUser ? currentUser.id : null
             })
         });
         
@@ -202,7 +217,7 @@ function compressImage(file) {
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                
+            
                 const maxSize = 1200;
                 let { width, height } = img;
                 
@@ -251,7 +266,7 @@ async function convertImageToPDF(imageBase64, filename) {
                     orientation: isLandscape ? 'landscape' : 'portrait',
                     unit: 'mm'
                 });
-                
+    
                 const pageWidth = doc.internal.pageSize.getWidth();
                 const pageHeight = doc.internal.pageSize.getHeight();
                 
@@ -443,6 +458,15 @@ function applyUpdate() {
 
 // ===== Initialize App =====
 async function init() {
+    // Check authentication first
+    if (!checkAuth()) return;
+    
+    // Display submitter name
+    const submitterEl = document.getElementById('submitterName');
+    if (submitterEl && currentUser) {
+        submitterEl.textContent = currentUser.full_name;
+    }
+    
     await initDatabase();
     populateLocationDropdown();
     setupEventListeners();

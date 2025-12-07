@@ -1,8 +1,8 @@
 {
-    "name": "Mighty Note",
-    "short_name": "Mighty Note",
-    "description": "Document violations and incidents with ease",
-    "start_url": "/",
+    "name": "Mighty Ops",
+    "short_name": "Mighty Ops",
+    "description": "Operational management and site violation tracking",
+    "start_url": "/login.html",
     "display": "standalone",
     "background_color": "#000000",
     "theme_color": "#000000",
@@ -61,5 +61,3 @@
     "screenshots": [],
     "prefer_related_applications": false
 }
-
-

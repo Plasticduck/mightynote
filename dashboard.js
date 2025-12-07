@@ -1,3 +1,16 @@
+// ===== Authentication =====
+let currentUser = null;
+
+function checkAuth() {
+    const userStr = localStorage.getItem('mightyops_user');
+    if (!userStr) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    currentUser = JSON.parse(userStr);
+    return true;
+}
+
 // ===== Selection State =====
 let selectedNotes = new Set();
 let currentNotes = [];
@@ -395,6 +408,7 @@ function exportSelectedToExcel(notes) {
         'Note Type': note.note_type,
         'Other Description': note.other_description || '',
         'Additional Notes': note.additional_notes || '',
+        'Submitted By': note.submitted_by || '',
         'Photo': note.has_image ? getPhotoUrl(note.id) : ''
     }));
     
@@ -402,7 +416,7 @@ function exportSelectedToExcel(notes) {
     
     notes.forEach((note, index) => {
         if (note.has_image) {
-            const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 });
+            const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 7 });
             if (ws[cellRef]) {
                 ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
             }
@@ -411,22 +425,22 @@ function exportSelectedToExcel(notes) {
     
     ws['!cols'] = [
         { wch: 22 }, { wch: 12 }, { wch: 12 },
-        { wch: 30 }, { wch: 30 }, { wch: 50 }, { wch: 40 }
+        { wch: 30 }, { wch: 30 }, { wch: 50 }, { wch: 20 }, { wch: 40 }
     ];
     
     XLSX.utils.book_append_sheet(wb, ws, 'Selected Notes');
     
     const timestamp = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `Selected_Notes_${timestamp}.xlsx`);
+    XLSX.writeFile(wb, `Mighty_Ops_Notes_${timestamp}.xlsx`);
     showToast(`Exported ${notes.length} notes to Excel`);
 }
 
 function exportSelectedToPDF(notes) {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const doc = new jsPDF('landscape');
     
     doc.setFontSize(18);
-    doc.text('Selected Notes Export', 14, 20);
+    doc.text('Mighty Ops - Notes Export', 14, 20);
     
     doc.setFontSize(10);
     doc.setTextColor(100);
@@ -440,6 +454,7 @@ function exportSelectedToPDF(notes) {
         note.note_type === 'Other' && note.other_description 
             ? `Other: ${note.other_description}` 
             : note.note_type,
+        note.submitted_by || '-',
         note.has_image ? 'View Photo' : '-'
     ]);
     
@@ -447,20 +462,21 @@ function exportSelectedToPDF(notes) {
     
     doc.autoTable({
         startY: 42,
-        head: [['Date/Time', 'Site', 'Dept', 'Note Type', 'Photo']],
+        head: [['Date/Time', 'Site', 'Dept', 'Note Type', 'Submitted By', 'Photo']],
         body: tableData,
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
-            0: { cellWidth: 35 },
-            1: { cellWidth: 20 },
+            0: { cellWidth: 38 },
+            1: { cellWidth: 22 },
             2: { cellWidth: 25 },
             3: { cellWidth: 'auto' },
-            4: { cellWidth: 22, halign: 'center' }
+            4: { cellWidth: 35 },
+            5: { cellWidth: 22, halign: 'center' }
         },
         didDrawCell: (data) => {
-            if (data.section === 'body' && data.column.index === 4) {
+            if (data.section === 'body' && data.column.index === 5) {
                 const note = notes[data.row.index];
                 if (note && note.has_image) {
                     photoLinks.push({
@@ -472,7 +488,7 @@ function exportSelectedToPDF(notes) {
             }
         },
         didParseCell: (data) => {
-            if (data.section === 'body' && data.column.index === 4) {
+            if (data.section === 'body' && data.column.index === 5) {
                 const note = notes[data.row.index];
                 if (note && note.has_image) {
                     data.cell.styles.textColor = [10, 132, 255];
@@ -487,7 +503,7 @@ function exportSelectedToPDF(notes) {
     });
     
     const timestamp = new Date().toISOString().slice(0, 10);
-    doc.save(`Selected_Notes_${timestamp}.pdf`);
+    doc.save(`Mighty_Ops_Notes_${timestamp}.pdf`);
     showToast(`Exported ${notes.length} notes to PDF`);
 }
 
@@ -817,6 +833,12 @@ function renderReportNotes(notes) {
             </a>
         ` : '';
         
+        const submitterBadge = note.submitted_by ? `
+            <span class="record-badge" style="background: var(--accent-green-dim); color: var(--accent-green); border-color: rgba(48, 209, 88, 0.2);">
+                By: ${note.submitted_by}
+            </span>
+        ` : '';
+        
         return `
             <div class="record-card ${isSelected ? 'selected' : ''}" data-id="${note.id}">
                 <label class="record-checkbox" onclick="event.stopPropagation()">
@@ -830,6 +852,7 @@ function renderReportNotes(notes) {
                 <div class="record-meta">
                     <span class="record-badge">Site ${note.location}</span>
                     <span class="record-badge ${deptClass}">${note.department}</span>
+                    ${submitterBadge}
                     ${imageBadge}
                 </div>
                 ${note.additional_notes ? `<p class="record-notes">${note.additional_notes}</p>` : ''}
@@ -991,7 +1014,7 @@ async function exportReportToExcel() {
     
     // Summary sheet
     const summaryData = [
-        ['Mighty Note - Report Summary'],
+        ['Mighty Ops - Report Summary'],
         ['Generated:', new Date().toLocaleString()],
         [''],
         ['Total Records:', notes.length],
@@ -1017,6 +1040,7 @@ async function exportReportToExcel() {
         'Note Type': note.note_type,
         'Other Description': note.other_description || '',
         'Additional Notes': note.additional_notes || '',
+        'Submitted By': note.submitted_by || '',
         'Photo': note.has_image ? getPhotoUrl(note.id) : ''
     }));
     
@@ -1025,7 +1049,7 @@ async function exportReportToExcel() {
     // Add hyperlinks for photos
     notes.forEach((note, index) => {
         if (note.has_image) {
-            const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 }); // Photo column (G)
+            const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 7 }); // Photo column (H)
             if (allWs[cellRef]) {
                 allWs[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
             }
@@ -1039,6 +1063,7 @@ async function exportReportToExcel() {
         { wch: 30 },
         { wch: 30 },
         { wch: 50 },
+        { wch: 20 },
         { wch: 40 }
     ];
     XLSX.utils.book_append_sheet(wb, allWs, 'All Records');
@@ -1054,6 +1079,7 @@ async function exportReportToExcel() {
                 'Note Type': note.note_type,
                 'Other Description': note.other_description || '',
                 'Additional Notes': note.additional_notes || '',
+                'Submitted By': note.submitted_by || '',
                 'Photo': note.has_image ? getPhotoUrl(note.id) : ''
             }));
             
@@ -1062,7 +1088,7 @@ async function exportReportToExcel() {
             // Add hyperlinks for photos
             deptNotes.forEach((note, index) => {
                 if (note.has_image) {
-                    const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 5 }); // Photo column (F)
+                    const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 }); // Photo column (G)
                     if (ws[cellRef]) {
                         ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
                     }
@@ -1075,6 +1101,7 @@ async function exportReportToExcel() {
                 { wch: 30 },
                 { wch: 30 },
                 { wch: 50 },
+                { wch: 20 },
                 { wch: 40 }
             ];
             
@@ -1094,6 +1121,7 @@ async function exportReportToExcel() {
             'Note Type': note.note_type,
             'Other Description': note.other_description || '',
             'Additional Notes': note.additional_notes || '',
+            'Submitted By': note.submitted_by || '',
             'Photo': note.has_image ? getPhotoUrl(note.id) : ''
         }));
         
@@ -1102,7 +1130,7 @@ async function exportReportToExcel() {
         // Add hyperlinks for photos
         locNotes.forEach((note, index) => {
             if (note.has_image) {
-                const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 5 }); // Photo column (F)
+                const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 }); // Photo column (G)
                 if (ws[cellRef]) {
                     ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
                 }
@@ -1115,6 +1143,7 @@ async function exportReportToExcel() {
             { wch: 30 },
             { wch: 30 },
             { wch: 50 },
+            { wch: 20 },
             { wch: 40 }
         ];
         
@@ -1123,7 +1152,7 @@ async function exportReportToExcel() {
     
     // Generate filename
     const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `Mighty_Note_Report_${timestamp}.xlsx`;
+    const filename = `Mighty_Ops_Report_${timestamp}.xlsx`;
     
     // Download
     XLSX.writeFile(wb, filename);
@@ -1145,7 +1174,7 @@ async function exportReportToPDF() {
     // Title
     doc.setFontSize(20);
     doc.setTextColor(0, 0, 0);
-    doc.text('Mighty Note - Violation Report', 14, 20);
+    doc.text('Mighty Ops - Violation Report', 14, 20);
     
     // Summary info
     doc.setFontSize(10);
@@ -1170,9 +1199,9 @@ async function exportReportToPDF() {
         `Site ${note.location}`,
         note.department,
         note.note_type === 'Other' && note.other_description 
-            ? `Other: ${note.other_description.substring(0, 30)}${note.other_description.length > 30 ? '...' : ''}` 
+            ? `Other: ${note.other_description.substring(0, 25)}${note.other_description.length > 25 ? '...' : ''}` 
             : note.note_type,
-        (note.additional_notes || '-').substring(0, 40) + ((note.additional_notes || '').length > 40 ? '...' : ''),
+        note.submitted_by || '-',
         note.has_image ? 'View Photo' : '-'
     ]);
     
@@ -1182,7 +1211,7 @@ async function exportReportToPDF() {
     // Create table
     doc.autoTable({
         startY: 50,
-        head: [['Date/Time', 'Site', 'Department', 'Note Type', 'Details', 'Photo']],
+        head: [['Date/Time', 'Site', 'Department', 'Note Type', 'Submitted By', 'Photo']],
         body: tableData,
         styles: {
             fontSize: 8,
@@ -1200,8 +1229,8 @@ async function exportReportToPDF() {
             0: { cellWidth: 38 },
             1: { cellWidth: 22 },
             2: { cellWidth: 25 },
-            3: { cellWidth: 45 },
-            4: { cellWidth: 'auto' },
+            3: { cellWidth: 'auto' },
+            4: { cellWidth: 35 },
             5: { cellWidth: 22, halign: 'center' },
         },
         didDrawCell: (data) => {
@@ -1249,7 +1278,7 @@ async function exportReportToPDF() {
     
     // Generate filename
     const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `Mighty_Note_Report_${timestamp}.pdf`;
+    const filename = `Mighty_Ops_Report_${timestamp}.pdf`;
     
     // Download
     doc.save(filename);
@@ -1512,6 +1541,9 @@ function applyUpdate() {
 
 // ===== Initialize Dashboard =====
 async function init() {
+    // Check authentication first
+    if (!checkAuth()) return;
+    
     await initDatabase();
     await updateStats();
     populateFilterCheckboxes();

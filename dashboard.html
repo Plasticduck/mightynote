@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Mighty Note - Dashboard">
+    <meta name="apple-mobile-web-app-title" content="Mighty Ops">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <title>Dashboard - Mighty Notes</title>
-    <link rel="stylesheet" href="styles.css?v=19">
+    <title>Dashboard - Mighty Ops</title>
+    <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
     <div class="app-container">
@@ -27,6 +27,12 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="12" y1="5" x2="12" y2="19"/>
                         <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                </a>
+                <a href="home.html" class="btn-icon" title="Back to Apps">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
                     </svg>
                 </a>
             </div>
@@ -144,17 +150,17 @@
                             View Report
                         </button>
                         <div class="export-dropdown">
-                            <button class="btn-export-report" id="exportReportBtn">
+                        <button class="btn-export-report" id="exportReportBtn">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                     <polyline points="7 10 12 15 17 10"/>
                                     <line x1="12" y1="15" x2="12" y2="3"/>
                                 </svg>
-                                Export Report
+                            Export Report
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="dropdown-chevron">
                                     <polyline points="6 9 12 15 18 9"/>
                                 </svg>
-                            </button>
+                        </button>
                             <div class="export-menu hidden" id="exportMenu">
                                 <button class="export-option" data-format="pdf">Export as PDF</button>
                                 <button class="export-option" data-format="excel">Export as Excel</button>
@@ -182,7 +188,7 @@
                             Select
                         </button>
                     </div>
-
+                    
                     <!-- Selection Bar (hidden until Select clicked) -->
                     <div class="selection-bar hidden" id="reportSelectionBar">
                         <div class="selection-info">
@@ -191,7 +197,7 @@
                                 <span class="select-all-check"></span>
                             </label>
                             <span class="selection-count" id="reportSelectionCount">0 selected</span>
-                        </div>
+                    </div>
                         <div class="selection-actions">
                             <div class="export-dropdown-inline">
                                 <button class="btn-action btn-export-selected" id="reportExportSelectedBtn">
@@ -206,8 +212,8 @@
                                     <button class="export-option" data-format="pdf">Export as PDF</button>
                                     <button class="export-option" data-format="excel">Export as Excel</button>
                                     <button class="export-option" data-format="both">Export Both</button>
-                                </div>
-                            </div>
+                    </div>
+                    </div>
                             <button class="btn-action btn-delete-selected" id="reportDeleteSelectedBtn">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3 6 5 6 21 6"/>
@@ -241,6 +247,6 @@
     <!-- jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <script src="dashboard.js?v=20"></script>
+    <script src="dashboard.js?v=21"></script>
 </body>
 </html>

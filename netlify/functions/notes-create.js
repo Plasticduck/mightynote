@@ -26,7 +26,7 @@ exports.handler = async (event, context) => {
         const sql = neon(process.env.NETLIFY_DATABASE_URL);
         const data = JSON.parse(event.body);
 
-        const { location, department, note_type, other_description, additional_notes, image_pdf } = data;
+        const { location, department, note_type, other_description, additional_notes, image_pdf, submitted_by, user_id } = data;
 
         // Validate required fields
         if (!location || !department || !note_type) {
@@ -38,9 +38,9 @@ exports.handler = async (event, context) => {
         }
 
         const result = await sql`
-            INSERT INTO notes (location, department, note_type, other_description, additional_notes, image_pdf)
-            VALUES (${parseInt(location)}, ${department}, ${note_type}, ${other_description || null}, ${additional_notes || null}, ${image_pdf || null})
-            RETURNING id, location, department, note_type, other_description, additional_notes, created_at
+            INSERT INTO notes (location, department, note_type, other_description, additional_notes, image_pdf, submitted_by, user_id)
+            VALUES (${parseInt(location)}, ${department}, ${note_type}, ${other_description || null}, ${additional_notes || null}, ${image_pdf || null}, ${submitted_by || null}, ${user_id || null})
+            RETURNING id, location, department, note_type, other_description, additional_notes, submitted_by, created_at
         `;
 
         return {
@@ -57,4 +57,3 @@ exports.handler = async (event, context) => {
         };
     }
 };
-

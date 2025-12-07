@@ -42,6 +42,32 @@ exports.handler = async (event, context) => {
                 END IF;
             END $$;
         `;
+        
+        // Add submitted_by column if it doesn't exist
+        await sql`
+            DO $$ 
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'notes' AND column_name = 'submitted_by'
+                ) THEN
+                    ALTER TABLE notes ADD COLUMN submitted_by TEXT;
+                END IF;
+            END $$;
+        `;
+        
+        // Add user_id column if it doesn't exist
+        await sql`
+            DO $$ 
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'notes' AND column_name = 'user_id'
+                ) THEN
+                    ALTER TABLE notes ADD COLUMN user_id INTEGER;
+                END IF;
+            END $$;
+        `;
 
         return {
             statusCode: 200,
@@ -57,4 +83,3 @@ exports.handler = async (event, context) => {
         };
     }
 };
-

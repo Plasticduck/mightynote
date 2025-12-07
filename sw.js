@@ -1,16 +1,22 @@
-const CACHE_VERSION = 20;
-const CACHE_NAME = `mighty-note-v${CACHE_VERSION}`;
+const CACHE_VERSION = 21;
+const CACHE_NAME = `mighty-ops-v${CACHE_VERSION}`;
 
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
+    '/login.html',
+    '/signup.html',
+    '/home.html',
+    '/settings.html',
     '/dashboard.html',
     '/styles.css',
     '/app.js',
     '/dashboard.js',
     '/manifest.json',
     '/MW Logo.png',
-    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js'
 ];
 
 // Install event - cache assets and skip waiting
@@ -40,7 +46,7 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME && cacheName.startsWith('mighty-note-')) {
+                    if (cacheName !== CACHE_NAME && (cacheName.startsWith('mighty-note-') || cacheName.startsWith('mighty-ops-'))) {
                         console.log('[SW] Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
@@ -113,9 +119,9 @@ async function networkFirst(request) {
             return cachedResponse;
         }
         
-        // If navigating and nothing in cache, return index.html
+        // If navigating and nothing in cache, return login.html
         if (request.mode === 'navigate') {
-            return caches.match('/index.html');
+            return caches.match('/login.html');
         }
         
         throw error;
@@ -141,9 +147,9 @@ async function cacheFirst(request) {
         
         return networkResponse;
     } catch (error) {
-        // For navigation requests, return the cached index
+        // For navigation requests, return the cached login
         if (request.mode === 'navigate') {
-            return caches.match('/index.html');
+            return caches.match('/login.html');
         }
         throw error;
     }

@@ -27,7 +27,7 @@ exports.handler = async (event, context) => {
         // Select all fields except full image data, but include whether image exists
         if (location && department) {
             query = sql`
-                SELECT id, location, department, note_type, other_description, additional_notes, created_at,
+                SELECT id, location, department, note_type, other_description, additional_notes, submitted_by, created_at,
                        CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
                 FROM notes 
                 WHERE location = ${parseInt(location)} 
@@ -36,7 +36,7 @@ exports.handler = async (event, context) => {
             `;
         } else if (location) {
             query = sql`
-                SELECT id, location, department, note_type, other_description, additional_notes, created_at,
+                SELECT id, location, department, note_type, other_description, additional_notes, submitted_by, created_at,
                        CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
                 FROM notes 
                 WHERE location = ${parseInt(location)}
@@ -44,7 +44,7 @@ exports.handler = async (event, context) => {
             `;
         } else if (department) {
             query = sql`
-                SELECT id, location, department, note_type, other_description, additional_notes, created_at,
+                SELECT id, location, department, note_type, other_description, additional_notes, submitted_by, created_at,
                        CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
                 FROM notes 
                 WHERE department = ${department}
@@ -52,7 +52,7 @@ exports.handler = async (event, context) => {
             `;
         } else {
             query = sql`
-                SELECT id, location, department, note_type, other_description, additional_notes, created_at,
+                SELECT id, location, department, note_type, other_description, additional_notes, submitted_by, created_at,
                        CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
                 FROM notes ORDER BY id DESC
             `;
@@ -74,4 +74,3 @@ exports.handler = async (event, context) => {
         };
     }
 };
-
