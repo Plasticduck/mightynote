@@ -16,23 +16,7 @@ if (user) {
 }
 
 // Site locations
-const locations = [
-    "Wash Lyfe - McKinney",
-    "Wash Lyfe - Prosper", 
-    "Wash Lyfe - Celina",
-    "Wash Lyfe - Little Elm",
-    "Wash Lyfe - Frisco",
-    "Wash Lyfe - Allen",
-    "Wash Lyfe - Plano",
-    "Wash Lyfe - Richardson",
-    "Wash Lyfe - Garland",
-    "Wash Lyfe - Rowlett",
-    "Wash Lyfe - Rockwall",
-    "Wash Lyfe - Wylie",
-    "Wash Lyfe - Murphy",
-    "Wash Lyfe - Sachse",
-    "Wash Lyfe - Forney"
-];
+const locations = Array.from({ length: 31 }, (_, i) => `Site #${i + 1}`);
 
 // Populate locations dropdown
 const locationSelect = document.getElementById('location');
@@ -227,4 +211,5 @@ document.getElementById('evaluationForm').addEventListener('submit', async (e) =
         submitBtn.disabled = false;
     }
 });
+
 

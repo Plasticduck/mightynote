@@ -13,23 +13,7 @@ function checkAuth() {
 const user = checkAuth();
 
 // Site locations
-const locations = [
-    "Wash Lyfe - McKinney",
-    "Wash Lyfe - Prosper", 
-    "Wash Lyfe - Celina",
-    "Wash Lyfe - Little Elm",
-    "Wash Lyfe - Frisco",
-    "Wash Lyfe - Allen",
-    "Wash Lyfe - Plano",
-    "Wash Lyfe - Richardson",
-    "Wash Lyfe - Garland",
-    "Wash Lyfe - Rowlett",
-    "Wash Lyfe - Rockwall",
-    "Wash Lyfe - Wylie",
-    "Wash Lyfe - Murphy",
-    "Wash Lyfe - Sachse",
-    "Wash Lyfe - Forney"
-];
+const locations = Array.from({ length: 31 }, (_, i) => `Site #${i + 1}`);
 
 // Question definitions for PDF
 const questions = [
@@ -91,7 +75,7 @@ function populateLocationCheckboxes() {
         label.innerHTML = `
             <input type="checkbox" value="${loc}" checked>
             <span class="checkmark"></span>
-            ${loc.replace('Wash Lyfe - ', '')}
+            ${loc}
         `;
         container.appendChild(label);
     });
@@ -573,4 +557,5 @@ function showToast(message, type = 'success') {
         setTimeout(() => toast.classList.add('hidden'), 300);
     }, 3000);
 }
+
 

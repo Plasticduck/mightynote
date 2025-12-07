@@ -17921,13 +17921,2586 @@ I'll implement the Executive Site Review app with all 19 dropdown questions, opt
 - [-] Create site-evaluations.html form with 19 dropdown questions
 - [ ] Create site-evaluations-dashboard.html with PDF export
 - [ ] Create Netlify functions for site evaluations database
+- [ ] Update home.html to link to Site Evaluations app
+- [ ] Push changes to git
 
 </details>
 </tool-use>
 
 ---
 
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: index.html</summary>
 
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: styles.css</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I have a good understanding of the structure. Let me create:
+1. site-evaluations.html - the main form with 19 dropdown questions
+2. site-evaluations-dashboard.html - the dashboard with PDF export only
+3. site-evaluations.js - JavaScript for the form
+4. site-evaluations-dashboard.js - JavaScript for the dashboard
+5. Netlify functions for database operations
+
+Let me start creating these files.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: site-evaluations.html</summary>
+
+**Chunk 1**
+Lines added: 494, lines removed: 1
+
+```diff
+@@ -1,1 +1,494 @@
+- 
++ &lt;!DOCTYPE html&gt;
++ &lt;html lang="en"&gt;
++ &lt;head&gt;
++     &lt;meta charset="UTF-8"&gt;
++     &lt;meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"&gt;
++     &lt;meta name="theme-color" content="#000000"&gt;
++     &lt;meta name="apple-mobile-web-app-capable" content="yes"&gt;
++     &lt;meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"&gt;
++     &lt;meta name="apple-mobile-web-app-title" content="Mighty Ops"&gt;
++     &lt;link rel="manifest" href="manifest.json"&gt;
++     &lt;link rel="apple-touch-icon" href="icons/icon-192.png"&gt;
++     &lt;title&gt;Executive Site Review - Mighty Ops&lt;/title&gt;
++     &lt;link rel="stylesheet" href="styles.css?v=23"&gt;
++     &lt;style&gt;
++         .evaluation-form {
++             padding: var(--space-lg);
++             display: flex;
++             flex-direction: column;
++             gap: var(--space-lg);
++         }
++         
++         .question-group {
++             display: flex;
++             flex-direction: column;
++             gap: var(--space-sm);
++             padding-bottom: var(--space-lg);
++             border-bottom: 1px solid var(--border-subtle);
++         }
++         
++         .question-group:last-of-type {
++             border-bottom: none;
++             padding-bottom: 0;
++         }
++         
++         .question-number {
++             font-size: 0.7rem;
++             font-weight: 600;
++             color: var(--accent-blue);
++             text-transform: uppercase;
++             letter-spacing: 0.05em;
++         }
++         
++         .question-text {
++             font-size: 0.95rem;
++             font-weight: 500;
++             color: var(--white);
++             line-height: 1.4;
++         }
++         
++         .optional-section {
++             margin-top: var(--space-md);
++             padding-top: var(--space-lg);
++             border-top: 2px solid var(--border-color);
++         }
++         
++         .optional-section h3 {
++             font-size: 0.85rem;
++             font-weight: 600;
++             color: var(--text-secondary);
++             text-transform: uppercase;
++             letter-spacing: 0.05em;
++             margin-bottom: var(--space-lg);
++         }
++         
++         .form-card {
++             max-width: 640px;
++         }
++     &lt;/style&gt;
++ &lt;/head&gt;
++ &lt;body&gt;
++     &lt;div class="app-container"&gt;
++         &lt;div class="bg-decoration"&gt;&lt;/div&gt;
++ 
++         &lt;!-- Header --&gt;
++         &lt;header class="app-header"&gt;
++             &lt;div class="logo"&gt;
++                 &lt;img src="MW Logo.png" alt="MW Logo" class="logo-img"&gt;
++                 &lt;span class="logo-text"&gt;Executive Site Review&lt;/span&gt;
++             &lt;/div&gt;
++             &lt;div class="header-actions"&gt;
++                 &lt;a href="site-evaluations-dashboard.html" class="btn-icon" title="View Reviews &amp; Reports"&gt;
++                     &lt;svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                         &lt;path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/&gt;
++                     &lt;/svg&gt;
++                 &lt;/a&gt;
++                 &lt;a href="home.html" class="btn-icon" title="Back to Apps"&gt;
++                     &lt;svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                         &lt;path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/&gt;
++                         &lt;polyline points="9 22 9 12 15 12 15 22"/&gt;
++                     &lt;/svg&gt;
++                 &lt;/a&gt;
++             &lt;/div&gt;
++         &lt;/header&gt;
++ 
++         &lt;!-- Main Form Screen --&gt;
++         &lt;main class="main-content" id="formScreen"&gt;
++             &lt;div class="form-card"&gt;
++                 &lt;div class="form-header"&gt;
++                     &lt;h2&gt;Executive Site Review&lt;/h2&gt;
++                     &lt;p class="form-subtitle"&gt;Submitting as: &lt;strong id="submitterName"&gt;Loading...&lt;/strong&gt;&lt;/p&gt;
++                 &lt;/div&gt;
++ 
++                 &lt;form id="evaluationForm" class="evaluation-form"&gt;
++                     &lt;!-- Site Selection --&gt;
++                     &lt;div class="form-group"&gt;
++                         &lt;label for="location"&gt;Site Location&lt;/label&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="location" required&gt;
++                                 &lt;option value=""&gt;Select a site...&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 1 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 1&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Was the General Manager present during your visit?&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q1" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Yes"&gt;Yes&lt;/option&gt;
++                                 &lt;option value="No"&gt;No&lt;/option&gt;
++                                 &lt;option value="Acting Manager Present"&gt;Acting Manager Present&lt;/option&gt;
++                                 &lt;option value="No Manager Present"&gt;No Manager Present&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 2 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 2&lt;/span&gt;
++                         &lt;span class="question-text"&gt;How would you rate overall site leadership at the time of the visit?&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q2" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Excellent"&gt;Excellent&lt;/option&gt;
++                                 &lt;option value="Good"&gt;Good&lt;/option&gt;
++                                 &lt;option value="Fair"&gt;Fair&lt;/option&gt;
++                                 &lt;option value="Poor"&gt;Poor&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 3 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 3&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Staffing levels observed:&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q3" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Adequately staffed"&gt;Adequately staffed&lt;/option&gt;
++                                 &lt;option value="Slightly understaffed"&gt;Slightly understaffed&lt;/option&gt;
++                                 &lt;option value="Severely understaffed"&gt;Severely understaffed&lt;/option&gt;
++                                 &lt;option value="Overstaffed"&gt;Overstaffed&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 4 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 4&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Employee engagement during the visit:&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q4" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Very engaged"&gt;Very engaged&lt;/option&gt;
++                                 &lt;option value="Moderately engaged"&gt;Moderately engaged&lt;/option&gt;
++                                 &lt;option value="Minimally engaged"&gt;Minimally engaged&lt;/option&gt;
++                                 &lt;option value="Disengaged"&gt;Disengaged&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 5 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 5&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Was the site following the proper SOP flow?&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q5" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Fully compliant"&gt;Fully compliant&lt;/option&gt;
++                                 &lt;option value="Mostly compliant"&gt;Mostly compliant&lt;/option&gt;
++                                 &lt;option value="Partially compliant"&gt;Partially compliant&lt;/option&gt;
++                                 &lt;option value="Non-compliant"&gt;Non-compliant&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 6 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 6&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Cleanliness inside the site (office / lobby / waiting area):&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q6" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Excellent"&gt;Excellent&lt;/option&gt;
++                                 &lt;option value="Good"&gt;Good&lt;/option&gt;
++                                 &lt;option value="Needs improvement"&gt;Needs improvement&lt;/option&gt;
++                                 &lt;option value="Poor"&gt;Poor&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 7 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 7&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Cleanliness outside (lot / vacuums / entrance / signage):&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q7" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Excellent"&gt;Excellent&lt;/option&gt;
++                                 &lt;option value="Good"&gt;Good&lt;/option&gt;
++                                 &lt;option value="Needs improvement"&gt;Needs improvement&lt;/option&gt;
++                                 &lt;option value="Poor"&gt;Poor&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 8 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 8&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Equipment status at the time of inspection:&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q8" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Fully operational"&gt;Fully operational&lt;/option&gt;
++                                 &lt;option value="Minor issues observed"&gt;Minor issues observed&lt;/option&gt;
++                                 &lt;option value="Major issues observed"&gt;Major issues observed&lt;/option&gt;
++                                 &lt;option value="Critical failures"&gt;Critical failures&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 9 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 9&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Customer experience during your visit:&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q9" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Excellent"&gt;Excellent&lt;/option&gt;
++                                 &lt;option value="Good"&gt;Good&lt;/option&gt;
++                                 &lt;option value="Acceptable"&gt;Acceptable&lt;/option&gt;
++                                 &lt;option value="Poor"&gt;Poor&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 10 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 10&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Did you observe any safety concerns?&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q10" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="No issues observed"&gt;No issues observed&lt;/option&gt;
++                                 &lt;option value="Minor safety concerns"&gt;Minor safety concerns&lt;/option&gt;
++                                 &lt;option value="Moderate safety concerns"&gt;Moderate safety concerns&lt;/option&gt;
++                                 &lt;option value="Serious safety hazard"&gt;Serious safety hazard&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 11 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 11&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Accuracy of POS operations you observed:&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q11" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Fully accurate"&gt;Fully accurate&lt;/option&gt;
++                                 &lt;option value="Mostly accurate"&gt;Mostly accurate&lt;/option&gt;
++                                 &lt;option value="Inconsistent"&gt;Inconsistent&lt;/option&gt;
++                                 &lt;option value="Not accurate"&gt;Not accurate&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 12 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 12&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Uniform compliance:&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q12" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Fully compliant"&gt;Fully compliant&lt;/option&gt;
++                                 &lt;option value="Mostly compliant"&gt;Mostly compliant&lt;/option&gt;
++                                 &lt;option value="Partially compliant"&gt;Partially compliant&lt;/option&gt;
++                                 &lt;option value="Not compliant"&gt;Not compliant&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 13 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 13&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Professionalism of staff:&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q13" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Excellent"&gt;Excellent&lt;/option&gt;
++                                 &lt;option value="Good"&gt;Good&lt;/option&gt;
++                                 &lt;option value="Fair"&gt;Fair&lt;/option&gt;
++                                 &lt;option value="Poor"&gt;Poor&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 14 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 14&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Was the site operating according to the posted hours?&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q14" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Yes"&gt;Yes&lt;/option&gt;
++                                 &lt;option value="No (Opened late)"&gt;No (Opened late)&lt;/option&gt;
++                                 &lt;option value="No (Closed early)"&gt;No (Closed early)&lt;/option&gt;
++                                 &lt;option value="No (Unapproved adjustment)"&gt;No (Unapproved adjustment)&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 15 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 15&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Fleet and vendor processes observed:&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q15" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="No concerns"&gt;No concerns&lt;/option&gt;
++                                 &lt;option value="Minor issues"&gt;Minor issues&lt;/option&gt;
++                                 &lt;option value="Moderate issues"&gt;Moderate issues&lt;/option&gt;
++                                 &lt;option value="Major issues"&gt;Major issues&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 16 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 16&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Condition of chemical rooms / inventory areas:&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q16" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Excellent"&gt;Excellent&lt;/option&gt;
++                                 &lt;option value="Organized but needs attention"&gt;Organized but needs attention&lt;/option&gt;
++                                 &lt;option value="Disorganized"&gt;Disorganized&lt;/option&gt;
++                                 &lt;option value="Serious issues"&gt;Serious issues&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 17 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 17&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Did the GM provide an update on current initiatives?&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q17" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Yes, detailed update"&gt;Yes, detailed update&lt;/option&gt;
++                                 &lt;option value="Brief update"&gt;Brief update&lt;/option&gt;
++                                 &lt;option value="Minimal update"&gt;Minimal update&lt;/option&gt;
++                                 &lt;option value="No update provided"&gt;No update provided&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 18 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 18&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Overall assessment of site performance:&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q18" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="Excellent"&gt;Excellent&lt;/option&gt;
++                                 &lt;option value="Good"&gt;Good&lt;/option&gt;
++                                 &lt;option value="Fair"&gt;Fair&lt;/option&gt;
++                                 &lt;option value="Poor"&gt;Poor&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Question 19 --&gt;
++                     &lt;div class="question-group"&gt;
++                         &lt;span class="question-number"&gt;Question 19&lt;/span&gt;
++                         &lt;span class="question-text"&gt;Immediate follow-up required?&lt;/span&gt;
++                         &lt;div class="select-wrapper"&gt;
++                             &lt;select id="q19" required&gt;
++                                 &lt;option value=""&gt;Select an answer...&lt;/option&gt;
++                                 &lt;option value="No"&gt;No&lt;/option&gt;
++                                 &lt;option value="Yes (minor follow-up)"&gt;Yes (minor follow-up)&lt;/option&gt;
++                                 &lt;option value="Yes (moderate follow-up)"&gt;Yes (moderate follow-up)&lt;/option&gt;
++                                 &lt;option value="Yes (urgent follow-up required)"&gt;Yes (urgent follow-up required)&lt;/option&gt;
++                             &lt;/select&gt;
++                             &lt;span class="select-arrow"&gt;▼&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Optional Section --&gt;
++                     &lt;div class="optional-section"&gt;
++                         &lt;h3&gt;Optional Information&lt;/h3&gt;
++                         
++                         &lt;!-- Additional Notes --&gt;
++                         &lt;div class="form-group"&gt;
++                             &lt;label for="additionalNotes"&gt;Additional Notes&lt;/label&gt;
++                             &lt;textarea id="additionalNotes" rows="4" placeholder="Enter any additional observations or comments..."&gt;&lt;/textarea&gt;
++                         &lt;/div&gt;
++ 
++                         &lt;!-- Photo Upload --&gt;
++                         &lt;div class="form-group"&gt;
++                             &lt;label&gt;Photos / Attachments&lt;/label&gt;
++                             &lt;div class="photo-upload-container"&gt;
++                                 &lt;div class="photo-buttons"&gt;
++                                     &lt;button type="button" class="btn-photo" id="takePhotoBtn"&gt;
++                                         &lt;svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                             &lt;path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/&gt;
++                                             &lt;circle cx="12" cy="13" r="4"/&gt;
++                                         &lt;/svg&gt;
++                                         Take Photo
++                                     &lt;/button&gt;
++                                     &lt;button type="button" class="btn-photo" id="uploadPhotoBtn"&gt;
++                                         &lt;svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                             &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
++                                             &lt;polyline points="17 8 12 3 7 8"/&gt;
++                                             &lt;line x1="12" y1="3" x2="12" y2="15"/&gt;
++                                         &lt;/svg&gt;
++                                         Upload Photo
++                                     &lt;/button&gt;
++                                 &lt;/div&gt;
++                                 &lt;!-- Hidden file inputs --&gt;
++                                 &lt;input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;"&gt;
++                                 &lt;input type="file" id="fileInput" accept="image/*" style="display: none;"&gt;
++                                 &lt;!-- Photo preview --&gt;
++                                 &lt;div class="photo-preview hidden" id="photoPreview"&gt;
++                                     &lt;img id="previewImage" alt="Photo preview"&gt;
++                                     &lt;button type="button" class="btn-remove-photo" id="removePhotoBtn"&gt;
++                                         &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                             &lt;line x1="18" y1="6" x2="6" y2="18"/&gt;
++                                             &lt;line x1="6" y1="6" x2="18" y2="18"/&gt;
++                                         &lt;/svg&gt;
++                                     &lt;/button&gt;
++                                     &lt;span class="photo-status"&gt;Photo attached&lt;/span&gt;
++                                 &lt;/div&gt;
++                             &lt;/div&gt;
++                         &lt;/div&gt;
++ 
++                         &lt;!-- Follow-Up Instructions --&gt;
++                         &lt;div class="form-group"&gt;
++                             &lt;label for="followUpInstructions"&gt;Follow-Up Instructions&lt;/label&gt;
++                             &lt;textarea id="followUpInstructions" rows="3" placeholder="Enter any follow-up instructions or action items..."&gt;&lt;/textarea&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Submit Button --&gt;
++                     &lt;button type="submit" class="btn-submit"&gt;
++                         &lt;span class="btn-text"&gt;Submit Review&lt;/span&gt;
++                     &lt;/button&gt;
++                 &lt;/form&gt;
++             &lt;/div&gt;
++         &lt;/main&gt;
++ 
++         &lt;!-- Toast Notification --&gt;
++         &lt;div class="toast hidden" id="toast"&gt;
++             &lt;span class="toast-icon"&gt;✓&lt;/span&gt;
++             &lt;span class="toast-message"&gt;Review saved successfully!&lt;/span&gt;
++         &lt;/div&gt;
++     &lt;/div&gt;
++ 
++     &lt;!-- jsPDF for PDF conversion --&gt;
++     &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;
++     &lt;script src="site-evaluations.js?v=1"&gt;&lt;/script&gt;
++ &lt;/body&gt;
++ &lt;/html&gt;
++ 
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me create the JavaScript for the form.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: site-evaluations.js</summary>
+
+**Chunk 1**
+Lines added: 230, lines removed: 1
+
+```diff
+@@ -1,1 +1,230 @@
+- 
++ // Site Evaluations App JavaScript
++ 
++ // Check authentication
++ function checkAuth() {
++     const userStr = localStorage.getItem('mightyops_user');
++     if (!userStr) {
++         window.location.href = 'login.html';
++         return null;
++     }
++     return JSON.parse(userStr);
++ }
++ 
++ const user = checkAuth();
++ if (user) {
++     document.getElementById('submitterName').textContent = user.full_name;
++ }
++ 
++ // Site locations
++ const locations = [
++     "Wash Lyfe - McKinney",
++     "Wash Lyfe - Prosper", 
++     "Wash Lyfe - Celina",
++     "Wash Lyfe - Little Elm",
++     "Wash Lyfe - Frisco",
++     "Wash Lyfe - Allen",
++     "Wash Lyfe - Plano",
++     "Wash Lyfe - Richardson",
++     "Wash Lyfe - Garland",
++     "Wash Lyfe - Rowlett",
++     "Wash Lyfe - Rockwall",
++     "Wash Lyfe - Wylie",
++     "Wash Lyfe - Murphy",
++     "Wash Lyfe - Sachse",
++     "Wash Lyfe - Forney"
++ ];
++ 
++ // Populate locations dropdown
++ const locationSelect = document.getElementById('location');
++ locations.forEach(loc =&gt; {
++     const option = document.createElement('option');
++     option.value = loc;
++     option.textContent = loc;
++     locationSelect.appendChild(option);
++ });
++ 
++ // Photo handling
++ let currentImageData = null;
++ 
++ const takePhotoBtn = document.getElementById('takePhotoBtn');
++ const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
++ const cameraInput = document.getElementById('cameraInput');
++ const fileInput = document.getElementById('fileInput');
++ const photoPreview = document.getElementById('photoPreview');
++ const previewImage = document.getElementById('previewImage');
++ const removePhotoBtn = document.getElementById('removePhotoBtn');
++ 
++ takePhotoBtn.addEventListener('click', () =&gt; cameraInput.click());
++ uploadPhotoBtn.addEventListener('click', () =&gt; fileInput.click());
++ 
++ async function handleImageSelect(file) {
++     if (!file) return;
++     
++     // Compress and convert to base64
++     const compressedImage = await compressImage(file);
++     currentImageData = compressedImage;
++     
++     previewImage.src = compressedImage;
++     photoPreview.classList.remove('hidden');
++ }
++ 
++ async function compressImage(file, maxWidth = 1200, quality = 0.7) {
++     return new Promise((resolve) =&gt; {
++         const reader = new FileReader();
++         reader.onload = (e) =&gt; {
++             const img = new Image();
++             img.onload = () =&gt; {
++                 const canvas = document.createElement('canvas');
++                 let { width, height } = img;
++                 
++                 if (width &gt; maxWidth) {
++                     height = (height * maxWidth) / width;
++                     width = maxWidth;
++                 }
++                 
++                 canvas.width = width;
++                 canvas.height = height;
++                 
++                 const ctx = canvas.getContext('2d');
++                 ctx.drawImage(img, 0, 0, width, height);
++                 
++                 resolve(canvas.toDataURL('image/jpeg', quality));
++             };
++             img.src = e.target.result;
++         };
++         reader.readAsDataURL(file);
++     });
++ }
++ 
++ cameraInput.addEventListener('change', (e) =&gt; handleImageSelect(e.target.files[0]));
++ fileInput.addEventListener('change', (e) =&gt; handleImageSelect(e.target.files[0]));
++ 
++ removePhotoBtn.addEventListener('click', () =&gt; {
++     currentImageData = null;
++     photoPreview.classList.add('hidden');
++     previewImage.src = '';
++     cameraInput.value = '';
++     fileInput.value = '';
++ });
++ 
++ // Convert image to PDF
++ async function convertImageToPDF(imageData) {
++     const { jsPDF } = window.jspdf;
++     const pdf = new jsPDF();
++     
++     const img = new Image();
++     return new Promise((resolve) =&gt; {
++         img.onload = () =&gt; {
++             const pageWidth = pdf.internal.pageSize.getWidth();
++             const pageHeight = pdf.internal.pageSize.getHeight();
++             
++             let imgWidth = img.width;
++             let imgHeight = img.height;
++             
++             // Scale to fit page
++             const ratio = Math.min((pageWidth - 20) / imgWidth, (pageHeight - 20) / imgHeight);
++             imgWidth *= ratio;
++             imgHeight *= ratio;
++             
++             const x = (pageWidth - imgWidth) / 2;
++             const y = (pageHeight - imgHeight) / 2;
++             
++             pdf.addImage(imageData, 'JPEG', x, y, imgWidth, imgHeight);
++             resolve(pdf.output('datauristring'));
++         };
++         img.src = imageData;
++     });
++ }
++ 
++ // Format date for CST
++ function formatDate(date) {
++     return new Date(date).toLocaleString('en-US', {
++         timeZone: 'America/Chicago',
++         year: 'numeric',
++         month: '2-digit',
++         day: '2-digit',
++         hour: '2-digit',
++         minute: '2-digit',
++         hour12: true
++     });
++ }
++ 
++ // Show toast notification
++ function showToast(message, type = 'success') {
++     const toast = document.getElementById('toast');
++     const toastMessage = toast.querySelector('.toast-message');
++     const toastIcon = toast.querySelector('.toast-icon');
++     
++     toastMessage.textContent = message;
++     toastIcon.textContent = type === 'success' ? '✓' : '✕';
++     toast.style.setProperty('--toast-color', type === 'success' ? 'var(--success)' : 'var(--danger)');
++     
++     toast.classList.remove('hidden');
++     toast.classList.add('show');
++     
++     setTimeout(() =&gt; {
++         toast.classList.remove('show');
++         setTimeout(() =&gt; toast.classList.add('hidden'), 300);
++     }, 3000);
++ }
++ 
++ // Form submission
++ document.getElementById('evaluationForm').addEventListener('submit', async (e) =&gt; {
++     e.preventDefault();
++     
++     const submitBtn = e.target.querySelector('.btn-submit');
++     const btnText = submitBtn.querySelector('.btn-text');
++     const originalText = btnText.textContent;
++     
++     btnText.textContent = 'Saving...';
++     submitBtn.disabled = true;
++     
++     try {
++         // Collect all answers
++         const answers = {};
++         for (let i = 1; i &lt;= 19; i++) {
++             answers[&#96;q${i}&#96;] = document.getElementById(&#96;q${i}&#96;).value;
++         }
++         
++         // Convert image to PDF if exists
++         let imagePdf = null;
++         if (currentImageData) {
++             imagePdf = await convertImageToPDF(currentImageData);
++         }
++         
++         const evaluationData = {
++             location: document.getElementById('location').value,
++             answers: answers,
++             additional_notes: document.getElementById('additionalNotes').value,
++             follow_up_instructions: document.getElementById('followUpInstructions').value,
++             image_pdf: imagePdf,
++             submitted_by: user.full_name,
++             submitted_at: new Date().toISOString()
++         };
++         
++         // Save to database
++         const response = await fetch('/.netlify/functions/evaluations-create', {
++             method: 'POST',
++             headers: { 'Content-Type': 'application/json' },
++             body: JSON.stringify(evaluationData)
++         });
++         
++         if (!response.ok) throw new Error('Failed to save evaluation');
++         
++         showToast('Review saved successfully!');
++         
++         // Reset form
++         e.target.reset();
++         currentImageData = null;
++         photoPreview.classList.add('hidden');
++         previewImage.src = '';
++         
++     } catch (error) {
++         console.error('Error saving evaluation:', error);
++         showToast('Failed to save review. Please try again.', 'error');
++     } finally {
++         btnText.textContent = originalText;
++         submitBtn.disabled = false;
++     }
++ });
++ 
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me create the dashboard with PDF export.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: site-evaluations-dashboard.html</summary>
+
+**Chunk 1**
+Lines added: 435, lines removed: 1
+
+```diff
+@@ -1,1 +1,435 @@
+- 
++ &lt;!DOCTYPE html&gt;
++ &lt;html lang="en"&gt;
++ &lt;head&gt;
++     &lt;meta charset="UTF-8"&gt;
++     &lt;meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"&gt;
++     &lt;meta name="theme-color" content="#000000"&gt;
++     &lt;meta name="apple-mobile-web-app-capable" content="yes"&gt;
++     &lt;meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"&gt;
++     &lt;meta name="apple-mobile-web-app-title" content="Mighty Ops"&gt;
++     &lt;link rel="manifest" href="manifest.json"&gt;
++     &lt;link rel="apple-touch-icon" href="icons/icon-192.png"&gt;
++     &lt;title&gt;Site Reviews Dashboard - Mighty Ops&lt;/title&gt;
++     &lt;link rel="stylesheet" href="styles.css?v=23"&gt;
++     &lt;style&gt;
++         .review-card {
++             background: var(--bg-input);
++             border: 1px solid var(--border-color);
++             border-radius: var(--radius-md);
++             padding: var(--space-md);
++             margin-bottom: var(--space-md);
++             transition: all var(--transition-base);
++             position: relative;
++         }
++         
++         .review-card:hover {
++             background: var(--bg-hover);
++             border-color: var(--white-15);
++         }
++         
++         .review-card:last-child {
++             margin-bottom: 0;
++         }
++         
++         .review-header {
++             display: flex;
++             justify-content: space-between;
++             align-items: flex-start;
++             margin-bottom: var(--space-sm);
++         }
++         
++         .review-location {
++             font-weight: 600;
++             font-size: 1rem;
++             color: var(--white);
++         }
++         
++         .review-timestamp {
++             font-family: var(--font-mono);
++             font-size: 0.75rem;
++             color: var(--text-muted);
++         }
++         
++         .review-meta {
++             display: flex;
++             gap: var(--space-sm);
++             flex-wrap: wrap;
++             margin-bottom: var(--space-sm);
++         }
++         
++         .review-badge {
++             font-size: 0.75rem;
++             font-weight: 500;
++             padding: 4px 10px;
++             border-radius: var(--radius-sm);
++             background: var(--white-05);
++             color: var(--text-secondary);
++             border: 1px solid var(--border-color);
++         }
++         
++         .review-badge.excellent {
++             color: var(--accent-green);
++             background: var(--accent-green-dim);
++             border-color: rgba(48, 209, 88, 0.2);
++         }
++         
++         .review-badge.good {
++             color: var(--accent-blue);
++             background: var(--accent-blue-dim);
++             border-color: rgba(10, 132, 255, 0.2);
++         }
++         
++         .review-badge.fair {
++             color: var(--accent-yellow);
++             background: var(--accent-yellow-dim);
++             border-color: rgba(255, 214, 10, 0.2);
++         }
++         
++         .review-badge.poor {
++             color: var(--accent-red);
++             background: var(--accent-red-dim);
++             border-color: rgba(255, 69, 58, 0.2);
++         }
++         
++         .review-badge.followup {
++             color: var(--accent-red);
++             background: var(--accent-red-dim);
++             border-color: rgba(255, 69, 58, 0.2);
++         }
++         
++         .review-submitter {
++             font-size: 0.8rem;
++             color: var(--text-secondary);
++         }
++         
++         .review-actions {
++             display: flex;
++             gap: var(--space-sm);
++             margin-top: var(--space-md);
++             padding-top: var(--space-sm);
++             border-top: 1px solid var(--border-subtle);
++         }
++         
++         .btn-view-pdf {
++             display: inline-flex;
++             align-items: center;
++             gap: 4px;
++             padding: 6px 12px;
++             font-size: 0.8rem;
++             font-weight: 500;
++             color: var(--accent-blue);
++             background: var(--accent-blue-dim);
++             border: 1px solid rgba(10, 132, 255, 0.2);
++             border-radius: var(--radius-sm);
++             cursor: pointer;
++             transition: all var(--transition-base);
++             text-decoration: none;
++         }
++         
++         .btn-view-pdf:hover {
++             background: var(--accent-blue);
++             color: var(--white);
++         }
++         
++         .review-card.selectable {
++             padding-left: 56px;
++         }
++         
++         .review-checkbox {
++             position: absolute;
++             top: var(--space-md);
++             left: var(--space-md);
++             width: 20px;
++             height: 20px;
++             cursor: pointer;
++             display: none;
++         }
++         
++         .select-mode .review-checkbox {
++             display: block;
++         }
++         
++         .review-checkbox input {
++             display: none;
++         }
++         
++         .review-check {
++             width: 20px;
++             height: 20px;
++             border: 2px solid var(--border-color);
++             border-radius: 4px;
++             display: flex;
++             align-items: center;
++             justify-content: center;
++             background: var(--bg-input);
++             transition: all var(--transition-fast);
++         }
++         
++         .review-checkbox:hover .review-check {
++             border-color: var(--accent-blue);
++         }
++         
++         .review-checkbox input:checked + .review-check {
++             background: var(--accent-blue);
++             border-color: var(--accent-blue);
++         }
++         
++         .review-checkbox input:checked + .review-check::after {
++             content: '✓';
++             color: var(--white);
++             font-size: 0.7rem;
++             font-weight: bold;
++         }
++         
++         .review-card.selected {
++             background: var(--accent-blue-dim);
++             border-color: rgba(10, 132, 255, 0.3);
++         }
++     &lt;/style&gt;
++ &lt;/head&gt;
++ &lt;body&gt;
++     &lt;div class="app-container"&gt;
++         &lt;div class="bg-decoration"&gt;&lt;/div&gt;
++ 
++         &lt;!-- Header --&gt;
++         &lt;header class="app-header"&gt;
++             &lt;div class="logo"&gt;
++                 &lt;img src="MW Logo.png" alt="MW Logo" class="logo-img"&gt;
++                 &lt;span class="logo-text"&gt;Site Reviews&lt;/span&gt;
++             &lt;/div&gt;
++             &lt;div class="header-actions"&gt;
++                 &lt;a href="site-evaluations.html" class="btn-icon btn-add-note" title="New Review"&gt;
++                     &lt;svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                         &lt;line x1="12" y1="5" x2="12" y2="19"/&gt;
++                         &lt;line x1="5" y1="12" x2="19" y2="12"/&gt;
++                     &lt;/svg&gt;
++                 &lt;/a&gt;
++                 &lt;a href="home.html" class="btn-icon" title="Back to Apps"&gt;
++                     &lt;svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                         &lt;path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/&gt;
++                         &lt;polyline points="9 22 9 12 15 12 15 22"/&gt;
++                     &lt;/svg&gt;
++                 &lt;/a&gt;
++             &lt;/div&gt;
++         &lt;/header&gt;
++ 
++         &lt;!-- Main Content --&gt;
++         &lt;main class="main-content"&gt;
++             &lt;div class="admin-dashboard"&gt;
++                 &lt;!-- Stats Grid --&gt;
++                 &lt;div class="stats-grid"&gt;
++                     &lt;div class="stat-card stat-total"&gt;
++                         &lt;div class="stat-content"&gt;
++                             &lt;span class="stat-value" id="totalReviews"&gt;0&lt;/span&gt;
++                             &lt;span class="stat-label"&gt;Total Reviews&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++                     &lt;div class="stat-card stat-operations"&gt;
++                         &lt;div class="stat-content"&gt;
++                             &lt;span class="stat-value" id="excellentCount"&gt;0&lt;/span&gt;
++                             &lt;span class="stat-label"&gt;Excellent&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++                     &lt;div class="stat-card stat-safety"&gt;
++                         &lt;div class="stat-content"&gt;
++                             &lt;span class="stat-value" id="goodCount"&gt;0&lt;/span&gt;
++                             &lt;span class="stat-label"&gt;Good&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++                     &lt;div class="stat-card stat-accounting"&gt;
++                         &lt;div class="stat-content"&gt;
++                             &lt;span class="stat-value" id="followUpCount"&gt;0&lt;/span&gt;
++                             &lt;span class="stat-label"&gt;Need Follow-up&lt;/span&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++                 &lt;/div&gt;
++ 
++                 &lt;!-- Generate Reports Section --&gt;
++                 &lt;div class="report-filters"&gt;
++                     &lt;h3&gt;Generate Report&lt;/h3&gt;
++                     &lt;div class="filters-grid"&gt;
++                         &lt;!-- Location Filter --&gt;
++                         &lt;div class="filter-section"&gt;
++                             &lt;label&gt;Locations&lt;/label&gt;
++                             &lt;div class="checkbox-group" id="locationCheckboxes"&gt;
++                                 &lt;!-- Populated by JS --&gt;
++                             &lt;/div&gt;
++                         &lt;/div&gt;
++ 
++                         &lt;!-- Overall Rating Filter --&gt;
++                         &lt;div class="filter-section"&gt;
++                             &lt;label&gt;Overall Rating&lt;/label&gt;
++                             &lt;div class="checkbox-group" id="ratingCheckboxes"&gt;
++                                 &lt;label class="checkbox-item"&gt;
++                                     &lt;input type="checkbox" value="Excellent" checked&gt;
++                                     &lt;span class="checkmark"&gt;&lt;/span&gt;
++                                     Excellent
++                                 &lt;/label&gt;
++                                 &lt;label class="checkbox-item"&gt;
++                                     &lt;input type="checkbox" value="Good" checked&gt;
++                                     &lt;span class="checkmark"&gt;&lt;/span&gt;
++                                     Good
++                                 &lt;/label&gt;
++                                 &lt;label class="checkbox-item"&gt;
++                                     &lt;input type="checkbox" value="Fair" checked&gt;
++                                     &lt;span class="checkmark"&gt;&lt;/span&gt;
++                                     Fair
++                                 &lt;/label&gt;
++                                 &lt;label class="checkbox-item"&gt;
++                                     &lt;input type="checkbox" value="Poor" checked&gt;
++                                     &lt;span class="checkmark"&gt;&lt;/span&gt;
++                                     Poor
++                                 &lt;/label&gt;
++                             &lt;/div&gt;
++                         &lt;/div&gt;
++ 
++                         &lt;!-- Follow-up Filter --&gt;
++                         &lt;div class="filter-section"&gt;
++                             &lt;label&gt;Follow-up Status&lt;/label&gt;
++                             &lt;div class="checkbox-group" id="followupCheckboxes"&gt;
++                                 &lt;label class="checkbox-item"&gt;
++                                     &lt;input type="checkbox" value="No" checked&gt;
++                                     &lt;span class="checkmark"&gt;&lt;/span&gt;
++                                     No Follow-up
++                                 &lt;/label&gt;
++                                 &lt;label class="checkbox-item"&gt;
++                                     &lt;input type="checkbox" value="Yes (minor follow-up)" checked&gt;
++                                     &lt;span class="checkmark"&gt;&lt;/span&gt;
++                                     Minor Follow-up
++                                 &lt;/label&gt;
++                                 &lt;label class="checkbox-item"&gt;
++                                     &lt;input type="checkbox" value="Yes (moderate follow-up)" checked&gt;
++                                     &lt;span class="checkmark"&gt;&lt;/span&gt;
++                                     Moderate Follow-up
++                                 &lt;/label&gt;
++                                 &lt;label class="checkbox-item"&gt;
++                                     &lt;input type="checkbox" value="Yes (urgent follow-up required)" checked&gt;
++                                     &lt;span class="checkmark"&gt;&lt;/span&gt;
++                                     Urgent Follow-up
++                                 &lt;/label&gt;
++                             &lt;/div&gt;
++                         &lt;/div&gt;
++ 
++                         &lt;!-- Date Range --&gt;
++                         &lt;div class="filter-section"&gt;
++                             &lt;label&gt;Date Range&lt;/label&gt;
++                             &lt;div class="date-inputs"&gt;
++                                 &lt;input type="text" class="date-input" id="startDate" placeholder="mm/dd/yyyy"&gt;
++                                 &lt;span class="date-separator"&gt;to&lt;/span&gt;
++                                 &lt;input type="text" class="date-input" id="endDate" placeholder="mm/dd/yyyy"&gt;
++                             &lt;/div&gt;
++                             &lt;div class="quick-actions"&gt;
++                                 &lt;label&gt;Quick Select&lt;/label&gt;
++                                 &lt;div class="quick-action-btns"&gt;
++                                     &lt;button type="button" class="btn-quick" onclick="setDateRange('today')"&gt;Today&lt;/button&gt;
++                                     &lt;button type="button" class="btn-quick" onclick="setDateRange('week')"&gt;This Week&lt;/button&gt;
++                                     &lt;button type="button" class="btn-quick" onclick="setDateRange('month')"&gt;This Month&lt;/button&gt;
++                                     &lt;button type="button" class="btn-quick" onclick="setDateRange('all')"&gt;All Time&lt;/button&gt;
++                                 &lt;/div&gt;
++                             &lt;/div&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;div class="report-actions"&gt;
++                         &lt;button class="btn-generate" onclick="generateReport()"&gt;
++                             &lt;svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                 &lt;path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/&gt;
++                                 &lt;polyline points="14 2 14 8 20 8"/&gt;
++                                 &lt;line x1="16" y1="13" x2="8" y2="13"/&gt;
++                                 &lt;line x1="16" y1="17" x2="8" y2="17"/&gt;
++                             &lt;/svg&gt;
++                             Generate Report
++                         &lt;/button&gt;
++                         &lt;button class="btn-export-report" onclick="exportAllToPDF()"&gt;
++                             &lt;svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                 &lt;path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/&gt;
++                                 &lt;polyline points="14 2 14 8 20 8"/&gt;
++                                 &lt;line x1="12" y1="18" x2="12" y2="12"/&gt;
++                                 &lt;polyline points="9 15 12 12 15 15"/&gt;
++                             &lt;/svg&gt;
++                             Export as PDF
++                         &lt;/button&gt;
++                     &lt;/div&gt;
++                 &lt;/div&gt;
++ 
++                 &lt;!-- Report Results --&gt;
++                 &lt;div class="report-results hidden" id="reportResults"&gt;
++                     &lt;div class="report-results-header"&gt;
++                         &lt;h3&gt;Report Results&lt;/h3&gt;
++                         &lt;div class="report-stats" id="reportStats"&gt;
++                             &lt;!-- Stats populated by JS --&gt;
++                         &lt;/div&gt;
++                         &lt;button class="btn-select-mode" id="selectModeBtn" onclick="toggleSelectMode()"&gt;
++                             &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                 &lt;polyline points="9 11 12 14 22 4"/&gt;
++                                 &lt;path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/&gt;
++                             &lt;/svg&gt;
++                             Select
++                         &lt;/button&gt;
++                     &lt;/div&gt;
++                     
++                     &lt;!-- Selection Bar --&gt;
++                     &lt;div class="selection-bar hidden" id="selectionBar"&gt;
++                         &lt;div class="selection-info"&gt;
++                             &lt;label class="select-all-container"&gt;
++                                 &lt;input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"&gt;
++                                 &lt;span class="select-all-check"&gt;&lt;/span&gt;
++                             &lt;/label&gt;
++                             &lt;span class="selection-count" id="selectionCount"&gt;0 selected&lt;/span&gt;
++                         &lt;/div&gt;
++                         &lt;div class="selection-actions"&gt;
++                             &lt;button class="btn-action btn-export-selected" onclick="exportSelectedToPDF()" id="exportSelectedBtn" disabled&gt;
++                                 &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                     &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
++                                     &lt;polyline points="7 10 12 15 17 10"/&gt;
++                                     &lt;line x1="12" y1="15" x2="12" y2="3"/&gt;
++                                 &lt;/svg&gt;
++                                 Export PDF
++                             &lt;/button&gt;
++                             &lt;button class="btn-action btn-delete-selected" onclick="deleteSelected()" id="deleteSelectedBtn" disabled&gt;
++                                 &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                     &lt;polyline points="3 6 5 6 21 6"/&gt;
++                                     &lt;path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/&gt;
++                                 &lt;/svg&gt;
++                                 Delete
++                             &lt;/button&gt;
++                             &lt;button class="btn-action btn-clear-selection" onclick="clearSelection()"&gt;
++                                 Clear
++                             &lt;/button&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++                     
++                     &lt;!-- Sort Options --&gt;
++                     &lt;div class="filter-bar"&gt;
++                         &lt;div class="filter-group"&gt;
++                             &lt;label&gt;Sort by:&lt;/label&gt;
++                             &lt;select id="sortSelect" onchange="sortResults()"&gt;
++                                 &lt;option value="newest"&gt;Newest First&lt;/option&gt;
++                                 &lt;option value="oldest"&gt;Oldest First&lt;/option&gt;
++                                 &lt;option value="location"&gt;Location A-Z&lt;/option&gt;
++                                 &lt;option value="rating"&gt;Rating (Best First)&lt;/option&gt;
++                             &lt;/select&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++                     
++                     &lt;div class="records-container" id="resultsContainer"&gt;
++                         &lt;!-- Results populated by JS --&gt;
++                     &lt;/div&gt;
++                 &lt;/div&gt;
++             &lt;/div&gt;
++         &lt;/main&gt;
++ 
++         &lt;!-- Toast Notification --&gt;
++         &lt;div class="toast hidden" id="toast"&gt;
++             &lt;span class="toast-icon"&gt;✓&lt;/span&gt;
++             &lt;span class="toast-message"&gt;Success!&lt;/span&gt;
++         &lt;/div&gt;
++     &lt;/div&gt;
++ 
++     &lt;!-- jsPDF --&gt;
++     &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;
++     &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"&gt;&lt;/script&gt;
++     &lt;script src="site-evaluations-dashboard.js?v=1"&gt;&lt;/script&gt;
++ &lt;/body&gt;
++ &lt;/html&gt;
++ 
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me create the dashboard JavaScript.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: site-evaluations-dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 576, lines removed: 1
+
+```diff
+@@ -1,1 +1,576 @@
+- 
++ // Site Evaluations Dashboard JavaScript
++ 
++ // Check authentication
++ function checkAuth() {
++     const userStr = localStorage.getItem('mightyops_user');
++     if (!userStr) {
++         window.location.href = 'login.html';
++         return null;
++     }
++     return JSON.parse(userStr);
++ }
++ 
++ const user = checkAuth();
++ 
++ // Site locations
++ const locations = [
++     "Wash Lyfe - McKinney",
++     "Wash Lyfe - Prosper", 
++     "Wash Lyfe - Celina",
++     "Wash Lyfe - Little Elm",
++     "Wash Lyfe - Frisco",
++     "Wash Lyfe - Allen",
++     "Wash Lyfe - Plano",
++     "Wash Lyfe - Richardson",
++     "Wash Lyfe - Garland",
++     "Wash Lyfe - Rowlett",
++     "Wash Lyfe - Rockwall",
++     "Wash Lyfe - Wylie",
++     "Wash Lyfe - Murphy",
++     "Wash Lyfe - Sachse",
++     "Wash Lyfe - Forney"
++ ];
++ 
++ // Question definitions for PDF
++ const questions = [
++     { id: 'q1', text: 'Was the General Manager present during your visit?' },
++     { id: 'q2', text: 'How would you rate overall site leadership at the time of the visit?' },
++     { id: 'q3', text: 'Staffing levels observed:' },
++     { id: 'q4', text: 'Employee engagement during the visit:' },
++     { id: 'q5', text: 'Was the site following the proper SOP flow?' },
++     { id: 'q6', text: 'Cleanliness inside the site (office / lobby / waiting area):' },
++     { id: 'q7', text: 'Cleanliness outside (lot / vacuums / entrance / signage):' },
++     { id: 'q8', text: 'Equipment status at the time of inspection:' },
++     { id: 'q9', text: 'Customer experience during your visit:' },
++     { id: 'q10', text: 'Did you observe any safety concerns?' },
++     { id: 'q11', text: 'Accuracy of POS operations you observed:' },
++     { id: 'q12', text: 'Uniform compliance:' },
++     { id: 'q13', text: 'Professionalism of staff:' },
++     { id: 'q14', text: 'Was the site operating according to the posted hours?' },
++     { id: 'q15', text: 'Fleet and vendor processes observed:' },
++     { id: 'q16', text: 'Condition of chemical rooms / inventory areas:' },
++     { id: 'q17', text: 'Did the GM provide an update on current initiatives?' },
++     { id: 'q18', text: 'Overall assessment of site performance:' },
++     { id: 'q19', text: 'Immediate follow-up required?' }
++ ];
++ 
++ // State
++ let allReviews = [];
++ let filteredReviews = [];
++ let selectedIds = new Set();
++ let selectMode = false;
++ 
++ // Initialize
++ document.addEventListener('DOMContentLoaded', () =&gt; {
++     initializeDateInputs();
++     populateLocationCheckboxes();
++     loadStats();
++ });
++ 
++ // Initialize date inputs for mobile
++ function initializeDateInputs() {
++     const dateInputs = document.querySelectorAll('.date-input');
++     dateInputs.forEach(input =&gt; {
++         input.addEventListener('focus', function() {
++             this.type = 'date';
++         });
++         input.addEventListener('blur', function() {
++             if (!this.value) {
++                 this.type = 'text';
++             }
++         });
++     });
++ }
++ 
++ // Populate location checkboxes
++ function populateLocationCheckboxes() {
++     const container = document.getElementById('locationCheckboxes');
++     locations.forEach(loc =&gt; {
++         const label = document.createElement('label');
++         label.className = 'checkbox-item';
++         label.innerHTML = &#96;
++             &lt;input type="checkbox" value="${loc}" checked&gt;
++             &lt;span class="checkmark"&gt;&lt;/span&gt;
++             ${loc.replace('Wash Lyfe - ', '')}
++         &#96;;
++         container.appendChild(label);
++     });
++ }
++ 
++ // Load stats
++ async function loadStats() {
++     try {
++         const response = await fetch('/.netlify/functions/evaluations-get');
++         if (!response.ok) throw new Error('Failed to fetch evaluations');
++         
++         allReviews = await response.json();
++         updateStats(allReviews);
++     } catch (error) {
++         console.error('Error loading stats:', error);
++     }
++ }
++ 
++ // Update stats display
++ function updateStats(reviews) {
++     document.getElementById('totalReviews').textContent = reviews.length;
++     
++     const excellent = reviews.filter(r =&gt; r.answers?.q18 === 'Excellent').length;
++     const good = reviews.filter(r =&gt; r.answers?.q18 === 'Good').length;
++     const followUp = reviews.filter(r =&gt; r.answers?.q19 &amp;&amp; r.answers.q19.startsWith('Yes')).length;
++     
++     document.getElementById('excellentCount').textContent = excellent;
++     document.getElementById('goodCount').textContent = good;
++     document.getElementById('followUpCount').textContent = followUp;
++ }
++ 
++ // Date range helpers
++ function setDateRange(range) {
++     const today = new Date();
++     today.setHours(0, 0, 0, 0);
++     
++     let start, end;
++     
++     switch(range) {
++         case 'today':
++             start = end = today;
++             break;
++         case 'week':
++             start = new Date(today);
++             start.setDate(today.getDate() - today.getDay());
++             end = today;
++             break;
++         case 'month':
++             start = new Date(today.getFullYear(), today.getMonth(), 1);
++             end = today;
++             break;
++         case 'all':
++             document.getElementById('startDate').value = '';
++             document.getElementById('endDate').value = '';
++             document.getElementById('startDate').type = 'text';
++             document.getElementById('endDate').type = 'text';
++             return;
++     }
++     
++     document.getElementById('startDate').type = 'date';
++     document.getElementById('endDate').type = 'date';
++     document.getElementById('startDate').value = formatDateForInput(start);
++     document.getElementById('endDate').value = formatDateForInput(end);
++ }
++ 
++ function formatDateForInput(date) {
++     return date.toISOString().split('T')[0];
++ }
++ 
++ // Format date for display (CST 12-hour)
++ function formatDate(dateStr) {
++     return new Date(dateStr).toLocaleString('en-US', {
++         timeZone: 'America/Chicago',
++         year: 'numeric',
++         month: '2-digit',
++         day: '2-digit',
++         hour: '2-digit',
++         minute: '2-digit',
++         hour12: true
++     });
++ }
++ 
++ // Generate report
++ async function generateReport() {
++     // Get selected locations
++     const selectedLocations = Array.from(document.querySelectorAll('#locationCheckboxes input:checked'))
++         .map(cb =&gt; cb.value);
++     
++     // Get selected ratings
++     const selectedRatings = Array.from(document.querySelectorAll('#ratingCheckboxes input:checked'))
++         .map(cb =&gt; cb.value);
++     
++     // Get selected follow-up statuses
++     const selectedFollowups = Array.from(document.querySelectorAll('#followupCheckboxes input:checked'))
++         .map(cb =&gt; cb.value);
++     
++     // Get date range
++     const startDate = document.getElementById('startDate').value;
++     const endDate = document.getElementById('endDate').value;
++     
++     // Filter reviews
++     filteredReviews = allReviews.filter(review =&gt; {
++         // Location filter
++         if (!selectedLocations.includes(review.location)) return false;
++         
++         // Rating filter
++         const rating = review.answers?.q18;
++         if (rating &amp;&amp; !selectedRatings.includes(rating)) return false;
++         
++         // Follow-up filter
++         const followup = review.answers?.q19;
++         if (followup &amp;&amp; !selectedFollowups.includes(followup)) return false;
++         
++         // Date filter
++         if (startDate || endDate) {
++             const reviewDate = new Date(review.submitted_at);
++             if (startDate &amp;&amp; reviewDate &lt; new Date(startDate)) return false;
++             if (endDate) {
++                 const endDateTime = new Date(endDate);
++                 endDateTime.setHours(23, 59, 59, 999);
++                 if (reviewDate &gt; endDateTime) return false;
++             }
++         }
++         
++         return true;
++     });
++     
++     // Sort and display
++     sortResults();
++     
++     // Show results section
++     document.getElementById('reportResults').classList.remove('hidden');
++     
++     // Update report stats
++     updateReportStats();
++ }
++ 
++ // Update report stats
++ function updateReportStats() {
++     const statsContainer = document.getElementById('reportStats');
++     const total = filteredReviews.length;
++     const excellent = filteredReviews.filter(r =&gt; r.answers?.q18 === 'Excellent').length;
++     const good = filteredReviews.filter(r =&gt; r.answers?.q18 === 'Good').length;
++     const fair = filteredReviews.filter(r =&gt; r.answers?.q18 === 'Fair').length;
++     const poor = filteredReviews.filter(r =&gt; r.answers?.q18 === 'Poor').length;
++     
++     statsContainer.innerHTML = &#96;
++         &lt;span class="report-stat"&gt;${total} Total&lt;/span&gt;
++         &lt;span class="report-stat stat-ops"&gt;${excellent} Excellent&lt;/span&gt;
++         &lt;span class="report-stat stat-safety"&gt;${good} Good&lt;/span&gt;
++         &lt;span class="report-stat stat-acct"&gt;${fair + poor} Fair/Poor&lt;/span&gt;
++     &#96;;
++ }
++ 
++ // Sort results
++ function sortResults() {
++     const sortBy = document.getElementById('sortSelect').value;
++     
++     switch(sortBy) {
++         case 'newest':
++             filteredReviews.sort((a, b) =&gt; new Date(b.submitted_at) - new Date(a.submitted_at));
++             break;
++         case 'oldest':
++             filteredReviews.sort((a, b) =&gt; new Date(a.submitted_at) - new Date(b.submitted_at));
++             break;
++         case 'location':
++             filteredReviews.sort((a, b) =&gt; a.location.localeCompare(b.location));
++             break;
++         case 'rating':
++             const ratingOrder = { 'Excellent': 0, 'Good': 1, 'Fair': 2, 'Poor': 3 };
++             filteredReviews.sort((a, b) =&gt; {
++                 const ratingA = ratingOrder[a.answers?.q18] ?? 4;
++                 const ratingB = ratingOrder[b.answers?.q18] ?? 4;
++                 return ratingA - ratingB;
++             });
++             break;
++     }
++     
++     renderResults();
++ }
++ 
++ // Render results
++ function renderResults() {
++     const container = document.getElementById('resultsContainer');
++     
++     if (filteredReviews.length === 0) {
++         container.innerHTML = '&lt;div class="no-records"&gt;No reviews match your filters&lt;/div&gt;';
++         return;
++     }
++     
++     container.innerHTML = filteredReviews.map(review =&gt; {
++         const rating = review.answers?.q18 || 'N/A';
++         const ratingClass = rating.toLowerCase();
++         const followup = review.answers?.q19 || 'No';
++         const needsFollowup = followup.startsWith('Yes');
++         const isSelected = selectedIds.has(review.id);
++         
++         return &#96;
++             &lt;div class="review-card ${selectMode ? 'selectable' : ''} ${isSelected ? 'selected' : ''}" data-id="${review.id}"&gt;
++                 &lt;label class="review-checkbox" onclick="event.stopPropagation()"&gt;
++                     &lt;input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelection(${review.id})"&gt;
++                     &lt;span class="review-check"&gt;&lt;/span&gt;
++                 &lt;/label&gt;
++                 &lt;div class="review-header"&gt;
++                     &lt;span class="review-location"&gt;${review.location}&lt;/span&gt;
++                     &lt;span class="review-timestamp"&gt;${formatDate(review.submitted_at)}&lt;/span&gt;
++                 &lt;/div&gt;
++                 &lt;div class="review-meta"&gt;
++                     &lt;span class="review-badge ${ratingClass}"&gt;${rating}&lt;/span&gt;
++                     ${needsFollowup ? &#96;&lt;span class="review-badge followup"&gt;${followup}&lt;/span&gt;&#96; : ''}
++                     ${review.has_image ? &#96;&lt;a href="/.netlify/functions/evaluations-view-image?id=${review.id}" target="_blank" class="btn-view-pdf" onclick="event.stopPropagation()"&gt;
++                         &lt;svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                             &lt;path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/&gt;
++                             &lt;polyline points="14 2 14 8 20 8"/&gt;
++                         &lt;/svg&gt;
++                         View Photo
++                     &lt;/a&gt;&#96; : ''}
++                 &lt;/div&gt;
++                 &lt;div class="review-submitter"&gt;Submitted by: ${review.submitted_by || 'Unknown'}&lt;/div&gt;
++                 ${review.additional_notes ? &#96;&lt;div class="record-notes"&gt;${review.additional_notes}&lt;/div&gt;&#96; : ''}
++             &lt;/div&gt;
++         &#96;;
++     }).join('');
++ }
++ 
++ // Toggle select mode
++ function toggleSelectMode() {
++     selectMode = !selectMode;
++     const btn = document.getElementById('selectModeBtn');
++     const bar = document.getElementById('selectionBar');
++     const resultsSection = document.getElementById('reportResults');
++     
++     if (selectMode) {
++         btn.classList.add('active');
++         btn.innerHTML = &#96;
++             &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                 &lt;line x1="18" y1="6" x2="6" y2="18"/&gt;
++                 &lt;line x1="6" y1="6" x2="18" y2="18"/&gt;
++             &lt;/svg&gt;
++             Cancel
++         &#96;;
++         bar.classList.remove('hidden');
++         resultsSection.classList.add('select-mode');
++     } else {
++         btn.classList.remove('active');
++         btn.innerHTML = &#96;
++             &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                 &lt;polyline points="9 11 12 14 22 4"/&gt;
++                 &lt;path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/&gt;
++             &lt;/svg&gt;
++             Select
++         &#96;;
++         bar.classList.add('hidden');
++         resultsSection.classList.remove('select-mode');
++         clearSelection();
++     }
++     
++     renderResults();
++ }
++ 
++ // Toggle selection
++ function toggleSelection(id) {
++     if (selectedIds.has(id)) {
++         selectedIds.delete(id);
++     } else {
++         selectedIds.add(id);
++     }
++     updateSelectionUI();
++     renderResults();
++ }
++ 
++ // Toggle select all
++ function toggleSelectAll() {
++     const checkbox = document.getElementById('selectAllCheckbox');
++     if (checkbox.checked) {
++         filteredReviews.forEach(r =&gt; selectedIds.add(r.id));
++     } else {
++         selectedIds.clear();
++     }
++     updateSelectionUI();
++     renderResults();
++ }
++ 
++ // Clear selection
++ function clearSelection() {
++     selectedIds.clear();
++     document.getElementById('selectAllCheckbox').checked = false;
++     updateSelectionUI();
++     renderResults();
++ }
++ 
++ // Update selection UI
++ function updateSelectionUI() {
++     const count = selectedIds.size;
++     document.getElementById('selectionCount').textContent = &#96;${count} selected&#96;;
++     document.getElementById('exportSelectedBtn').disabled = count === 0;
++     document.getElementById('deleteSelectedBtn').disabled = count === 0;
++     
++     // Update select all checkbox
++     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
++     selectAllCheckbox.checked = count === filteredReviews.length &amp;&amp; count &gt; 0;
++ }
++ 
++ // Delete selected
++ async function deleteSelected() {
++     if (selectedIds.size === 0) return;
++     
++     if (!confirm(&#96;Are you sure you want to delete ${selectedIds.size} review(s)?&#96;)) return;
++     
++     try {
++         const response = await fetch('/.netlify/functions/evaluations-delete', {
++             method: 'POST',
++             headers: { 'Content-Type': 'application/json' },
++             body: JSON.stringify({ ids: Array.from(selectedIds) })
++         });
++         
++         if (!response.ok) throw new Error('Failed to delete');
++         
++         showToast(&#96;Deleted ${selectedIds.size} review(s)&#96;);
++         selectedIds.clear();
++         
++         // Refresh data
++         setTimeout(async () =&gt; {
++             await loadStats();
++             generateReport();
++         }, 500);
++         
++     } catch (error) {
++         console.error('Error deleting:', error);
++         showToast('Error deleting reviews', 'error');
++     }
++ }
++ 
++ // Export all to PDF
++ function exportAllToPDF() {
++     if (filteredReviews.length === 0) {
++         showToast('No reviews to export', 'error');
++         return;
++     }
++     generatePDF(filteredReviews);
++ }
++ 
++ // Export selected to PDF
++ function exportSelectedToPDF() {
++     const selected = filteredReviews.filter(r =&gt; selectedIds.has(r.id));
++     if (selected.length === 0) {
++         showToast('No reviews selected', 'error');
++         return;
++     }
++     generatePDF(selected);
++ }
++ 
++ // Generate PDF
++ function generatePDF(reviews) {
++     const { jsPDF } = window.jspdf;
++     const doc = new jsPDF();
++     
++     // Title
++     doc.setFontSize(18);
++     doc.setFont(undefined, 'bold');
++     doc.text('Executive Site Review Report', 14, 20);
++     
++     // Generated date
++     doc.setFontSize(10);
++     doc.setFont(undefined, 'normal');
++     doc.text(&#96;Generated: ${formatDate(new Date().toISOString())}&#96;, 14, 28);
++     doc.text(&#96;Total Reviews: ${reviews.length}&#96;, 14, 34);
++     
++     let yPos = 45;
++     
++     reviews.forEach((review, index) =&gt; {
++         // Check if we need a new page
++         if (yPos &gt; 250) {
++             doc.addPage();
++             yPos = 20;
++         }
++         
++         // Review header
++         doc.setFontSize(12);
++         doc.setFont(undefined, 'bold');
++         doc.text(&#96;Review ${index + 1}: ${review.location}&#96;, 14, yPos);
++         yPos += 6;
++         
++         doc.setFontSize(9);
++         doc.setFont(undefined, 'normal');
++         doc.text(&#96;Date: ${formatDate(review.submitted_at)} | Submitted by: ${review.submitted_by || 'Unknown'}&#96;, 14, yPos);
++         yPos += 8;
++         
++         // Overall rating and follow-up status
++         const rating = review.answers?.q18 || 'N/A';
++         const followup = review.answers?.q19 || 'No';
++         doc.text(&#96;Overall Rating: ${rating} | Follow-up: ${followup}&#96;, 14, yPos);
++         yPos += 8;
++         
++         // Questions table
++         const tableData = questions.map((q, i) =&gt; [
++             &#96;${i + 1}&#96;,
++             q.text,
++             review.answers?.[q.id] || 'N/A'
++         ]);
++         
++         doc.autoTable({
++             startY: yPos,
++             head: [['#', 'Question', 'Answer']],
++             body: tableData,
++             theme: 'striped',
++             headStyles: { fillColor: [10, 132, 255], fontSize: 8 },
++             bodyStyles: { fontSize: 7 },
++             columnStyles: {
++                 0: { cellWidth: 10 },
++                 1: { cellWidth: 100 },
++                 2: { cellWidth: 60 }
++             },
++             margin: { left: 14, right: 14 }
++         });
++         
++         yPos = doc.lastAutoTable.finalY + 10;
++         
++         // Additional notes
++         if (review.additional_notes) {
++             if (yPos &gt; 250) {
++                 doc.addPage();
++                 yPos = 20;
++             }
++             doc.setFontSize(9);
++             doc.setFont(undefined, 'bold');
++             doc.text('Additional Notes:', 14, yPos);
++             yPos += 5;
++             doc.setFont(undefined, 'normal');
++             const splitNotes = doc.splitTextToSize(review.additional_notes, 180);
++             doc.text(splitNotes, 14, yPos);
++             yPos += splitNotes.length * 4 + 5;
++         }
++         
++         // Follow-up instructions
++         if (review.follow_up_instructions) {
++             if (yPos &gt; 250) {
++                 doc.addPage();
++                 yPos = 20;
++             }
++             doc.setFontSize(9);
++             doc.setFont(undefined, 'bold');
++             doc.text('Follow-Up Instructions:', 14, yPos);
++             yPos += 5;
++             doc.setFont(undefined, 'normal');
++             const splitInstr = doc.splitTextToSize(review.follow_up_instructions, 180);
++             doc.text(splitInstr, 14, yPos);
++             yPos += splitInstr.length * 4 + 5;
++         }
++         
++         // Separator
++         yPos += 10;
++         if (index &lt; reviews.length - 1) {
++             doc.setDrawColor(200);
++             doc.line(14, yPos - 5, 196, yPos - 5);
++         }
++     });
++     
++     // Save
++     const dateStr = new Date().toISOString().split('T')[0];
++     doc.save(&#96;Site_Reviews_Report_${dateStr}.pdf&#96;);
++     showToast('PDF exported successfully');
++ }
++ 
++ // Show toast
++ function showToast(message, type = 'success') {
++     const toast = document.getElementById('toast');
++     const toastMessage = toast.querySelector('.toast-message');
++     const toastIcon = toast.querySelector('.toast-icon');
++     
++     toastMessage.textContent = message;
++     toastIcon.textContent = type === 'success' ? '✓' : '✕';
++     
++     toast.classList.remove('hidden');
++     toast.classList.add('show');
++     
++     setTimeout(() =&gt; {
++         toast.classList.remove('show');
++         setTimeout(() =&gt; toast.classList.add('hidden'), 300);
++     }, 3000);
++ }
++ 
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to create the Netlify functions for the evaluations. Let me create:
+1. evaluations-create.js - Create new evaluations
+2. evaluations-get.js - Get all evaluations
+3. evaluations-delete.js - Delete evaluations
+4. evaluations-view-image.js - View image PDFs
+5. Also need to update db.js or create init function for evaluations table</details></think>
+
+---
+
+Now let me update the todo and create the Netlify functions:
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] Create site-evaluations.html form with 19 dropdown questions
+- [x] Create site-evaluations-dashboard.html with PDF export
+- [-] Create Netlify functions for site evaluations database
+- [ ] Update home.html to link to Site Evaluations app
+- [ ] Push changes to git
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: netlify/functions/db.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me create the Netlify functions for evaluations. I'll need:
+1. evaluations-create.js
+2. evaluations-get.js
+3. evaluations-delete.js
+4. evaluations-view-image.js
+5. evaluations-init.js (to initialize the evaluations table)
+
+Let me create these functions.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: netlify/functions/evaluations-init.js</summary>
+
+**Chunk 1**
+Lines added: 42, lines removed: 1
+
+```diff
+@@ -1,1 +1,42 @@
+- 
++ // Initialize evaluations table
++ const { neon } = require('@neondatabase/serverless');
++ 
++ exports.handler = async (event, context) =&gt; {
++     const headers = {
++         'Access-Control-Allow-Origin': '*',
++         'Access-Control-Allow-Headers': 'Content-Type',
++         'Content-Type': 'application/json'
++     };
++ 
++     try {
++         const sql = neon(process.env.NETLIFY_DATABASE_URL);
++         
++         // Create evaluations table
++         await sql&#96;
++             CREATE TABLE IF NOT EXISTS evaluations (
++                 id SERIAL PRIMARY KEY,
++                 location TEXT NOT NULL,
++                 answers JSONB NOT NULL,
++                 additional_notes TEXT,
++                 follow_up_instructions TEXT,
++                 image_pdf TEXT,
++                 submitted_by TEXT,
++                 submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
++             )
++         &#96;;
++         
++         return {
++             statusCode: 200,
++             headers,
++             body: JSON.stringify({ success: true, message: 'Evaluations table initialized' })
++         };
++     } catch (error) {
++         console.error('Error initializing evaluations table:', error);
++         return {
++             statusCode: 500,
++             headers,
++             body: JSON.stringify({ error: error.message })
++         };
++     }
++ };
++ 
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: netlify/functions/evaluations-create.js</summary>
+
+**Chunk 1**
+Lines added: 62, lines removed: 1
+
+```diff
+@@ -1,1 +1,62 @@
+- 
++ // Create a new site evaluation
++ const { neon } = require('@neondatabase/serverless');
++ 
++ exports.handler = async (event, context) =&gt; {
++     const headers = {
++         'Access-Control-Allow-Origin': '*',
++         'Access-Control-Allow-Headers': 'Content-Type',
++         'Content-Type': 'application/json'
++     };
++ 
++     if (event.httpMethod === 'OPTIONS') {
++         return { statusCode: 200, headers, body: '' };
++     }
++ 
++     if (event.httpMethod !== 'POST') {
++         return {
++             statusCode: 405,
++             headers,
++             body: JSON.stringify({ error: 'Method not allowed' })
++         };
++     }
++ 
++     try {
++         const sql = neon(process.env.NETLIFY_DATABASE_URL);
++         const data = JSON.parse(event.body);
++         
++         // Ensure table exists
++         await sql&#96;
++             CREATE TABLE IF NOT EXISTS evaluations (
++                 id SERIAL PRIMARY KEY,
++                 location TEXT NOT NULL,
++                 answers JSONB NOT NULL,
++                 additional_notes TEXT,
++                 follow_up_instructions TEXT,
++                 image_pdf TEXT,
++                 submitted_by TEXT,
++                 submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
++             )
++         &#96;;
++         
++         // Insert the evaluation
++         const result = await sql&#96;
++             INSERT INTO evaluations (location, answers, additional_notes, follow_up_instructions, image_pdf, submitted_by, submitted_at)
++             VALUES (${data.location}, ${JSON.stringify(data.answers)}, ${data.additional_notes || null}, ${data.follow_up_instructions || null}, ${data.image_pdf || null}, ${data.submitted_by || null}, ${data.submitted_at || new Date().toISOString()})
++             RETURNING id
++         &#96;;
++         
++         return {
++             statusCode: 200,
++             headers,
++             body: JSON.stringify({ success: true, id: result[0].id })
++         };
++     } catch (error) {
++         console.error('Error creating evaluation:', error);
++         return {
++             statusCode: 500,
++             headers,
++             body: JSON.stringify({ error: error.message })
++         };
++     }
++ };
++ 
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: netlify/functions/evaluations-get.js</summary>
+
+**Chunk 1**
+Lines added: 47, lines removed: 1
+
+```diff
+@@ -1,1 +1,47 @@
+- 
++ // Get all site evaluations
++ const { neon } = require('@neondatabase/serverless');
++ 
++ exports.handler = async (event, context) =&gt; {
++     const headers = {
++         'Access-Control-Allow-Origin': '*',
++         'Access-Control-Allow-Headers': 'Content-Type',
++         'Content-Type': 'application/json'
++     };
++ 
++     if (event.httpMethod === 'OPTIONS') {
++         return { statusCode: 200, headers, body: '' };
++     }
++ 
++     try {
++         const sql = neon(process.env.NETLIFY_DATABASE_URL);
++         
++         // Get all evaluations (excluding full image data for performance)
++         const evaluations = await sql&#96;
++             SELECT 
++                 id,
++                 location,
++                 answers,
++                 additional_notes,
++                 follow_up_instructions,
++                 submitted_by,
++                 submitted_at,
++                 CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
++             FROM evaluations
++             ORDER BY submitted_at DESC
++         &#96;;
++         
++         return {
++             statusCode: 200,
++             headers,
++             body: JSON.stringify(evaluations)
++         };
++     } catch (error) {
++         console.error('Error fetching evaluations:', error);
++         return {
++             statusCode: 500,
++             headers,
++             body: JSON.stringify({ error: error.message })
++         };
++     }
++ };
++ 
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: netlify/functions/evaluations-delete.js</summary>
+
+**Chunk 1**
+Lines added: 55, lines removed: 1
+
+```diff
+@@ -1,1 +1,55 @@
+- 
++ // Delete site evaluations
++ const { neon } = require('@neondatabase/serverless');
++ 
++ exports.handler = async (event, context) =&gt; {
++     const headers = {
++         'Access-Control-Allow-Origin': '*',
++         'Access-Control-Allow-Headers': 'Content-Type',
++         'Content-Type': 'application/json'
++     };
++ 
++     if (event.httpMethod === 'OPTIONS') {
++         return { statusCode: 200, headers, body: '' };
++     }
++ 
++     if (event.httpMethod !== 'POST') {
++         return {
++             statusCode: 405,
++             headers,
++             body: JSON.stringify({ error: 'Method not allowed' })
++         };
++     }
++ 
++     try {
++         const sql = neon(process.env.NETLIFY_DATABASE_URL);
++         const { ids } = JSON.parse(event.body);
++         
++         if (!ids || !Array.isArray(ids) || ids.length === 0) {
++             return {
++                 statusCode: 400,
++                 headers,
++                 body: JSON.stringify({ error: 'No IDs provided' })
++             };
++         }
++         
++         // Delete evaluations by IDs
++         await sql&#96;
++             DELETE FROM evaluations
++             WHERE id = ANY(${ids}::int[])
++         &#96;;
++         
++         return {
++             statusCode: 200,
++             headers,
++             body: JSON.stringify({ success: true, deleted: ids.length })
++         };
++     } catch (error) {
++         console.error('Error deleting evaluations:', error);
++         return {
++             statusCode: 500,
++             headers,
++             body: JSON.stringify({ error: error.message })
++         };
++     }
++ };
++ 
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: netlify/functions/evaluations-view-image.js</summary>
+
+**Chunk 1**
+Lines added: 177, lines removed: 1
+
+```diff
+@@ -1,1 +1,177 @@
+- 
++ // View image PDF for a site evaluation
++ const { neon } = require('@neondatabase/serverless');
++ 
++ exports.handler = async (event, context) =&gt; {
++     const headers = {
++         'Access-Control-Allow-Origin': '*',
++         'Access-Control-Allow-Headers': 'Content-Type'
++     };
++ 
++     if (event.httpMethod === 'OPTIONS') {
++         return { statusCode: 200, headers, body: '' };
++     }
++ 
++     try {
++         const sql = neon(process.env.NETLIFY_DATABASE_URL);
++         const { id } = event.queryStringParameters || {};
++         
++         if (!id) {
++             return {
++                 statusCode: 400,
++                 headers: { ...headers, 'Content-Type': 'application/json' },
++                 body: JSON.stringify({ error: 'ID required' })
++             };
++         }
++         
++         // Get the evaluation with image
++         const results = await sql&#96;
++             SELECT location, image_pdf, submitted_at, submitted_by
++             FROM evaluations
++             WHERE id = ${id}
++         &#96;;
++         
++         if (results.length === 0 || !results[0].image_pdf) {
++             return {
++                 statusCode: 404,
++                 headers: { ...headers, 'Content-Type': 'application/json' },
++                 body: JSON.stringify({ error: 'Image not found' })
++             };
++         }
++         
++         const evaluation = results[0];
++         
++         // Format timestamp for CST 12-hour
++         const timestamp = new Date(evaluation.submitted_at).toLocaleString('en-US', {
++             timeZone: 'America/Chicago',
++             year: 'numeric',
++             month: '2-digit',
++             day: '2-digit',
++             hour: '2-digit',
++             minute: '2-digit',
++             hour12: true
++         });
++         
++         // Return HTML page with embedded PDF viewer
++         const html = &#96;
++ &lt;!DOCTYPE html&gt;
++ &lt;html lang="en"&gt;
++ &lt;head&gt;
++     &lt;meta charset="UTF-8"&gt;
++     &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
++     &lt;title&gt;Site Review Photo - ${evaluation.location}&lt;/title&gt;
++     &lt;style&gt;
++         * { margin: 0; padding: 0; box-sizing: border-box; }
++         body {
++             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
++             background: #000;
++             color: #fff;
++             min-height: 100vh;
++             display: flex;
++             flex-direction: column;
++         }
++         .header {
++             padding: 16px 24px;
++             background: rgba(0,0,0,0.8);
++             border-bottom: 1px solid rgba(255,255,255,0.1);
++             display: flex;
++             justify-content: space-between;
++             align-items: center;
++             flex-wrap: wrap;
++             gap: 12px;
++         }
++         .info h1 {
++             font-size: 1.1rem;
++             font-weight: 600;
++             margin-bottom: 4px;
++         }
++         .info p {
++             font-size: 0.85rem;
++             color: rgba(255,255,255,0.6);
++         }
++         .actions {
++             display: flex;
++             gap: 8px;
++         }
++         .btn {
++             padding: 8px 16px;
++             font-size: 0.9rem;
++             font-weight: 500;
++             border: none;
++             border-radius: 8px;
++             cursor: pointer;
++             text-decoration: none;
++             display: inline-flex;
++             align-items: center;
++             gap: 6px;
++             transition: all 0.2s;
++         }
++         .btn-primary {
++             background: #0a84ff;
++             color: #fff;
++         }
++         .btn-primary:hover {
++             background: #0077ed;
++         }
++         .btn-secondary {
++             background: rgba(255,255,255,0.1);
++             color: #fff;
++         }
++         .btn-secondary:hover {
++             background: rgba(255,255,255,0.15);
++         }
++         .viewer {
++             flex: 1;
++             display: flex;
++             align-items: center;
++             justify-content: center;
++             padding: 24px;
++         }
++         iframe {
++             width: 100%;
++             max-width: 900px;
++             height: calc(100vh - 120px);
++             border: none;
++             border-radius: 12px;
++             background: #111;
++         }
++     &lt;/style&gt;
++ &lt;/head&gt;
++ &lt;body&gt;
++     &lt;div class="header"&gt;
++         &lt;div class="info"&gt;
++             &lt;h1&gt;${evaluation.location}&lt;/h1&gt;
++             &lt;p&gt;${timestamp} • ${evaluation.submitted_by || 'Unknown'}&lt;/p&gt;
++         &lt;/div&gt;
++         &lt;div class="actions"&gt;
++             &lt;a href="${evaluation.image_pdf}" download="site-review-photo.pdf" class="btn btn-primary"&gt;
++                 &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                     &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
++                     &lt;polyline points="7 10 12 15 17 10"/&gt;
++                     &lt;line x1="12" y1="15" x2="12" y2="3"/&gt;
++                 &lt;/svg&gt;
++                 Download
++             &lt;/a&gt;
++             &lt;a href="javascript:window.close()" class="btn btn-secondary"&gt;Close&lt;/a&gt;
++         &lt;/div&gt;
++     &lt;/div&gt;
++     &lt;div class="viewer"&gt;
++         &lt;iframe src="${evaluation.image_pdf}" title="Site Review Photo"&gt;&lt;/iframe&gt;
++     &lt;/div&gt;
++ &lt;/body&gt;
++ &lt;/html&gt;&#96;;
++         
++         return {
++             statusCode: 200,
++             headers: { ...headers, 'Content-Type': 'text/html' },
++             body: html
++         };
++     } catch (error) {
++         console.error('Error viewing image:', error);
++         return {
++             statusCode: 500,
++             headers: { ...headers, 'Content-Type': 'application/json' },
++             body: JSON.stringify({ error: error.message })
++         };
++     }
++ };
++ 
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to update the home.html to link to the Site Evaluations app (change it from coming soon to active). Let me read the home.html to find the Site Evaluations card and update it.</details></think>
+
+---
+
+Now let me update the home.html to link to the Site Evaluations app:
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] Create site-evaluations.html form with 19 dropdown questions
+- [x] Create site-evaluations-dashboard.html with PDF export
+- [x] Create Netlify functions for site evaluations database
+- [-] Update home.html to link to Site Evaluations app
+- [ ] Push changes to git
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: home.html</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to update the Site Evaluations card to be an active link instead of "coming soon".</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: home.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -210,5 +210,5 @@
+                      
+                      &lt;!-- Site Evaluations App --&gt;
+-                     &lt;div class="app-card coming-soon"&gt;
++                     &lt;a href="site-evaluations.html" class="app-card"&gt;
+                          &lt;div class="app-icon" style="background: linear-gradient(135deg, #34c759, #28a745);"&gt;
+                              &lt;svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+```
+
+**Chunk 2**
+Lines added: 2, lines removed: 3
+
+```diff
+@@ -218,7 +218,6 @@
+                          &lt;/div&gt;
+                          &lt;h3&gt;Site Evaluations&lt;/h3&gt;
+-                         &lt;p&gt;Assess locations&lt;/p&gt;
+-                         &lt;span class="coming-soon-badge"&gt;Coming Soon&lt;/span&gt;
+-                     &lt;/div&gt;
++                         &lt;p&gt;Executive reviews&lt;/p&gt;
++                     &lt;/a&gt;
+                      
+                      &lt;!-- Staffing, Leadership, and Culture Notes App --&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me update the todos and push the changes.</details></think>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] Create site-evaluations.html form with 19 dropdown questions
+- [x] Create site-evaluations-dashboard.html with PDF export
+- [x] Create Netlify functions for site evaluations database
+- [x] Update home.html to link to Site Evaluations app
+- [-] Push changes to git
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: git add -A; git reset HEAD mightyops.key mightyops.csr; git commit -m "Add Site Evaluations app with 19-question executive review form and PDF export dashboard"; git push</summary>
+
+```bash
+git add -A; git reset HEAD mightyops.key mightyops.csr; git commit -m "Add Site Evaluations app with 19-question executive review form and PDF export dashboard"; git push
+```
+
+```
+[main 1f155e3] Add Site Evaluations app with 19-question executive review form and PDF export dashboard                                                         
+ 11 files changed, 2597 insertions(+), 5 deletions(-)
+ create mode 100644 netlify/functions/evaluations-create.js
+ create mode 100644 netlify/functions/evaluations-delete.js
+ create mode 100644 netlify/functions/evaluations-get.js
+ create mode 100644 netlify/functions/evaluations-init.js
+ create mode 100644 netlify/functions/evaluations-view-image.js
+ create mode 100644 site-evaluations-dashboard.html
+ create mode 100644 site-evaluations-dashboard.js
+ create mode 100644 site-evaluations.html
+ create mode 100644 site-evaluations.js
+Enumerating objects: 24, done.
+Counting objects: 100% (24/24), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (16/16), done.
+Writing objects: 100% (17/17), 21.84 KiB | 1.82 MiB/s, done.
+Total 17 (delta 9), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (9/9), completed with 5 local objects.
+To https://github.com/Plasticduck/mightynote.git
+   3dcad05..1f155e3  main -&gt; main
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+All done! Let me update the todo to mark it as complete.</details></think>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] Create site-evaluations.html form with 19 dropdown questions
+- [x] Create site-evaluations-dashboard.html with PDF export
+- [x] Create Netlify functions for site evaluations database
+- [x] Update home.html to link to Site Evaluations app
+- [x] Push changes to git
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+All done! I've implemented the full Site Evaluations app with:
+
+1. **site-evaluations.html** - The main form with all 19 dropdown questions plus optional sections for additional notes, photo uploads, and follow-up instructions
+
+2. **site-evaluations.js** - JavaScript for the form handling, photo compression/PDF conversion, and submission
+
+3. **site-evaluations-dashboard.html** - Dashboard with stats, filters, and PDF export only (no Excel)
+
+4. **site-evaluations-dashboard.js** - JavaScript for dashboard functionality including filtering, sorting, selection, deletion, and PDF export
+
+5. **Netlify functions:**
+   - evaluations-init.js - Initialize the database table
+   - evaluations-create.js - Create new evaluations
+   - evaluations-get.js - Get all evaluations
+   - evaluations-delete.js - Delete evaluations
+   - evaluations-view-image.js - View attached photos
+
+6. Updated home.html to link to the Site Evaluations app (no longer "coming soon")
+
+The other 3 apps (Staffing/Leadership/Culture Notes, Capital Improvement Requests, Market Research) remain as "Coming Soon" placeholders.</details></think>
+
+---
+
+Done! I've implemented the **Site Evaluations** app with:
+
+### Form (`site-evaluations.html`)
+- All 19 dropdown questions with their specific answer options
+- Optional sections for:
+  - Additional Notes
+  - Photos/Attachments (with camera and upload support)
+  - Follow-Up Instructions
+
+### Dashboard (`site-evaluations-dashboard.html`)
+- Stats overview (Total Reviews, Excellent, Good, Need Follow-up)
+- Filters by location, rating, follow-up status, and date range
+- Sort options (newest, oldest, location, rating)
+- **PDF export only** (no Excel as requested)
+- Selection mode for bulk delete/export
+
+### Database Functions
+- `evaluations-create.js` - Save new reviews
+- `evaluations-get.js` - Fetch all reviews
+- `evaluations-delete.js` - Delete reviews
+- `evaluations-view-image.js` - View attached photos
+
+### Home Page
+- Site Evaluations is now **active** (green checkmark icon)
+- Other 3 apps remain as "Coming Soon":
+  - Staffing, Leadership, and Culture Notes
+  - Capital Improvement Requests
+  - Market Research
+
+Pushed to git! ✅
 
 ---
 
