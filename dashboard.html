@@ -119,9 +119,9 @@
                         <div class="filter-section">
                             <label>Date Range</label>
                             <div class="date-inputs">
-                                <input type="date" id="startDate" class="date-input">
+                                <input type="text" id="startDate" class="date-input" placeholder="mm/dd/yyyy" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
                                 <span class="date-separator">to</span>
-                                <input type="date" id="endDate" class="date-input">
+                                <input type="text" id="endDate" class="date-input" placeholder="mm/dd/yyyy" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
                             </div>
                             <div class="quick-actions">
                                 <label>Quick Reports</label>

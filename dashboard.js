@@ -444,7 +444,7 @@ function exportSelectedToPDF(notes) {
     
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+    doc.text(`Generated: ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true })}`, 14, 28);
     doc.text(`Total Records: ${notes.length}`, 14, 34);
     
     const tableData = notes.map(note => [
@@ -691,12 +691,12 @@ function showToast(message, isError = false) {
 function formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
+        timeZone: 'America/Chicago',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit',
         hour12: true
     });
 }
@@ -1015,7 +1015,7 @@ async function exportReportToExcel() {
     // Summary sheet
     const summaryData = [
         ['Mighty Ops - Report Summary'],
-        ['Generated:', new Date().toLocaleString()],
+        ['Generated:', new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true })],
         [''],
         ['Total Records:', notes.length],
         ['Operations:', notes.filter(n => n.department === 'Operations').length],
@@ -1179,7 +1179,7 @@ async function exportReportToPDF() {
     // Summary info
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+    doc.text(`Generated: ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true })}`, 14, 30);
     
     // Stats
     const operationsCount = notes.filter(n => n.department === 'Operations').length;

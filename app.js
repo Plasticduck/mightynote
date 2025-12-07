@@ -286,7 +286,7 @@ async function convertImageToPDF(imageBase64, filename) {
                 
                 doc.setFontSize(10);
                 doc.setTextColor(100);
-                doc.text(`Photo Evidence - ${new Date().toLocaleString()}`, margin, margin + 5);
+                doc.text(`Photo Evidence - ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true })}`, margin, margin + 5);
                 
                 doc.addImage(imageBase64, 'JPEG', x, y, imgWidth, imgHeight);
                 

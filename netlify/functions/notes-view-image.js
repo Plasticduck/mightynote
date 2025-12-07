@@ -77,7 +77,7 @@ exports.handler = async (event, context) => {
         }
 
         // Fallback: return the data URI in an HTML page with embedded viewer
-        const timestamp = new Date(note.created_at).toLocaleString();
+        const timestamp = new Date(note.created_at).toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true });
         
         return {
             statusCode: 200,

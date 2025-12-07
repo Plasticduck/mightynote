@@ -1413,6 +1413,12 @@ textarea {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     transition: all var(--transition-base);
+    min-height: 44px;
+}
+
+.date-input::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
 }
 
 .date-input:hover {
