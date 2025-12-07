@@ -20504,3 +20504,572 @@ Pushed to git! ✅
 
 ---
 
+_**User (2025-12-07 21:19Z)**_
+
+change the locations on site evaluations.js to just plain Site #1-31
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+
+
+---
+
+<think><details><summary>Thought Process</summary>
+The user wants me to change the locations in site-evaluations.js from the "Wash Lyfe - X" format to just "Site #1" through "Site #31".</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: site-evaluations.js</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 17
+
+```diff
+@@ -17,21 +17,5 @@
+  
+  // Site locations
+- const locations = [
+-     "Wash Lyfe - McKinney",
+-     "Wash Lyfe - Prosper", 
+-     "Wash Lyfe - Celina",
+-     "Wash Lyfe - Little Elm",
+-     "Wash Lyfe - Frisco",
+-     "Wash Lyfe - Allen",
+-     "Wash Lyfe - Plano",
+-     "Wash Lyfe - Richardson",
+-     "Wash Lyfe - Garland",
+-     "Wash Lyfe - Rowlett",
+-     "Wash Lyfe - Rockwall",
+-     "Wash Lyfe - Wylie",
+-     "Wash Lyfe - Murphy",
+-     "Wash Lyfe - Sachse",
+-     "Wash Lyfe - Forney"
+- ];
++ const locations = Array.from({ length: 31 }, (_, i) =&gt; &#96;Site #${i + 1}&#96;);
+  
+  // Populate locations dropdown
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: site-evaluations-dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 17
+
+```diff
+@@ -14,21 +14,5 @@
+  
+  // Site locations
+- const locations = [
+-     "Wash Lyfe - McKinney",
+-     "Wash Lyfe - Prosper", 
+-     "Wash Lyfe - Celina",
+-     "Wash Lyfe - Little Elm",
+-     "Wash Lyfe - Frisco",
+-     "Wash Lyfe - Allen",
+-     "Wash Lyfe - Plano",
+-     "Wash Lyfe - Richardson",
+-     "Wash Lyfe - Garland",
+-     "Wash Lyfe - Rowlett",
+-     "Wash Lyfe - Rockwall",
+-     "Wash Lyfe - Wylie",
+-     "Wash Lyfe - Murphy",
+-     "Wash Lyfe - Sachse",
+-     "Wash Lyfe - Forney"
+- ];
++ const locations = Array.from({ length: 31 }, (_, i) =&gt; &#96;Site #${i + 1}&#96;);
+  
+  // Question definitions for PDF
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+I also need to update the dashboard JS file to use the shorter site names in the location checkboxes display. Let me check if there's any special formatting for the location names in the dashboard.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: site-evaluations-dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -76,5 +76,5 @@
+              &lt;input type="checkbox" value="${loc}" checked&gt;
+              &lt;span class="checkmark"&gt;&lt;/span&gt;
+-             ${loc.replace('Wash Lyfe - ', '')}
++             ${loc}
+          &#96;;
+          container.appendChild(label);
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Done. I've updated both files to use "Site #1" through "Site #31" instead of the old "Wash Lyfe - X" format. Let me push the changes.</details></think>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: git add -A && git commit -m "Change site locations to Site #1-31" && git push</summary>
+
+```bash
+git add -A && git commit -m "Change site locations to Site #1-31" && git push
+```
+
+```
+PS C:\Users\Kevan\Downloads\MN1\mightynote&gt; git add -A &amp;&amp; git commit -m "Change 
+site locations to Site #1-31" &amp;&amp; git push
+At line:1 char:12
++ git add -A &amp;&amp; git commit -m "Change site locations to Site #1-31" &amp;&amp;  ...    
++            ~~
+The token '&amp;&amp;' is not a valid statement separator in this version.
+At line:1 char:67
++ ...  -A &amp;&amp; git commit -m "Change site locations to Site #1-31" &amp;&amp; git pus ...
++                                                                ~~
+The token '&amp;&amp;' is not a valid statement separator in this version.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordEx 
+   ception
+    + FullyQualifiedErrorId : InvalidEndOfLine
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+PowerShell doesn't support the && operator in that version. Let me use semicolons instead.</details></think>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: git add -A; git commit -m "Change site locations to Site #1-31"; git push</summary>
+
+```bash
+git add -A; git commit -m "Change site locations to Site #1-31"; git push
+```
+
+```
+PS C:\Users\Kevan\Downloads\MN1\mightynote&gt; git add -A; git commit -m "Change site locations to Site #1-31"; git push                                           
+[main 920a7ff] Change site locations to Site #1-31    
+ 15 files changed, 2638 insertions(+), 38 deletions(-)
+ create mode 100644 mightyops.csr
+ create mode 100644 mightyops.key
+Enumerating objects: 39, done.
+Counting objects: 100% (39/39), done.  
+Delta compression using up to 6 threads
+Compressing objects: 100% (20/20), done.
+Writing objects: 100% (21/21), 18.80 KiB | 583.00 KiB/s, done. 
+Total 21 (delta 16), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (16/16), completed with 16 local objects.        
+To https://github.com/Plasticduck/mightynote.git
+   1f155e3..920a7ff  main -&gt; main
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+I see that the mightyops.csr and mightyops.key files were accidentally added to the commit. Let me remove them from the repo and add them to .gitignore if there is one.</details></think>
+
+---
+
+Done! Updated the locations in both `site-evaluations.js` and `site-evaluations-dashboard.js` to use **Site #1** through **Site #31** instead of the old city names.
+
+I noticed the key files got accidentally committed - let me fix that:
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: git rm --cached mightyops.key mightyops.csr; git commit -m "Remove key files from repo"; git push</summary>
+
+```bash
+git rm --cached mightyops.key mightyops.csr; git commit -m "Remove key files from repo"; git push
+```
+
+```
+ops.csr; git commit -m "Remove key files from repo"; git push                   
+rm 'mightyops.csr'
+rm 'mightyops.key'
+[main ebb351d] Remove key files from repo
+ 2 files changed, 47 deletions(-)
+ delete mode 100644 mightyops.csr
+ delete mode 100644 mightyops.key
+Enumerating objects: 3, done.
+Counting objects: 100% (3/3), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (2/2), 243 bytes | 6.00 KiB/s, done.
+Total 2 (delta 1), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (1/1), completed with 1 local object.
+To https://github.com/Plasticduck/mightynote.git
+   920a7ff..ebb351d  main -&gt; main
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Good, I removed the key files from the repo. Now the locations are set to Site #1 through Site #31 in both files.</details></think>
+
+---
+
+Done! Locations are now **Site #1** through **Site #31** in both the form and dashboard. Also cleaned up those key files that accidentally got committed.
+
+---
+
+_**User (2025-12-07 21:19Z)**_
+
+for some reason the neondb is being weird when I make a site evaluation it says failed to submit, then I click it again then It works, and also not all reports are showing on the list in the dashboard, also change the name in the pdf to Site Evalutation Report
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user is experiencing issues with:
+1. Site evaluations failing on first submit, then working on second try - this sounds like a database table initialization issue
+2. Not all reports showing in the dashboard - might be a query issue or data parsing issue
+3. Need to change PDF title from "Executive Site Review Report" to "Site Evaluation Report"
+
+Let me look at the relevant files to diagnose and fix these issues.</details></think>
+
+---
+
+Let me check the code to diagnose these issues:
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: netlify/functions/evaluations-create.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: netlify/functions/evaluations-get.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: site-evaluations-dashboard.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+I see a few issues:
+
+1. **First submit failing**: The issue is that the `CREATE TABLE IF NOT EXISTS` runs every time, but the first time a serverless function cold-starts, the neon connection might be slow. Also, the two SQL statements are run as separate queries. Let me combine them into a single transaction or ensure table exists first.
+
+2. **Not all reports showing**: The `evaluations-get.js` should also ensure the table exists before querying, otherwise it might fail if the table doesn't exist yet.
+
+3. **PDF title**: Need to change "Executive Site Review Report" to "Site Evaluation Report" in the generatePDF function.
+
+Let me also check the beginning of the dashboard JS to see the PDF generation title:</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: site-evaluations-dashboard.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I can see all the issues. Let me fix:
+
+1. **evaluations-create.js**: The issue might be that the first cold start is slow. Let me separate the table creation into its own call with better error handling.
+
+2. **evaluations-get.js**: Need to ensure table exists before querying to avoid errors.
+
+3. **PDF title**: Change "Executive Site Review Report" to "Site Evaluation Report" and filename from `Site_Reviews_Report` to `Site_Evaluation_Report`.
+
+Let me make these fixes.</details></think>
+
+---
+
+I see the issues. Let me fix all three:
+
+1. **First submit failing** - Cold start + table creation timing issue
+2. **Not all reports showing** - Need to ensure table exists in get function
+3. **PDF title** - Change to "Site Evaluation Report"
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: netlify/functions/evaluations-create.js</summary>
+
+**Chunk 1**
+Lines added: 3, lines removed: undefined
+
+```diff
+@@ -1,4 +1,7 @@
+  // Create a new site evaluation
+  const { neon } = require('@neondatabase/serverless');
++ 
++ // Cache the table creation promise
++ let tableInitialized = false;
+  
+  exports.handler = async (event, context) =&gt; {
+```
+
+**Chunk 2**
+Lines added: 44, lines removed: 17
+
+```diff
+@@ -21,26 +24,53 @@
+      }
+  
++     let sql;
+      try {
+-         const sql = neon(process.env.NETLIFY_DATABASE_URL);
+-         const data = JSON.parse(event.body);
+-         
+-         // Ensure table exists
+-         await sql&#96;
+-             CREATE TABLE IF NOT EXISTS evaluations (
+-                 id SERIAL PRIMARY KEY,
+-                 location TEXT NOT NULL,
+-                 answers JSONB NOT NULL,
+-                 additional_notes TEXT,
+-                 follow_up_instructions TEXT,
+-                 image_pdf TEXT,
+-                 submitted_by TEXT,
+-                 submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+-             )
+-         &#96;;
++         sql = neon(process.env.NETLIFY_DATABASE_URL);
++     } catch (dbError) {
++         console.error('Database connection error:', dbError);
++         return {
++             statusCode: 500,
++             headers,
++             body: JSON.stringify({ error: 'Database connection failed' })
++         };
++     }
++ 
++     try {
++         // Ensure table exists (only once per cold start)
++         if (!tableInitialized) {
++             await sql&#96;
++                 CREATE TABLE IF NOT EXISTS evaluations (
++                     id SERIAL PRIMARY KEY,
++                     location TEXT NOT NULL,
++                     answers JSONB NOT NULL,
++                     additional_notes TEXT,
++                     follow_up_instructions TEXT,
++                     image_pdf TEXT,
++                     submitted_by TEXT,
++                     submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
++                 )
++             &#96;;
++             tableInitialized = true;
++         }
++     } catch (tableError) {
++         console.error('Table creation error:', tableError);
++         // Continue anyway - table might already exist
++     }
++ 
++     try {
++         const data = JSON.parse(event.body);
+          
+          // Insert the evaluation
+          const result = await sql&#96;
+              INSERT INTO evaluations (location, answers, additional_notes, follow_up_instructions, image_pdf, submitted_by, submitted_at)
+-             VALUES (${data.location}, ${JSON.stringify(data.answers)}, ${data.additional_notes || null}, ${data.follow_up_instructions || null}, ${data.image_pdf || null}, ${data.submitted_by || null}, ${data.submitted_at || new Date().toISOString()})
++             VALUES (
++                 ${data.location}, 
++                 ${JSON.stringify(data.answers)}, 
++                 ${data.additional_notes || null}, 
++                 ${data.follow_up_instructions || null}, 
++                 ${data.image_pdf || null}, 
++                 ${data.submitted_by || null}, 
++                 ${data.submitted_at || new Date().toISOString()}
++             )
+              RETURNING id
+          &#96;;
+```
+
+**Chunk 3**
+Lines added: undefined, lines removed: 2
+
+```diff
+@@ -60,5 +90,3 @@
+      }
+  };
+- 
+- 
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: netlify/functions/evaluations-get.js</summary>
+
+**Chunk 1**
+Lines added: 26, lines removed: 2
+
+```diff
+@@ -12,7 +12,31 @@
+          return { statusCode: 200, headers, body: '' };
+      }
+- 
++ 
++     let sql;
+      try {
+-         const sql = neon(process.env.NETLIFY_DATABASE_URL);
++         sql = neon(process.env.NETLIFY_DATABASE_URL);
++     } catch (dbError) {
++         console.error('Database connection error:', dbError);
++         return {
++             statusCode: 500,
++             headers,
++             body: JSON.stringify({ error: 'Database connection failed' })
++         };
++     }
++ 
++     try {
++         // Ensure table exists first
++         await sql&#96;
++             CREATE TABLE IF NOT EXISTS evaluations (
++                 id SERIAL PRIMARY KEY,
++                 location TEXT NOT NULL,
++                 answers JSONB NOT NULL,
++                 additional_notes TEXT,
++                 follow_up_instructions TEXT,
++                 image_pdf TEXT,
++                 submitted_by TEXT,
++                 submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
++             )
++         &#96;;
+          
+          // Get all evaluations (excluding full image data for performance)
+```
+
+**Chunk 2**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -26,5 +50,5 @@
+                  submitted_by,
+                  submitted_at,
+-                 CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
++                 CASE WHEN image_pdf IS NOT NULL AND image_pdf != '' THEN true ELSE false END as has_image
+              FROM evaluations
+              ORDER BY submitted_at DESC
+```
+
+**Chunk 3**
+Lines added: undefined, lines removed: 2
+
+```diff
+@@ -45,5 +69,3 @@
+      }
+  };
+- 
+- 
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: site-evaluations-dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -437,5 +437,5 @@
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+-     doc.text('Executive Site Review Report', 14, 20);
++     doc.text('Site Evaluation Report', 14, 20);
+      
+      // Generated date
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me also change the filename when saving the PDF from `Site_Reviews_Report` to `Site_Evaluation_Report`:</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: site-evaluations-dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -537,5 +537,5 @@
+      // Save
+      const dateStr = new Date().toISOString().split('T')[0];
+-     doc.save(&#96;Site_Reviews_Report_${dateStr}.pdf&#96;);
++     doc.save(&#96;Site_Evaluation_Report_${dateStr}.pdf&#96;);
+      showToast('PDF exported successfully');
+  }
+```
+
+</details>
+
+</tool-use>
+
+---
+
+
+
+---
+

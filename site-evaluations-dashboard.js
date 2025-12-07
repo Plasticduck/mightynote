@@ -436,7 +436,7 @@ function generatePDF(reviews) {
     // Title
     doc.setFontSize(18);
     doc.setFont(undefined, 'bold');
-    doc.text('Executive Site Review Report', 14, 20);
+    doc.text('Site Evaluation Report', 14, 20);
     
     // Generated date
     doc.setFontSize(10);
@@ -536,7 +536,7 @@ function generatePDF(reviews) {
     
     // Save
     const dateStr = new Date().toISOString().split('T')[0];
-    doc.save(`Site_Reviews_Report_${dateStr}.pdf`);
+    doc.save(`Site_Evaluation_Report_${dateStr}.pdf`);
     showToast('PDF exported successfully');
 }
 
