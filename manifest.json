@@ -1,6 +1,6 @@
 {
-    "name": "Mighty Ops",
-    "short_name": "Mighty Ops",
+    "name": "MightyOps",
+    "short_name": "MightyOps",
     "description": "Operational management and site violation tracking",
     "start_url": "/login.html",
     "display": "standalone",
