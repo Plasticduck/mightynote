@@ -21069,7 +21069,49 @@ Lines added: 1, lines removed: 1
 
 ---
 
+<think><details><summary>Thought Process</summary>
+Now let me push all the changes.</details></think>
 
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: git add -A; git reset HEAD mightyops.key mightyops.csr; git commit -m "Fix evaluation DB issues and rename PDF to Site Evaluation Report"; git push</summary>
+
+```bash
+git add -A; git reset HEAD mightyops.key mightyops.csr; git commit -m "Fix evaluation DB issues and rename PDF to Site Evaluation Report"; git push
+```
+
+```
+[main a1491a5] Fix evaluation DB issues and rename PDF to Site Evaluation Report 4 files changed, 21149 insertions(+), 20530 deletions(-)                       
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (9/9), done.
+Writing objects: 100% (10/10), 65.99 KiB | 2.28 MiB/s, done.
+Total 10 (delta 7), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/Plasticduck/mightynote.git
+   ebb351d..a1491a5  main -&gt; main
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+All changes pushed. Let me summarize what I fixed.</details></think>
+
+---
+
+Done! Fixed all three issues:
+
+1. **First submit failing** - Improved the database connection handling and separated table creation from insert. The function now catches connection errors separately and won't fail silently on table creation.
+
+2. **Not all reports showing** - Updated `evaluations-get.js` to ensure the table exists before querying (prevents errors if table hasn't been created yet).
+
+3. **PDF title** - Changed from "Executive Site Review Report" to **"Site Evaluation Report"** and filename to `Site_Evaluation_Report_[date].pdf`
+
+Give it a few minutes for Netlify to deploy, then try submitting again. If you're still seeing the first-submit issue, it may be a cold start delay from Neon's serverless database - the second attempt works because the connection is already warmed up.
 
 ---
 
