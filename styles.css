@@ -799,6 +799,180 @@ textarea {
     line-height: 1.6;
 }
 
+/* ===== Selection Bar ===== */
+.selection-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-lg);
+    background: var(--accent-blue-dim);
+    border-bottom: 1px solid rgba(10, 132, 255, 0.2);
+}
+
+.selection-bar.hidden {
+    display: none;
+}
+
+.selection-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.select-all-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.select-all-container input {
+    display: none;
+}
+
+.select-all-check {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--accent-blue);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    transition: all var(--transition-fast);
+}
+
+.select-all-container input:checked + .select-all-check {
+    background: var(--accent-blue);
+}
+
+.select-all-container input:checked + .select-all-check::after {
+    content: '✓';
+    color: var(--white);
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.selection-count {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--accent-blue);
+}
+
+.selection-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-family: var(--font-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.btn-export-selected {
+    background: var(--white);
+    color: var(--bg-primary);
+}
+
+.btn-export-selected:hover {
+    background: var(--white-90);
+}
+
+.btn-delete-selected {
+    background: var(--accent-red);
+    color: var(--white);
+}
+
+.btn-delete-selected:hover {
+    background: #ff2d20;
+}
+
+.btn-clear-selection {
+    background: var(--white-10);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-clear-selection:hover {
+    background: var(--white-15);
+}
+
+.btn-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-export-selected {
+    position: relative;
+}
+
+.selection-actions .export-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    top: auto;
+}
+
+/* ===== Record Checkbox ===== */
+.record-checkbox {
+    position: absolute;
+    top: var(--space-md);
+    left: var(--space-md);
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.record-checkbox input {
+    display: none;
+}
+
+.record-check {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-input);
+    transition: all var(--transition-fast);
+}
+
+.record-checkbox:hover .record-check {
+    border-color: var(--accent-blue);
+}
+
+.record-checkbox input:checked + .record-check {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+.record-checkbox input:checked + .record-check::after {
+    content: '✓';
+    color: var(--white);
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.record-card {
+    position: relative;
+    padding-left: 48px;
+}
+
+.record-card.selected {
+    background: var(--accent-blue-dim);
+    border-color: rgba(10, 132, 255, 0.3);
+}
+
 .record-image-badge {
     display: inline-flex;
     align-items: center;
@@ -812,6 +986,7 @@ textarea {
     border: 1px solid rgba(10, 132, 255, 0.2);
     cursor: pointer;
     transition: all var(--transition-base);
+    text-decoration: none;
 }
 
 .record-image-badge:hover {
@@ -822,6 +997,34 @@ textarea {
 .record-image-badge svg {
     width: 12px;
     height: 12px;
+}
+
+/* Responsive selection bar */
+@media (max-width: 600px) {
+    .selection-bar {
+        flex-direction: column;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+    }
+    
+    .selection-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .selection-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .btn-action {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .btn-action svg {
+        display: none;
+    }
 }
 
 /* Image Modal */

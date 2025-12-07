@@ -5,7 +5,7 @@ exports.handler = async (event, context) => {
     const headers = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
     };
 
@@ -14,7 +14,7 @@ exports.handler = async (event, context) => {
         return { statusCode: 200, headers, body: '' };
     }
 
-    if (event.httpMethod !== 'GET') {
+    if (event.httpMethod !== 'POST') {
         return {
             statusCode: 405,
             headers,
@@ -24,39 +24,34 @@ exports.handler = async (event, context) => {
 
     try {
         const sql = neon(process.env.NETLIFY_DATABASE_URL);
-        const noteId = event.queryStringParameters?.id;
+        const data = JSON.parse(event.body);
+        const { ids } = data;
 
-        if (!noteId) {
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
             return {
                 statusCode: 400,
                 headers,
-                body: JSON.stringify({ success: false, error: 'Note ID is required' })
+                body: JSON.stringify({ success: false, error: 'Note IDs are required' })
             };
         }
 
-        const result = await sql`
-            SELECT id, image_pdf FROM notes WHERE id = ${parseInt(noteId)}
+        // Delete notes by IDs
+        const deleteCount = await sql`
+            DELETE FROM notes WHERE id = ANY(${ids}::int[])
+            RETURNING id
         `;
-
-        if (result.length === 0) {
-            return {
-                statusCode: 404,
-                headers,
-                body: JSON.stringify({ success: false, error: 'Note not found' })
-            };
-        }
 
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({ 
                 success: true, 
-                hasImage: !!result[0].image_pdf,
-                image_pdf: result[0].image_pdf 
+                deleted: deleteCount.length,
+                message: `Deleted ${deleteCount.length} note(s)`
             })
         };
     } catch (error) {
-        console.error('Error fetching note image:', error);
+        console.error('Error deleting notes:', error);
         return {
             statusCode: 500,
             headers,
@@ -64,5 +59,4 @@ exports.handler = async (event, context) => {
         };
     }
 };
-
 

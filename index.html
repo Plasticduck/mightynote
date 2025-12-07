@@ -10,7 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Mighty Notes</title>
-    <link rel="stylesheet" href="styles.css?v=15">
+    <link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
     <div class="app-container">
@@ -154,12 +154,22 @@
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label for="filterDepartment">Department:</label>
+                        <label for="filterDepartment">Dept:</label>
                         <select id="filterDepartment">
-                            <option value="">All Departments</option>
+                            <option value="">All</option>
                             <option value="Operations">Operations</option>
                             <option value="Safety">Safety</option>
                             <option value="Accounting">Accounting</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="sortOrder">Sort:</label>
+                        <select id="sortOrder">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="site-asc">Site (1-31)</option>
+                            <option value="site-desc">Site (31-1)</option>
+                            <option value="dept">Department</option>
                         </select>
                     </div>
                     <div class="export-dropdown">
@@ -203,6 +213,37 @@
                                 Export Both
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Selection Actions Bar -->
+                <div class="selection-bar hidden" id="selectionBar">
+                    <div class="selection-info">
+                        <label class="select-all-container">
+                            <input type="checkbox" id="selectAllCheckbox">
+                            <span class="select-all-check"></span>
+                        </label>
+                        <span class="selection-count" id="selectionCount">0 selected</span>
+                    </div>
+                    <div class="selection-actions">
+                        <button class="btn-action btn-export-selected" id="exportSelectedBtn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Export Selected
+                        </button>
+                        <button class="btn-action btn-delete-selected" id="deleteSelectedBtn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Delete
+                        </button>
+                        <button class="btn-action btn-clear-selection" id="clearSelectionBtn">
+                            Clear
+                        </button>
                     </div>
                 </div>
 
@@ -256,6 +297,6 @@
     <!-- jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <script src="app.js?v=15"></script>
+    <script src="app.js?v=16"></script>
 </body>
 </html>

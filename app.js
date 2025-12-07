@@ -1,6 +1,11 @@
 // ===== Photo Upload State =====
 let currentPhotoData = null;
 
+// ===== Selection State =====
+let selectedNotes = new Set();
+let currentNotes = [];
+let currentSortOrder = 'newest';
+
 // ===== Configuration =====
 const CONFIG = {
     locations: Array.from({ length: 31 }, (_, i) => i + 1),
@@ -222,9 +227,19 @@ function formatDate(dateString) {
 
 function renderRecords(notes) {
     const container = document.getElementById('recordsContainer');
+    currentNotes = notes;
+    
+    // Show/hide selection bar
+    const selectionBar = document.getElementById('selectionBar');
+    if (notes.length > 0) {
+        selectionBar.classList.remove('hidden');
+    } else {
+        selectionBar.classList.add('hidden');
+    }
     
     if (notes.length === 0) {
         container.innerHTML = '<p class="no-records">No records found</p>';
+        updateSelectionUI();
         return;
     }
     
@@ -233,20 +248,25 @@ function renderRecords(notes) {
         const displayType = note.note_type === 'Other' && note.other_description 
             ? `Other: ${note.other_description}` 
             : note.note_type;
+        const isSelected = selectedNotes.has(note.id);
         
         const imageBadge = note.has_image ? `
-            <span class="record-image-badge" onclick="openImageModal(${note.id})">
+            <a href="${getPhotoUrl(note.id)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                     <circle cx="8.5" cy="8.5" r="1.5"/>
                     <polyline points="21 15 16 10 5 21"/>
                 </svg>
-                Photo
-            </span>
+                View Photo
+            </a>
         ` : '';
         
         return `
-            <div class="record-card">
+            <div class="record-card ${isSelected ? 'selected' : ''}" data-id="${note.id}">
+                <label class="record-checkbox" onclick="event.stopPropagation()">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleNoteSelection(${note.id}, this.checked)">
+                    <span class="record-check"></span>
+                </label>
                 <div class="record-header">
                     <span class="record-type">${displayType}</span>
                     <span class="record-timestamp">${formatDate(note.created_at)}</span>
@@ -260,6 +280,8 @@ function renderRecords(notes) {
             </div>
         `;
     }).join('');
+    
+    updateSelectionUI();
 }
 
 function getPhotoUrl(noteId) {
@@ -761,6 +783,305 @@ function downloadCurrentImage() {
     showToast('Image downloaded');
 }
 
+// ===== Selection Functions =====
+function toggleNoteSelection(noteId, isSelected) {
+    if (isSelected) {
+        selectedNotes.add(noteId);
+    } else {
+        selectedNotes.delete(noteId);
+    }
+    
+    // Update card visual
+    const card = document.querySelector(`.record-card[data-id="${noteId}"]`);
+    if (card) {
+        card.classList.toggle('selected', isSelected);
+    }
+    
+    updateSelectionUI();
+}
+
+function selectAllNotes() {
+    const selectAll = document.getElementById('selectAllCheckbox').checked;
+    
+    currentNotes.forEach(note => {
+        if (selectAll) {
+            selectedNotes.add(note.id);
+        } else {
+            selectedNotes.delete(note.id);
+        }
+    });
+    
+    // Update all checkboxes
+    document.querySelectorAll('.record-card').forEach(card => {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            checkbox.checked = selectAll;
+            card.classList.toggle('selected', selectAll);
+        }
+    });
+    
+    updateSelectionUI();
+}
+
+function clearSelection() {
+    selectedNotes.clear();
+    document.getElementById('selectAllCheckbox').checked = false;
+    
+    document.querySelectorAll('.record-card').forEach(card => {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            checkbox.checked = false;
+            card.classList.remove('selected');
+        }
+    });
+    
+    updateSelectionUI();
+}
+
+function updateSelectionUI() {
+    const count = selectedNotes.size;
+    const countEl = document.getElementById('selectionCount');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const exportBtn = document.getElementById('exportSelectedBtn');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    
+    if (countEl) {
+        countEl.textContent = `${count} selected`;
+    }
+    
+    // Update select all checkbox state
+    if (selectAllCheckbox && currentNotes.length > 0) {
+        const allSelected = currentNotes.every(note => selectedNotes.has(note.id));
+        const someSelected = currentNotes.some(note => selectedNotes.has(note.id));
+        selectAllCheckbox.checked = allSelected;
+        selectAllCheckbox.indeterminate = someSelected && !allSelected;
+    }
+    
+    // Enable/disable action buttons
+    if (exportBtn) exportBtn.disabled = count === 0;
+    if (deleteBtn) deleteBtn.disabled = count === 0;
+}
+
+// ===== Delete Functions =====
+async function deleteSelectedNotes() {
+    if (selectedNotes.size === 0) {
+        showToast('No notes selected', true);
+        return;
+    }
+    
+    const count = selectedNotes.size;
+    const confirmed = confirm(`Are you sure you want to delete ${count} note(s)? This cannot be undone.`);
+    
+    if (!confirmed) return;
+    
+    try {
+        const ids = Array.from(selectedNotes);
+        const response = await fetch(`${API_BASE}/notes-delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ids })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Deleted ${result.deleted} note(s)`);
+            selectedNotes.clear();
+            refreshRecords();
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        console.error('Error deleting notes:', error);
+        showToast('Error deleting notes', true);
+    }
+}
+
+// ===== Sorting Functions =====
+function sortNotes(notes, sortOrder) {
+    const sorted = [...notes];
+    
+    switch (sortOrder) {
+        case 'newest':
+            sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            break;
+        case 'oldest':
+            sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            break;
+        case 'site-asc':
+            sorted.sort((a, b) => a.location - b.location);
+            break;
+        case 'site-desc':
+            sorted.sort((a, b) => b.location - a.location);
+            break;
+        case 'dept':
+            sorted.sort((a, b) => a.department.localeCompare(b.department));
+            break;
+        default:
+            break;
+    }
+    
+    return sorted;
+}
+
+// ===== Export Selected Notes =====
+async function exportSelectedNotes(format) {
+    if (selectedNotes.size === 0) {
+        showToast('No notes selected', true);
+        return;
+    }
+    
+    const selectedData = currentNotes.filter(note => selectedNotes.has(note.id));
+    
+    if (format === 'pdf' || format === 'both') {
+        exportSelectedToPDF(selectedData);
+    }
+    
+    if (format === 'excel' || format === 'both') {
+        exportSelectedToExcel(selectedData);
+    }
+    
+    closeExportSelectedMenu();
+}
+
+function exportSelectedToExcel(notes) {
+    const wb = XLSX.utils.book_new();
+    
+    const data = notes.map(note => ({
+        'Date/Time': formatDate(note.created_at),
+        'Site': `Site ${note.location}`,
+        'Department': note.department,
+        'Note Type': note.note_type,
+        'Other Description': note.other_description || '',
+        'Additional Notes': note.additional_notes || '',
+        'Photo': note.has_image ? getPhotoUrl(note.id) : ''
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    
+    // Add hyperlinks for photos
+    notes.forEach((note, index) => {
+        if (note.has_image) {
+            const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 });
+            if (ws[cellRef]) {
+                ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
+            }
+        }
+    });
+    
+    ws['!cols'] = [
+        { wch: 22 }, { wch: 12 }, { wch: 12 },
+        { wch: 30 }, { wch: 30 }, { wch: 50 }, { wch: 40 }
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Selected Notes');
+    
+    const timestamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `Selected_Notes_${timestamp}.xlsx`);
+    showToast(`Exported ${notes.length} notes to Excel`);
+}
+
+function exportSelectedToPDF(notes) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.text('Selected Notes Export', 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+    doc.text(`Total Records: ${notes.length}`, 14, 34);
+    
+    const tableData = notes.map(note => [
+        formatDate(note.created_at),
+        `Site ${note.location}`,
+        note.department,
+        note.note_type === 'Other' && note.other_description 
+            ? `Other: ${note.other_description}` 
+            : note.note_type,
+        note.has_image ? 'View Photo' : '-'
+    ]);
+    
+    const photoLinks = [];
+    
+    doc.autoTable({
+        startY: 42,
+        head: [['Date/Time', 'Site', 'Dept', 'Note Type', 'Photo']],
+        body: tableData,
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: {
+            0: { cellWidth: 35 },
+            1: { cellWidth: 20 },
+            2: { cellWidth: 25 },
+            3: { cellWidth: 'auto' },
+            4: { cellWidth: 22, halign: 'center' }
+        },
+        didDrawCell: (data) => {
+            if (data.section === 'body' && data.column.index === 4) {
+                const note = notes[data.row.index];
+                if (note && note.has_image) {
+                    photoLinks.push({
+                        x: data.cell.x, y: data.cell.y,
+                        width: data.cell.width, height: data.cell.height,
+                        url: getPhotoUrl(note.id)
+                    });
+                }
+            }
+        },
+        didParseCell: (data) => {
+            if (data.section === 'body' && data.column.index === 4) {
+                const note = notes[data.row.index];
+                if (note && note.has_image) {
+                    data.cell.styles.textColor = [10, 132, 255];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            }
+        }
+    });
+    
+    photoLinks.forEach(link => {
+        doc.link(link.x, link.y, link.width, link.height, { url: link.url });
+    });
+    
+    const timestamp = new Date().toISOString().slice(0, 10);
+    doc.save(`Selected_Notes_${timestamp}.pdf`);
+    showToast(`Exported ${notes.length} notes to PDF`);
+}
+
+let exportSelectedMenuOpen = false;
+
+function toggleExportSelectedMenu() {
+    const btn = document.getElementById('exportSelectedBtn');
+    let menu = document.getElementById('exportSelectedMenu');
+    
+    if (!menu) {
+        menu = document.createElement('div');
+        menu.id = 'exportSelectedMenu';
+        menu.className = 'export-menu';
+        menu.innerHTML = `
+            <button class="export-option" onclick="exportSelectedNotes('pdf')">Export as PDF</button>
+            <button class="export-option" onclick="exportSelectedNotes('excel')">Export as Excel</button>
+            <button class="export-option" onclick="exportSelectedNotes('both')">Export Both</button>
+        `;
+        btn.parentElement.appendChild(menu);
+        btn.parentElement.style.position = 'relative';
+    }
+    
+    menu.classList.toggle('hidden');
+    exportSelectedMenuOpen = !menu.classList.contains('hidden');
+}
+
+function closeExportSelectedMenu() {
+    const menu = document.getElementById('exportSelectedMenu');
+    if (menu) menu.classList.add('hidden');
+    exportSelectedMenuOpen = false;
+}
+
 // ===== Event Handlers =====
 function setupEventListeners() {
     const departmentSelect = document.getElementById('department');
@@ -836,8 +1157,30 @@ function setupEventListeners() {
     });
     
     // Filter changes
-    filterLocation.addEventListener('change', refreshRecords);
-    filterDepartment.addEventListener('change', refreshRecords);
+    filterLocation.addEventListener('change', () => {
+        clearSelection();
+        refreshRecords();
+    });
+    filterDepartment.addEventListener('change', () => {
+        clearSelection();
+        refreshRecords();
+    });
+    
+    // Sort change
+    const sortOrder = document.getElementById('sortOrder');
+    sortOrder.addEventListener('change', (e) => {
+        currentSortOrder = e.target.value;
+        refreshRecords();
+    });
+    
+    // Selection handlers
+    document.getElementById('selectAllCheckbox').addEventListener('change', selectAllNotes);
+    document.getElementById('clearSelectionBtn').addEventListener('click', clearSelection);
+    document.getElementById('deleteSelectedBtn').addEventListener('click', deleteSelectedNotes);
+    document.getElementById('exportSelectedBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleExportSelectedMenu();
+    });
     
     // Export button - toggle dropdown
     exportBtn.addEventListener('click', (e) => {
@@ -854,9 +1197,10 @@ function setupEventListeners() {
         });
     });
     
-    // Close export menu when clicking outside
+    // Close export menus when clicking outside
     document.addEventListener('click', () => {
         closeExportMenu();
+        closeExportSelectedMenu();
     });
 }
 
@@ -864,10 +1208,13 @@ async function refreshRecords() {
     const location = document.getElementById('filterLocation').value;
     const department = document.getElementById('filterDepartment').value;
     
-    const notes = await getNotes(
+    let notes = await getNotes(
         location ? parseInt(location) : null,
         department || null
     );
+    
+    // Apply sorting
+    notes = sortNotes(notes, currentSortOrder);
     
     renderRecords(notes);
 }
