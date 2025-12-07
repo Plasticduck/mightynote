@@ -351,6 +351,10 @@ function renderReportTable(notes) {
     }).join('');
 }
 
+function getPhotoUrl(noteId) {
+    return `${window.location.origin}/.netlify/functions/notes-view-image?id=${noteId}`;
+}
+
 async function exportReportToExcel() {
     const filters = getSelectedFilters();
     const notes = await getFilteredNotes(filters);
@@ -383,24 +387,37 @@ async function exportReportToExcel() {
     summaryWs['!cols'] = [{ wch: 20 }, { wch: 50 }];
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
     
-    // All records sheet
+    // All records sheet with photo links
     const allData = notes.map(note => ({
         'Date/Time': formatDate(note.created_at),
         'Site': `Site ${note.location}`,
         'Department': note.department,
         'Note Type': note.note_type,
         'Other Description': note.other_description || '',
-        'Additional Notes': note.additional_notes || ''
+        'Additional Notes': note.additional_notes || '',
+        'Photo': note.has_image ? getPhotoUrl(note.id) : ''
     }));
     
     const allWs = XLSX.utils.json_to_sheet(allData);
+    
+    // Add hyperlinks for photos
+    notes.forEach((note, index) => {
+        if (note.has_image) {
+            const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 }); // Photo column (G)
+            if (allWs[cellRef]) {
+                allWs[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
+            }
+        }
+    });
+    
     allWs['!cols'] = [
         { wch: 22 },
         { wch: 12 },
         { wch: 12 },
         { wch: 30 },
         { wch: 30 },
-        { wch: 50 }
+        { wch: 50 },
+        { wch: 40 }
     ];
     XLSX.utils.book_append_sheet(wb, allWs, 'All Records');
     
@@ -414,16 +431,29 @@ async function exportReportToExcel() {
                 'Site': `Site ${note.location}`,
                 'Note Type': note.note_type,
                 'Other Description': note.other_description || '',
-                'Additional Notes': note.additional_notes || ''
+                'Additional Notes': note.additional_notes || '',
+                'Photo': note.has_image ? getPhotoUrl(note.id) : ''
             }));
             
             const ws = XLSX.utils.json_to_sheet(data);
+            
+            // Add hyperlinks for photos
+            deptNotes.forEach((note, index) => {
+                if (note.has_image) {
+                    const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 5 }); // Photo column (F)
+                    if (ws[cellRef]) {
+                        ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
+                    }
+                }
+            });
+            
             ws['!cols'] = [
                 { wch: 22 },
                 { wch: 12 },
                 { wch: 30 },
                 { wch: 30 },
-                { wch: 50 }
+                { wch: 50 },
+                { wch: 40 }
             ];
             
             XLSX.utils.book_append_sheet(wb, ws, dept);
@@ -441,16 +471,29 @@ async function exportReportToExcel() {
             'Department': note.department,
             'Note Type': note.note_type,
             'Other Description': note.other_description || '',
-            'Additional Notes': note.additional_notes || ''
+            'Additional Notes': note.additional_notes || '',
+            'Photo': note.has_image ? getPhotoUrl(note.id) : ''
         }));
         
         const ws = XLSX.utils.json_to_sheet(data);
+        
+        // Add hyperlinks for photos
+        locNotes.forEach((note, index) => {
+            if (note.has_image) {
+                const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 5 }); // Photo column (F)
+                if (ws[cellRef]) {
+                    ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
+                }
+            }
+        });
+        
         ws['!cols'] = [
             { wch: 22 },
             { wch: 12 },
             { wch: 30 },
             { wch: 30 },
-            { wch: 50 }
+            { wch: 50 },
+            { wch: 40 }
         ];
         
         XLSX.utils.book_append_sheet(wb, ws, `Site ${loc}`);
@@ -499,7 +542,7 @@ async function exportReportToPDF() {
     const dateText = filters.startDate && filters.endDate ? `${filters.startDate} to ${filters.endDate}` : 'All dates';
     doc.text(`${sitesText}  |  Date Range: ${dateText}`, 14, 42);
     
-    // Table data
+    // Table data with photo column
     const tableData = notes.map(note => [
         formatDate(note.created_at),
         `Site ${note.location}`,
@@ -507,13 +550,17 @@ async function exportReportToPDF() {
         note.note_type === 'Other' && note.other_description 
             ? `Other: ${note.other_description.substring(0, 30)}${note.other_description.length > 30 ? '...' : ''}` 
             : note.note_type,
-        (note.additional_notes || '-').substring(0, 50) + ((note.additional_notes || '').length > 50 ? '...' : '')
+        (note.additional_notes || '-').substring(0, 40) + ((note.additional_notes || '').length > 40 ? '...' : ''),
+        note.has_image ? 'View Photo' : '-'
     ]);
+    
+    // Store row positions for adding links later
+    const photoLinks = [];
     
     // Create table
     doc.autoTable({
         startY: 50,
-        head: [['Date/Time', 'Site', 'Department', 'Note Type', 'Details']],
+        head: [['Date/Time', 'Site', 'Department', 'Note Type', 'Details', 'Photo']],
         body: tableData,
         styles: {
             fontSize: 8,
@@ -528,11 +575,37 @@ async function exportReportToPDF() {
             fillColor: [245, 245, 245],
         },
         columnStyles: {
-            0: { cellWidth: 40 },
-            1: { cellWidth: 25 },
-            2: { cellWidth: 30 },
-            3: { cellWidth: 50 },
+            0: { cellWidth: 38 },
+            1: { cellWidth: 22 },
+            2: { cellWidth: 25 },
+            3: { cellWidth: 45 },
             4: { cellWidth: 'auto' },
+            5: { cellWidth: 22, halign: 'center' },
+        },
+        didDrawCell: (data) => {
+            // Track photo cells for adding links
+            if (data.section === 'body' && data.column.index === 5) {
+                const note = notes[data.row.index];
+                if (note && note.has_image) {
+                    photoLinks.push({
+                        x: data.cell.x,
+                        y: data.cell.y,
+                        width: data.cell.width,
+                        height: data.cell.height,
+                        url: getPhotoUrl(note.id)
+                    });
+                }
+            }
+        },
+        didParseCell: (data) => {
+            // Style photo links as blue
+            if (data.section === 'body' && data.column.index === 5) {
+                const note = notes[data.row.index];
+                if (note && note.has_image) {
+                    data.cell.styles.textColor = [10, 132, 255];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            }
         },
         didDrawPage: function(data) {
             // Footer
@@ -545,6 +618,11 @@ async function exportReportToPDF() {
                 { align: 'center' }
             );
         }
+    });
+    
+    // Add clickable links for photos
+    photoLinks.forEach(link => {
+        doc.link(link.x, link.y, link.width, link.height, { url: link.url });
     });
     
     // Generate filename
