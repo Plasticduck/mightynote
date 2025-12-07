@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Mighty Note Icons</title>
+    <style>
+        body {
+            font-family: -apple-system, sans-serif;
+            padding: 40px;
+            background: #0f0f1a;
+            color: white;
+            text-align: center;
+        }
+        h1 { color: #e94560; }
+        .btn {
+            display: inline-block;
+            margin: 20px 10px;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .status { margin-top: 20px; color: #00d9a5; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+    <h1>⚡ Mighty Note Icon Generator</h1>
+    <p>Click the button below to generate and download all required PWA icons.</p>
+    <button class="btn" onclick="generateAllIcons()">Generate & Download Icons</button>
+    <div class="status" id="status"></div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        
+        function drawIcon(ctx, size) {
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Background gradient
+            const bgGrad = ctx.createLinearGradient(0, 0, size, size);
+            bgGrad.addColorStop(0, '#1a1a2e');
+            bgGrad.addColorStop(1, '#16213e');
+            
+            // Rounded rect background
+            const radius = size * 0.2;
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, radius);
+            ctx.fillStyle = bgGrad;
+            ctx.fill();
+            
+            // Lightning bolt
+            const accentGrad = ctx.createLinearGradient(0, 0, size, size);
+            accentGrad.addColorStop(0, '#e94560');
+            accentGrad.addColorStop(1, '#ff6b6b');
+            
+            const scale = size / 512;
+            ctx.save();
+            ctx.scale(scale, scale);
+            
+            // Glow effect
+            ctx.shadowColor = '#e94560';
+            ctx.shadowBlur = 40;
+            
+            ctx.beginPath();
+            ctx.moveTo(280, 80);
+            ctx.lineTo(180, 240);
+            ctx.lineTo(240, 240);
+            ctx.lineTo(200, 432);
+            ctx.lineTo(340, 220);
+            ctx.lineTo(270, 220);
+            ctx.lineTo(320, 80);
+            ctx.closePath();
+            
+            ctx.fillStyle = accentGrad;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 6;
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+        
+        function downloadIcon(canvas, size) {
+            return new Promise(resolve => {
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `icon-${size}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    setTimeout(resolve, 300);
+                }, 'image/png');
+            });
+        }
+        
+        async function generateAllIcons() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const status = document.getElementById('status');
+            
+            for (const size of sizes) {
+                status.textContent = `Generating icon-${size}.png...`;
+                canvas.width = size;
+                canvas.height = size;
+                drawIcon(ctx, size);
+                await downloadIcon(canvas, size);
+            }
+            
+            status.textContent = '✓ All icons generated! Move them to the icons/ folder.';
+        }
+    </script>
+</body>
+</html>
+
+

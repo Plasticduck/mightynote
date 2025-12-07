@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Icons</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #1a1a2e; color: white; }
+        canvas { border: 1px solid #333; margin: 10px; }
+        .icons { display: flex; flex-wrap: wrap; gap: 10px; }
+        a { color: #e94560; }
+    </style>
+</head>
+<body>
+    <h1>Icon Generator</h1>
+    <p>Right-click each canvas and "Save image as..." to save the icons.</p>
+    <div class="icons" id="icons"></div>
+    
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        
+        function drawIcon(ctx, size) {
+            // Background gradient
+            const bgGrad = ctx.createLinearGradient(0, 0, size, size);
+            bgGrad.addColorStop(0, '#1a1a2e');
+            bgGrad.addColorStop(1, '#16213e');
+            
+            // Rounded rect background
+            const radius = size * 0.2;
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, radius);
+            ctx.fillStyle = bgGrad;
+            ctx.fill();
+            
+            // Lightning bolt
+            const accentGrad = ctx.createLinearGradient(0, 0, size, size);
+            accentGrad.addColorStop(0, '#e94560');
+            accentGrad.addColorStop(1, '#ff6b6b');
+            
+            const scale = size / 512;
+            ctx.save();
+            ctx.scale(scale, scale);
+            
+            // Glow effect
+            ctx.shadowColor = '#e94560';
+            ctx.shadowBlur = 40;
+            
+            ctx.beginPath();
+            ctx.moveTo(280, 80);
+            ctx.lineTo(180, 240);
+            ctx.lineTo(240, 240);
+            ctx.lineTo(200, 432);
+            ctx.lineTo(340, 220);
+            ctx.lineTo(270, 220);
+            ctx.lineTo(320, 80);
+            ctx.closePath();
+            
+            ctx.fillStyle = accentGrad;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 6;
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+        
+        const container = document.getElementById('icons');
+        
+        sizes.forEach(size => {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `<p>icon-${size}.png</p>`;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            canvas.id = `icon-${size}`;
+            
+            const ctx = canvas.getContext('2d');
+            drawIcon(ctx, size);
+            
+            wrapper.appendChild(canvas);
+            container.appendChild(wrapper);
+        });
+    </script>
+</body>
+</html>
+
+

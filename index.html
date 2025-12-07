@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mighty Note">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <title>Mighty Note</title>
+    <link rel="stylesheet" href="styles.css?v=12">
+</head>
+<body>
+    <div class="app-container">
+        <div class="bg-decoration"></div>
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <img src="MW Logo.png" alt="MW Logo" class="logo-img">
+                <span class="logo-text">Mighty Note</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon" id="viewDataBtn" title="View Records">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3h18v18H3zM3 9h18M9 21V9"/>
+                    </svg>
+                </button>
+                <a href="dashboard.html" class="btn-icon" title="Reports Dashboard">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
+                    </svg>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Form Screen -->
+        <main class="main-content" id="formScreen">
+            <div class="form-card">
+                <div class="form-header">
+                    <h2>Create New Note</h2>
+                    <p class="form-subtitle">Document violations and incidents</p>
+                </div>
+
+                <form id="noteForm" class="note-form">
+                    <!-- Location Selection -->
+                    <div class="form-group">
+                        <label for="location">Site</label>
+                        <div class="select-wrapper">
+                            <select id="location" required>
+                                <option value="">Select a site...</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Department Selection -->
+                    <div class="form-group">
+                        <label for="department">Department</label>
+                        <div class="select-wrapper">
+                            <select id="department" required>
+                                <option value="">Select a department...</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Safety">Safety</option>
+                                <option value="Accounting">Accounting</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Note Type Selection -->
+                    <div class="form-group" id="noteTypeGroup" style="display: none;">
+                        <label for="noteType">Note Type</label>
+                        <div class="select-wrapper">
+                            <select id="noteType" required>
+                                <option value="">Select a note type...</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Other Description (shown when "Other" is selected) -->
+                    <div class="form-group" id="otherDescGroup" style="display: none;">
+                        <label for="otherDesc">Describe the violation</label>
+                        <input type="text" id="otherDesc" placeholder="Enter description...">
+                    </div>
+
+                    <!-- Additional Notes -->
+                    <div class="form-group">
+                        <label for="notes">Additional Notes</label>
+                        <textarea id="notes" rows="4" placeholder="Enter any additional details..."></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-submit">
+                        <span class="btn-text">Save Note</span>
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- Data View Screen -->
+        <main class="main-content hidden" id="dataScreen">
+            <div class="data-card">
+                <div class="data-header">
+                    <button class="btn-back" id="backBtn">Back</button>
+                    <h2>Records</h2>
+                </div>
+
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label for="filterLocation">Site:</label>
+                        <select id="filterLocation">
+                            <option value="">All Sites</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterDepartment">Department:</label>
+                        <select id="filterDepartment">
+                            <option value="">All Departments</option>
+                            <option value="Operations">Operations</option>
+                            <option value="Safety">Safety</option>
+                            <option value="Accounting">Accounting</option>
+                        </select>
+                    </div>
+                    <button class="btn-export" id="exportBtn">
+                        Export Spreadsheet
+                    </button>
+                </div>
+
+                <div class="records-container" id="recordsContainer">
+                    <p class="no-records">No records found</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Toast Notification -->
+        <div class="toast hidden" id="toast">
+            <span class="toast-icon">✓</span>
+            <span class="toast-message">Note saved successfully!</span>
+        </div>
+    </div>
+
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="app.js?v=12"></script>
+</body>
+</html>
