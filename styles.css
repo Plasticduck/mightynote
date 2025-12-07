@@ -1163,6 +1163,70 @@ textarea {
     gap: var(--space-lg);
 }
 
+/* ===== Notes Section ===== */
+.notes-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.notes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.notes-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--white);
+}
+
+.notes-filters {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+.notes-section .selection-bar {
+    border-radius: 0;
+}
+
+.notes-section .records-container {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Add note button styling */
+.btn-add-note {
+    background: var(--accent-blue) !important;
+    border-color: var(--accent-blue) !important;
+    color: var(--white) !important;
+}
+
+.btn-add-note:hover {
+    background: #0077ed !important;
+}
+
+/* Export dropdown inline */
+.export-dropdown-inline {
+    position: relative;
+}
+
+.export-dropdown-inline .export-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    top: auto;
+}
+
 .admin-header {
     display: none;
 }

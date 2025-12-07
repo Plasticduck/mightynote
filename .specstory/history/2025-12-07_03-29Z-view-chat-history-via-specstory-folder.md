@@ -6223,34 +6223,2375 @@ Let me also update the HTML to add the new controls.</details></think>
 
 ---
 
-<tool-use data-tool-type="unknown" data-tool-name="search_replace">
-<details>
-<summary>Tool use: **search_replace**</summary>
+<tool-use data-tool-type="write" data-tool-name="search_replace">
 
+<details><summary>Tool use: **search_replace** • Edit file: app.js</summary>
 
-Parameters:
+**Chunk 1**
+Lines added: 5, lines removed: undefined
 
-```json
-{
-  "relativeWorkspacePath": "app.js"
-}
+```diff
+@@ -1,4 +1,9 @@
+  // ===== Photo Upload State =====
+  let currentPhotoData = null;
++ 
++ // ===== Selection State =====
++ let selectedNotes = new Set();
++ let currentNotes = [];
++ let currentSortOrder = 'newest';
+  
+  // ===== Configuration =====
 ```
-Additional data:
 
-```json
-{
-  "codeblockId": "e53f8153-2454-4aed-b3b8-5b300282531d"
-}
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to add a delete function to the API. Let me create a new Netlify function for deleting notes.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: netlify/functions/notes-delete.js</summary>
+
+**Chunk 1**
+Lines added: 62, lines removed: 1
+
+```diff
+@@ -1,1 +1,62 @@
+- 
++ const { neon } = require('@neondatabase/serverless');
++ 
++ exports.handler = async (event, context) =&gt; {
++     // CORS headers
++     const headers = {
++         'Access-Control-Allow-Origin': '*',
++         'Access-Control-Allow-Headers': 'Content-Type',
++         'Access-Control-Allow-Methods': 'POST, OPTIONS',
++         'Content-Type': 'application/json'
++     };
++ 
++     // Handle preflight
++     if (event.httpMethod === 'OPTIONS') {
++         return { statusCode: 200, headers, body: '' };
++     }
++ 
++     if (event.httpMethod !== 'POST') {
++         return {
++             statusCode: 405,
++             headers,
++             body: JSON.stringify({ success: false, error: 'Method not allowed' })
++         };
++     }
++ 
++     try {
++         const sql = neon(process.env.NETLIFY_DATABASE_URL);
++         const data = JSON.parse(event.body);
++         const { ids } = data;
++ 
++         if (!ids || !Array.isArray(ids) || ids.length === 0) {
++             return {
++                 statusCode: 400,
++                 headers,
++                 body: JSON.stringify({ success: false, error: 'Note IDs are required' })
++             };
++         }
++ 
++         // Delete notes by IDs
++         const deleteCount = await sql&#96;
++             DELETE FROM notes WHERE id = ANY(${ids}::int[])
++             RETURNING id
++         &#96;;
++ 
++         return {
++             statusCode: 200,
++             headers,
++             body: JSON.stringify({ 
++                 success: true, 
++                 deleted: deleteCount.length,
++                 message: &#96;Deleted ${deleteCount.length} note(s)&#96;
++             })
++         };
++     } catch (error) {
++         console.error('Error deleting notes:', error);
++         return {
++             statusCode: 500,
++             headers,
++             body: JSON.stringify({ success: false, error: error.message })
++         };
++     }
++ };
++ 
 ```
-User decision: **accepted**
 
-Status: **loading**
+</details>
 
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me update the index.html to add the new controls (sorting, select all, bulk actions).</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: index.html</summary>
+
+**Chunk 1**
+Lines added: 12, lines removed: 2
+
+```diff
+@@ -155,12 +155,22 @@
+                      &lt;/div&gt;
+                      &lt;div class="filter-group"&gt;
+-                         &lt;label for="filterDepartment"&gt;Department:&lt;/label&gt;
++                         &lt;label for="filterDepartment"&gt;Dept:&lt;/label&gt;
+                          &lt;select id="filterDepartment"&gt;
+-                             &lt;option value=""&gt;All Departments&lt;/option&gt;
++                             &lt;option value=""&gt;All&lt;/option&gt;
+                              &lt;option value="Operations"&gt;Operations&lt;/option&gt;
+                              &lt;option value="Safety"&gt;Safety&lt;/option&gt;
+                              &lt;option value="Accounting"&gt;Accounting&lt;/option&gt;
+                          &lt;/select&gt;
+                      &lt;/div&gt;
++                     &lt;div class="filter-group"&gt;
++                         &lt;label for="sortOrder"&gt;Sort:&lt;/label&gt;
++                         &lt;select id="sortOrder"&gt;
++                             &lt;option value="newest"&gt;Newest First&lt;/option&gt;
++                             &lt;option value="oldest"&gt;Oldest First&lt;/option&gt;
++                             &lt;option value="site-asc"&gt;Site (1-31)&lt;/option&gt;
++                             &lt;option value="site-desc"&gt;Site (31-1)&lt;/option&gt;
++                             &lt;option value="dept"&gt;Department&lt;/option&gt;
++                         &lt;/select&gt;
++                     &lt;/div&gt;
+                      &lt;div class="export-dropdown"&gt;
+                          &lt;button class="btn-export" id="exportBtn"&gt;
+```
+
+**Chunk 2**
+Lines added: 31, lines removed: undefined
+
+```diff
+@@ -206,4 +216,35 @@
+                      &lt;/div&gt;
+                  &lt;/div&gt;
++ 
++                 &lt;!-- Selection Actions Bar --&gt;
++                 &lt;div class="selection-bar hidden" id="selectionBar"&gt;
++                     &lt;div class="selection-info"&gt;
++                         &lt;label class="select-all-container"&gt;
++                             &lt;input type="checkbox" id="selectAllCheckbox"&gt;
++                             &lt;span class="select-all-check"&gt;&lt;/span&gt;
++                         &lt;/label&gt;
++                         &lt;span class="selection-count" id="selectionCount"&gt;0 selected&lt;/span&gt;
++                     &lt;/div&gt;
++                     &lt;div class="selection-actions"&gt;
++                         &lt;button class="btn-action btn-export-selected" id="exportSelectedBtn"&gt;
++                             &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                 &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
++                                 &lt;polyline points="7 10 12 15 17 10"/&gt;
++                                 &lt;line x1="12" y1="15" x2="12" y2="3"/&gt;
++                             &lt;/svg&gt;
++                             Export Selected
++                         &lt;/button&gt;
++                         &lt;button class="btn-action btn-delete-selected" id="deleteSelectedBtn"&gt;
++                             &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                 &lt;polyline points="3 6 5 6 21 6"/&gt;
++                                 &lt;path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/&gt;
++                             &lt;/svg&gt;
++                             Delete
++                         &lt;/button&gt;
++                         &lt;button class="btn-action btn-clear-selection" id="clearSelectionBtn"&gt;
++                             Clear
++                         &lt;/button&gt;
++                     &lt;/div&gt;
++                 &lt;/div&gt;
+  
+                  &lt;div class="records-container" id="recordsContainer"&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to add CSS for the selection bar and checkboxes.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: styles.css</summary>
+
+**Chunk 1**
+Lines added: 158, lines removed: undefined
+
+```diff
+@@ -799,4 +799,162 @@
+      line-height: 1.6;
+  }
++ 
++ /* ===== Selection Bar ===== */
++ .selection-bar {
++     display: flex;
++     align-items: center;
++     justify-content: space-between;
++     padding: var(--space-sm) var(--space-lg);
++     background: var(--accent-blue-dim);
++     border-bottom: 1px solid rgba(10, 132, 255, 0.2);
++ }
++ 
++ .selection-bar.hidden {
++     display: none;
++ }
++ 
++ .selection-info {
++     display: flex;
++     align-items: center;
++     gap: var(--space-md);
++ }
++ 
++ .select-all-container {
++     display: flex;
++     align-items: center;
++     cursor: pointer;
++ }
++ 
++ .select-all-container input {
++     display: none;
++ }
++ 
++ .select-all-check {
++     width: 20px;
++     height: 20px;
++     border: 2px solid var(--accent-blue);
++     border-radius: 4px;
++     display: flex;
++     align-items: center;
++     justify-content: center;
++     background: transparent;
++     transition: all var(--transition-fast);
++ }
++ 
++ .select-all-container input:checked + .select-all-check {
++     background: var(--accent-blue);
++ }
++ 
++ .select-all-container input:checked + .select-all-check::after {
++     content: '✓';
++     color: var(--white);
++     font-size: 0.75rem;
++     font-weight: bold;
++ }
++ 
++ .selection-count {
++     font-size: 0.9rem;
++     font-weight: 500;
++     color: var(--accent-blue);
++ }
++ 
++ .selection-actions {
++     display: flex;
++     gap: var(--space-sm);
++ }
++ 
++ .btn-action {
++     display: flex;
++     align-items: center;
++     gap: 6px;
++     padding: 8px 14px;
++     font-family: var(--font-primary);
++     font-size: 0.85rem;
++     font-weight: 500;
++     border: none;
++     border-radius: var(--radius-sm);
++     cursor: pointer;
++     transition: all var(--transition-base);
++ }
++ 
++ .btn-export-selected {
++     background: var(--white);
++     color: var(--bg-primary);
++ }
++ 
++ .btn-export-selected:hover {
++     background: var(--white-90);
++ }
++ 
++ .btn-delete-selected {
++     background: var(--accent-red);
++     color: var(--white);
++ }
++ 
++ .btn-delete-selected:hover {
++     background: #ff2d20;
++ }
++ 
++ .btn-clear-selection {
++     background: var(--white-10);
++     color: var(--text-primary);
++     border: 1px solid var(--border-color);
++ }
++ 
++ .btn-clear-selection:hover {
++     background: var(--white-15);
++ }
++ 
++ /* ===== Record Checkbox ===== */
++ .record-checkbox {
++     position: absolute;
++     top: var(--space-md);
++     left: var(--space-md);
++     width: 20px;
++     height: 20px;
++     cursor: pointer;
++ }
++ 
++ .record-checkbox input {
++     display: none;
++ }
++ 
++ .record-check {
++     width: 20px;
++     height: 20px;
++     border: 2px solid var(--border-color);
++     border-radius: 4px;
++     display: flex;
++     align-items: center;
++     justify-content: center;
++     background: var(--bg-input);
++     transition: all var(--transition-fast);
++ }
++ 
++ .record-checkbox:hover .record-check {
++     border-color: var(--accent-blue);
++ }
++ 
++ .record-checkbox input:checked + .record-check {
++     background: var(--accent-blue);
++     border-color: var(--accent-blue);
++ }
++ 
++ .record-checkbox input:checked + .record-check::after {
++     content: '✓';
++     color: var(--white);
++     font-size: 0.7rem;
++     font-weight: bold;
++ }
++ 
++ .record-card {
++     position: relative;
++     padding-left: 48px;
++ }
++ 
++ .record-card.selected {
++     background: var(--accent-blue-dim);
++     border-color: rgba(10, 132, 255, 0.3);
++ }
+  
+  .record-image-badge {
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me update the renderRecords function in app.js to include checkboxes, and update the photo viewing to open in a new tab. I'll also need to add the selection handling, sorting, and delete functions.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: app.js</summary>
+
+**Chunk 1**
+Lines added: 10, lines removed: undefined
+
+```diff
+@@ -228,7 +228,17 @@
+  function renderRecords(notes) {
+      const container = document.getElementById('recordsContainer');
++     currentNotes = notes;
++     
++     // Show/hide selection bar
++     const selectionBar = document.getElementById('selectionBar');
++     if (notes.length &gt; 0) {
++         selectionBar.classList.remove('hidden');
++     } else {
++         selectionBar.classList.add('hidden');
++     }
+      
+      if (notes.length === 0) {
+          container.innerHTML = '&lt;p class="no-records"&gt;No records found&lt;/p&gt;';
++         updateSelectionUI();
+          return;
+      }
+```
+
+**Chunk 2**
+Lines added: 9, lines removed: 4
+
+```diff
+@@ -239,18 +249,23 @@
+              ? &#96;Other: ${note.other_description}&#96; 
+              : note.note_type;
++         const isSelected = selectedNotes.has(note.id);
+          
+          const imageBadge = note.has_image ? &#96;
+-             &lt;span class="record-image-badge" onclick="openImageModal(${note.id})"&gt;
++             &lt;a href="${getPhotoUrl(note.id)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()"&gt;
+                  &lt;svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+                      &lt;rect x="3" y="3" width="18" height="18" rx="2" ry="2"/&gt;
+                      &lt;circle cx="8.5" cy="8.5" r="1.5"/&gt;
+                      &lt;polyline points="21 15 16 10 5 21"/&gt;
+                  &lt;/svg&gt;
+-                 Photo
+-             &lt;/span&gt;
++                 View Photo
++             &lt;/a&gt;
+          &#96; : '';
+          
+          return &#96;
+-             &lt;div class="record-card"&gt;
++             &lt;div class="record-card ${isSelected ? 'selected' : ''}" data-id="${note.id}"&gt;
++                 &lt;label class="record-checkbox" onclick="event.stopPropagation()"&gt;
++                     &lt;input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleNoteSelection(${note.id}, this.checked)"&gt;
++                     &lt;span class="record-check"&gt;&lt;/span&gt;
++                 &lt;/label&gt;
+                  &lt;div class="record-header"&gt;
+                      &lt;span class="record-type"&gt;${displayType}&lt;/span&gt;
+```
+
+**Chunk 3**
+Lines added: 2, lines removed: undefined
+
+```diff
+@@ -266,4 +281,6 @@
+          &#96;;
+      }).join('');
++     
++     updateSelectionUI();
+  }
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to add the selection functions, delete function, sorting function, and update the event listeners.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: app.js</summary>
+
+**Chunk 1**
+Lines added: 299, lines removed: undefined
+
+```diff
+@@ -783,4 +783,303 @@
+      showToast('Image downloaded');
+  }
++ 
++ // ===== Selection Functions =====
++ function toggleNoteSelection(noteId, isSelected) {
++     if (isSelected) {
++         selectedNotes.add(noteId);
++     } else {
++         selectedNotes.delete(noteId);
++     }
++     
++     // Update card visual
++     const card = document.querySelector(&#96;.record-card[data-id="${noteId}"]&#96;);
++     if (card) {
++         card.classList.toggle('selected', isSelected);
++     }
++     
++     updateSelectionUI();
++ }
++ 
++ function selectAllNotes() {
++     const selectAll = document.getElementById('selectAllCheckbox').checked;
++     
++     currentNotes.forEach(note =&gt; {
++         if (selectAll) {
++             selectedNotes.add(note.id);
++         } else {
++             selectedNotes.delete(note.id);
++         }
++     });
++     
++     // Update all checkboxes
++     document.querySelectorAll('.record-card').forEach(card =&gt; {
++         const checkbox = card.querySelector('input[type="checkbox"]');
++         if (checkbox) {
++             checkbox.checked = selectAll;
++             card.classList.toggle('selected', selectAll);
++         }
++     });
++     
++     updateSelectionUI();
++ }
++ 
++ function clearSelection() {
++     selectedNotes.clear();
++     document.getElementById('selectAllCheckbox').checked = false;
++     
++     document.querySelectorAll('.record-card').forEach(card =&gt; {
++         const checkbox = card.querySelector('input[type="checkbox"]');
++         if (checkbox) {
++             checkbox.checked = false;
++             card.classList.remove('selected');
++         }
++     });
++     
++     updateSelectionUI();
++ }
++ 
++ function updateSelectionUI() {
++     const count = selectedNotes.size;
++     const countEl = document.getElementById('selectionCount');
++     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
++     const exportBtn = document.getElementById('exportSelectedBtn');
++     const deleteBtn = document.getElementById('deleteSelectedBtn');
++     
++     if (countEl) {
++         countEl.textContent = &#96;${count} selected&#96;;
++     }
++     
++     // Update select all checkbox state
++     if (selectAllCheckbox &amp;&amp; currentNotes.length &gt; 0) {
++         const allSelected = currentNotes.every(note =&gt; selectedNotes.has(note.id));
++         const someSelected = currentNotes.some(note =&gt; selectedNotes.has(note.id));
++         selectAllCheckbox.checked = allSelected;
++         selectAllCheckbox.indeterminate = someSelected &amp;&amp; !allSelected;
++     }
++     
++     // Enable/disable action buttons
++     if (exportBtn) exportBtn.disabled = count === 0;
++     if (deleteBtn) deleteBtn.disabled = count === 0;
++ }
++ 
++ // ===== Delete Functions =====
++ async function deleteSelectedNotes() {
++     if (selectedNotes.size === 0) {
++         showToast('No notes selected', true);
++         return;
++     }
++     
++     const count = selectedNotes.size;
++     const confirmed = confirm(&#96;Are you sure you want to delete ${count} note(s)? This cannot be undone.&#96;);
++     
++     if (!confirmed) return;
++     
++     try {
++         const ids = Array.from(selectedNotes);
++         const response = await fetch(&#96;${API_BASE}/notes-delete&#96;, {
++             method: 'POST',
++             headers: {
++                 'Content-Type': 'application/json'
++             },
++             body: JSON.stringify({ ids })
++         });
++         
++         const result = await response.json();
++         
++         if (result.success) {
++             showToast(&#96;Deleted ${result.deleted} note(s)&#96;);
++             selectedNotes.clear();
++             refreshRecords();
++         } else {
++             throw new Error(result.error);
++         }
++     } catch (error) {
++         console.error('Error deleting notes:', error);
++         showToast('Error deleting notes', true);
++     }
++ }
++ 
++ // ===== Sorting Functions =====
++ function sortNotes(notes, sortOrder) {
++     const sorted = [...notes];
++     
++     switch (sortOrder) {
++         case 'newest':
++             sorted.sort((a, b) =&gt; new Date(b.created_at) - new Date(a.created_at));
++             break;
++         case 'oldest':
++             sorted.sort((a, b) =&gt; new Date(a.created_at) - new Date(b.created_at));
++             break;
++         case 'site-asc':
++             sorted.sort((a, b) =&gt; a.location - b.location);
++             break;
++         case 'site-desc':
++             sorted.sort((a, b) =&gt; b.location - a.location);
++             break;
++         case 'dept':
++             sorted.sort((a, b) =&gt; a.department.localeCompare(b.department));
++             break;
++         default:
++             break;
++     }
++     
++     return sorted;
++ }
++ 
++ // ===== Export Selected Notes =====
++ async function exportSelectedNotes(format) {
++     if (selectedNotes.size === 0) {
++         showToast('No notes selected', true);
++         return;
++     }
++     
++     const selectedData = currentNotes.filter(note =&gt; selectedNotes.has(note.id));
++     
++     if (format === 'pdf' || format === 'both') {
++         exportSelectedToPDF(selectedData);
++     }
++     
++     if (format === 'excel' || format === 'both') {
++         exportSelectedToExcel(selectedData);
++     }
++     
++     closeExportSelectedMenu();
++ }
++ 
++ function exportSelectedToExcel(notes) {
++     const wb = XLSX.utils.book_new();
++     
++     const data = notes.map(note =&gt; ({
++         'Date/Time': formatDate(note.created_at),
++         'Site': &#96;Site ${note.location}&#96;,
++         'Department': note.department,
++         'Note Type': note.note_type,
++         'Other Description': note.other_description || '',
++         'Additional Notes': note.additional_notes || '',
++         'Photo': note.has_image ? getPhotoUrl(note.id) : ''
++     }));
++     
++     const ws = XLSX.utils.json_to_sheet(data);
++     
++     // Add hyperlinks for photos
++     notes.forEach((note, index) =&gt; {
++         if (note.has_image) {
++             const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 });
++             if (ws[cellRef]) {
++                 ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
++             }
++         }
++     });
++     
++     ws['!cols'] = [
++         { wch: 22 }, { wch: 12 }, { wch: 12 },
++         { wch: 30 }, { wch: 30 }, { wch: 50 }, { wch: 40 }
++     ];
++     
++     XLSX.utils.book_append_sheet(wb, ws, 'Selected Notes');
++     
++     const timestamp = new Date().toISOString().slice(0, 10);
++     XLSX.writeFile(wb, &#96;Selected_Notes_${timestamp}.xlsx&#96;);
++     showToast(&#96;Exported ${notes.length} notes to Excel&#96;);
++ }
++ 
++ function exportSelectedToPDF(notes) {
++     const { jsPDF } = window.jspdf;
++     const doc = new jsPDF();
++     
++     doc.setFontSize(18);
++     doc.text('Selected Notes Export', 14, 20);
++     
++     doc.setFontSize(10);
++     doc.setTextColor(100);
++     doc.text(&#96;Generated: ${new Date().toLocaleString()}&#96;, 14, 28);
++     doc.text(&#96;Total Records: ${notes.length}&#96;, 14, 34);
++     
++     const tableData = notes.map(note =&gt; [
++         formatDate(note.created_at),
++         &#96;Site ${note.location}&#96;,
++         note.department,
++         note.note_type === 'Other' &amp;&amp; note.other_description 
++             ? &#96;Other: ${note.other_description}&#96; 
++             : note.note_type,
++         note.has_image ? 'View Photo' : '-'
++     ]);
++     
++     const photoLinks = [];
++     
++     doc.autoTable({
++         startY: 42,
++         head: [['Date/Time', 'Site', 'Dept', 'Note Type', 'Photo']],
++         body: tableData,
++         styles: { fontSize: 8, cellPadding: 3 },
++         headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
++         alternateRowStyles: { fillColor: [245, 245, 245] },
++         columnStyles: {
++             0: { cellWidth: 35 },
++             1: { cellWidth: 20 },
++             2: { cellWidth: 25 },
++             3: { cellWidth: 'auto' },
++             4: { cellWidth: 22, halign: 'center' }
++         },
++         didDrawCell: (data) =&gt; {
++             if (data.section === 'body' &amp;&amp; data.column.index === 4) {
++                 const note = notes[data.row.index];
++                 if (note &amp;&amp; note.has_image) {
++                     photoLinks.push({
++                         x: data.cell.x, y: data.cell.y,
++                         width: data.cell.width, height: data.cell.height,
++                         url: getPhotoUrl(note.id)
++                     });
++                 }
++             }
++         },
++         didParseCell: (data) =&gt; {
++             if (data.section === 'body' &amp;&amp; data.column.index === 4) {
++                 const note = notes[data.row.index];
++                 if (note &amp;&amp; note.has_image) {
++                     data.cell.styles.textColor = [10, 132, 255];
++                     data.cell.styles.fontStyle = 'bold';
++                 }
++             }
++         }
++     });
++     
++     photoLinks.forEach(link =&gt; {
++         doc.link(link.x, link.y, link.width, link.height, { url: link.url });
++     });
++     
++     const timestamp = new Date().toISOString().slice(0, 10);
++     doc.save(&#96;Selected_Notes_${timestamp}.pdf&#96;);
++     showToast(&#96;Exported ${notes.length} notes to PDF&#96;);
++ }
++ 
++ let exportSelectedMenuOpen = false;
++ 
++ function toggleExportSelectedMenu() {
++     const btn = document.getElementById('exportSelectedBtn');
++     let menu = document.getElementById('exportSelectedMenu');
++     
++     if (!menu) {
++         menu = document.createElement('div');
++         menu.id = 'exportSelectedMenu';
++         menu.className = 'export-menu';
++         menu.innerHTML = &#96;
++             &lt;button class="export-option" onclick="exportSelectedNotes('pdf')"&gt;Export as PDF&lt;/button&gt;
++             &lt;button class="export-option" onclick="exportSelectedNotes('excel')"&gt;Export as Excel&lt;/button&gt;
++             &lt;button class="export-option" onclick="exportSelectedNotes('both')"&gt;Export Both&lt;/button&gt;
++         &#96;;
++         btn.parentElement.appendChild(menu);
++         btn.parentElement.style.position = 'relative';
++     }
++     
++     menu.classList.toggle('hidden');
++     exportSelectedMenuOpen = !menu.classList.contains('hidden');
++ }
++ 
++ function closeExportSelectedMenu() {
++     const menu = document.getElementById('exportSelectedMenu');
++     if (menu) menu.classList.add('hidden');
++     exportSelectedMenuOpen = false;
++ }
+  
+  // ===== Event Handlers =====
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to update the setupEventListeners function to add the new event handlers for sorting, selection, and bulk actions.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: app.js</summary>
+
+**Chunk 1**
+Lines added: 24, lines removed: 2
+
+```diff
+@@ -1158,6 +1158,28 @@
+      
+      // Filter changes
+-     filterLocation.addEventListener('change', refreshRecords);
+-     filterDepartment.addEventListener('change', refreshRecords);
++     filterLocation.addEventListener('change', () =&gt; {
++         clearSelection();
++         refreshRecords();
++     });
++     filterDepartment.addEventListener('change', () =&gt; {
++         clearSelection();
++         refreshRecords();
++     });
++     
++     // Sort change
++     const sortOrder = document.getElementById('sortOrder');
++     sortOrder.addEventListener('change', (e) =&gt; {
++         currentSortOrder = e.target.value;
++         refreshRecords();
++     });
++     
++     // Selection handlers
++     document.getElementById('selectAllCheckbox').addEventListener('change', selectAllNotes);
++     document.getElementById('clearSelectionBtn').addEventListener('click', clearSelection);
++     document.getElementById('deleteSelectedBtn').addEventListener('click', deleteSelectedNotes);
++     document.getElementById('exportSelectedBtn').addEventListener('click', (e) =&gt; {
++         e.stopPropagation();
++         toggleExportSelectedMenu();
++     });
+      
+      // Export button - toggle dropdown
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to update the refreshRecords function to apply sorting.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: app.js</summary>
+
+**Chunk 1**
+Lines added: 4, lines removed: 1
+
+```diff
+@@ -1208,8 +1208,11 @@
+      const department = document.getElementById('filterDepartment').value;
+      
+-     const notes = await getNotes(
++     let notes = await getNotes(
+          location ? parseInt(location) : null,
+          department || null
+      );
++     
++     // Apply sorting
++     notes = sortNotes(notes, currentSortOrder);
+      
+      renderRecords(notes);
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me also add some CSS adjustments for the export selected menu and make sure the close functionality works properly.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: app.js</summary>
+
+**Chunk 1**
+Lines added: 2, lines removed: 1
+
+```diff
+@@ -1198,7 +1198,8 @@
+      });
+      
+-     // Close export menu when clicking outside
++     // Close export menus when clicking outside
+      document.addEventListener('click', () =&gt; {
+          closeExportMenu();
++         closeExportSelectedMenu();
+      });
+  }
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me also update the CSS to ensure the export selected menu is positioned correctly and add some responsive adjustments.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: styles.css</summary>
+
+**Chunk 1**
+Lines added: 16, lines removed: undefined
+
+```diff
+@@ -905,4 +905,20 @@
+      background: var(--white-15);
+  }
++ 
++ .btn-action:disabled {
++     opacity: 0.5;
++     cursor: not-allowed;
++ }
++ 
++ .btn-export-selected {
++     position: relative;
++ }
++ 
++ .selection-actions .export-menu {
++     position: absolute;
++     bottom: calc(100% + 6px);
++     left: 0;
++     top: auto;
++ }
+  
+  /* ===== Record Checkbox ===== */
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me also add responsive styles for the selection bar and update the image badge styling to make it look like a proper link now.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: styles.css</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: undefined
+
+```diff
+@@ -987,4 +987,5 @@
+      cursor: pointer;
+      transition: all var(--transition-base);
++     text-decoration: none;
+  }
+  
+```
+
+**Chunk 2**
+Lines added: 28, lines removed: undefined
+
+```diff
+@@ -998,4 +999,32 @@
+      height: 12px;
+  }
++ 
++ /* Responsive selection bar */
++ @media (max-width: 600px) {
++     .selection-bar {
++         flex-direction: column;
++         gap: var(--space-sm);
++         padding: var(--space-sm) var(--space-md);
++     }
++     
++     .selection-info {
++         width: 100%;
++         justify-content: space-between;
++     }
++     
++     .selection-actions {
++         width: 100%;
++         justify-content: flex-end;
++     }
++     
++     .btn-action {
++         padding: 6px 10px;
++         font-size: 0.8rem;
++     }
++     
++     .btn-action svg {
++         display: none;
++     }
++ }
+  
+  /* Image Modal */
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me bump the cache version and push to git.</details></think>
+
+---
+
+Now let me bump the version and push:
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: sw.js</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -1,3 +1,3 @@
+- const CACHE_VERSION = 15;
++ const CACHE_VERSION = 16;
+  const CACHE_NAME = &#96;mighty-note-v${CACHE_VERSION}&#96;;
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: index.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -11,5 +11,5 @@
+      &lt;link rel="apple-touch-icon" href="icons/icon-192.png"&gt;
+      &lt;title&gt;Mighty Notes&lt;/title&gt;
+-     &lt;link rel="stylesheet" href="styles.css?v=15"&gt;
++     &lt;link rel="stylesheet" href="styles.css?v=16"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: index.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -298,5 +298,5 @@
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"&gt;&lt;/script&gt;
+-     &lt;script src="app.js?v=15"&gt;&lt;/script&gt;
++     &lt;script src="app.js?v=16"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+  &lt;/html&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -11,5 +11,5 @@
+      &lt;link rel="apple-touch-icon" href="icons/icon-192.png"&gt;
+      &lt;title&gt;Reports Dashboard - Mighty Note&lt;/title&gt;
+-     &lt;link rel="stylesheet" href="styles.css?v=15"&gt;
++     &lt;link rel="stylesheet" href="styles.css?v=16"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -249,5 +249,5 @@
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"&gt;&lt;/script&gt;
+-     &lt;script src="dashboard.js?v=15"&gt;&lt;/script&gt;
++     &lt;script src="dashboard.js?v=16"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+  &lt;/html&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me push to git.</details></think>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: git add -A; git commit -m "Add note selection, bulk delete, sorting, photo opens in new tab"; git push</summary>
+
+```bash
+git add -A; git commit -m "Add note selection, bulk delete, sorting, photo opens in new tab"; git push
+```
+
+```
+selection, bulk delete, sorting, photo opens in new tab"; git push
+[main 8ec61fe] Add note selection, bulk delete, sorting, photo opens in new tab
+ 9 files changed, 1489 insertions(+), 16 deletions(-)
+ create mode 100644 netlify/functions/notes-delete.js
+Enumerating objects: 28, done.
+Counting objects: 100% (28/28), done.   
+Delta compression using up to 6 threads 
+Compressing objects: 100% (14/14), done.
+Writing objects: 100% (15/15), 10.75 KiB | 1.19 MiB/s, done.   
+Total 15 (delta 11), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (11/11), completed with 11 local objects.        
+To https://github.com/Plasticduck/mightynote.git
+   7633f9a..8ec61fe  main -&gt; main
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Done! Let me provide a summary of what was added.</details></think>
+
+---
+
+Pushed! ✓
+
+**Commit:** `8ec61fe` - "Add note selection, bulk delete, sorting, photo opens in new tab"
+
+## New Features Added:
+
+### Photo Viewing
+- **View Photo** badge now opens in a **new tab** with a nice viewer page
+- Shows the PDF with download button, note details in header
+
+### Note Selection
+- **Checkboxes** on each record card to select notes
+- **Select All** checkbox in the selection bar
+- **Visual feedback** - selected cards highlighted in blue
+
+### Bulk Actions
+- **Export Selected** - Export only selected notes as PDF, Excel, or both
+- **Delete** - Delete selected notes (with confirmation)
+- **Clear** - Deselect all notes
+
+### Sorting Options
+- **Newest First** (default)
+- **Oldest First**
+- **Site (1-31)** - ascending
+- **Site (31-1)** - descending
+- **Department** - alphabetical
+
+### New API
+- `notes-delete.js` - Bulk delete notes by IDs
+
+All changes are live at **v16**!
+
+---
+
+_**User (2025-12-07 05:30Z)**_
+
+yes but I want it to look like that but on the dashboard view notes part, just remove the records page, and keep only the dashboard with that in it. 
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants to:
+1. Remove the separate "Records" page from index.html (the data view screen)
+2. Move the records viewing functionality with selection, sorting, bulk actions to the dashboard page instead
+3. Keep only the form on the main index.html page
+
+So the flow would be:
+- index.html = just the form to create notes
+- dashboard.html = view all notes with selection, sorting, filtering, bulk delete, export, etc.
+
+Let me update both files.</details></think>
+
+---
+
+Got it! I'll remove the Records screen from index.html and move all the viewing/selection functionality to the dashboard. Let me update both files:
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: index.html</summary>
 
 </details>
 </tool-use>
 
 ---
+
+<think><details><summary>Thought Process</summary>
+Now I'll simplify index.html to just be the form page, and then update dashboard.html to have the records viewing with all the selection features.
+
+Let me first update index.html to remove the Records page and simplify it:</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: index.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -11,5 +11,5 @@
+      &lt;link rel="apple-touch-icon" href="icons/icon-192.png"&gt;
+      &lt;title&gt;Mighty Notes&lt;/title&gt;
+-     &lt;link rel="stylesheet" href="styles.css?v=16"&gt;
++     &lt;link rel="stylesheet" href="styles.css?v=17"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+```
+
+**Chunk 2**
+Lines added: 1, lines removed: 6
+
+```diff
+@@ -24,10 +24,5 @@
+              &lt;/div&gt;
+              &lt;div class="header-actions"&gt;
+-                 &lt;button class="btn-icon" id="viewDataBtn" title="View Records"&gt;
+-                     &lt;svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                         &lt;path d="M3 3h18v18H3zM3 9h18M9 21V9"/&gt;
+-                     &lt;/svg&gt;
+-                 &lt;/button&gt;
+-                 &lt;a href="dashboard.html" class="btn-icon" title="Reports Dashboard"&gt;
++                 &lt;a href="dashboard.html" class="btn-icon" title="View Notes &amp; Reports"&gt;
+                      &lt;svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+                          &lt;path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/&gt;
+```
+
+**Chunk 3**
+Lines added: undefined, lines removed: 115
+
+```diff
+@@ -138,119 +133,4 @@
+              &lt;/div&gt;
+          &lt;/main&gt;
+- 
+-         &lt;!-- Data View Screen --&gt;
+-         &lt;main class="main-content hidden" id="dataScreen"&gt;
+-             &lt;div class="data-card"&gt;
+-                 &lt;div class="data-header"&gt;
+-                     &lt;button class="btn-back" id="backBtn"&gt;Back&lt;/button&gt;
+-                     &lt;h2&gt;Records&lt;/h2&gt;
+-                 &lt;/div&gt;
+- 
+-                 &lt;div class="filter-bar"&gt;
+-                     &lt;div class="filter-group"&gt;
+-                         &lt;label for="filterLocation"&gt;Site:&lt;/label&gt;
+-                         &lt;select id="filterLocation"&gt;
+-                             &lt;option value=""&gt;All Sites&lt;/option&gt;
+-                         &lt;/select&gt;
+-                     &lt;/div&gt;
+-                     &lt;div class="filter-group"&gt;
+-                         &lt;label for="filterDepartment"&gt;Dept:&lt;/label&gt;
+-                         &lt;select id="filterDepartment"&gt;
+-                             &lt;option value=""&gt;All&lt;/option&gt;
+-                             &lt;option value="Operations"&gt;Operations&lt;/option&gt;
+-                             &lt;option value="Safety"&gt;Safety&lt;/option&gt;
+-                             &lt;option value="Accounting"&gt;Accounting&lt;/option&gt;
+-                         &lt;/select&gt;
+-                     &lt;/div&gt;
+-                     &lt;div class="filter-group"&gt;
+-                         &lt;label for="sortOrder"&gt;Sort:&lt;/label&gt;
+-                         &lt;select id="sortOrder"&gt;
+-                             &lt;option value="newest"&gt;Newest First&lt;/option&gt;
+-                             &lt;option value="oldest"&gt;Oldest First&lt;/option&gt;
+-                             &lt;option value="site-asc"&gt;Site (1-31)&lt;/option&gt;
+-                             &lt;option value="site-desc"&gt;Site (31-1)&lt;/option&gt;
+-                             &lt;option value="dept"&gt;Department&lt;/option&gt;
+-                         &lt;/select&gt;
+-                     &lt;/div&gt;
+-                     &lt;div class="export-dropdown"&gt;
+-                         &lt;button class="btn-export" id="exportBtn"&gt;
+-                             &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                 &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
+-                                 &lt;polyline points="7 10 12 15 17 10"/&gt;
+-                                 &lt;line x1="12" y1="15" x2="12" y2="3"/&gt;
+-                             &lt;/svg&gt;
+-                             Export
+-                             &lt;svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="dropdown-chevron"&gt;
+-                                 &lt;polyline points="6 9 12 15 18 9"/&gt;
+-                             &lt;/svg&gt;
+-                         &lt;/button&gt;
+-                         &lt;div class="export-menu hidden" id="exportMenu"&gt;
+-                             &lt;button class="export-option" data-format="pdf"&gt;
+-                                 &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                     &lt;path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/&gt;
+-                                     &lt;polyline points="14 2 14 8 20 8"/&gt;
+-                                     &lt;line x1="16" y1="13" x2="8" y2="13"/&gt;
+-                                     &lt;line x1="16" y1="17" x2="8" y2="17"/&gt;
+-                                 &lt;/svg&gt;
+-                                 Export as PDF
+-                             &lt;/button&gt;
+-                             &lt;button class="export-option" data-format="excel"&gt;
+-                                 &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                     &lt;rect x="3" y="3" width="18" height="18" rx="2" ry="2"/&gt;
+-                                     &lt;line x1="3" y1="9" x2="21" y2="9"/&gt;
+-                                     &lt;line x1="3" y1="15" x2="21" y2="15"/&gt;
+-                                     &lt;line x1="9" y1="3" x2="9" y2="21"/&gt;
+-                                     &lt;line x1="15" y1="3" x2="15" y2="21"/&gt;
+-                                 &lt;/svg&gt;
+-                                 Export as Excel
+-                             &lt;/button&gt;
+-                             &lt;button class="export-option" data-format="both"&gt;
+-                                 &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                     &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
+-                                     &lt;polyline points="17 8 12 3 7 8"/&gt;
+-                                     &lt;line x1="12" y1="3" x2="12" y2="15"/&gt;
+-                                 &lt;/svg&gt;
+-                                 Export Both
+-                             &lt;/button&gt;
+-                         &lt;/div&gt;
+-                     &lt;/div&gt;
+-                 &lt;/div&gt;
+- 
+-                 &lt;!-- Selection Actions Bar --&gt;
+-                 &lt;div class="selection-bar hidden" id="selectionBar"&gt;
+-                     &lt;div class="selection-info"&gt;
+-                         &lt;label class="select-all-container"&gt;
+-                             &lt;input type="checkbox" id="selectAllCheckbox"&gt;
+-                             &lt;span class="select-all-check"&gt;&lt;/span&gt;
+-                         &lt;/label&gt;
+-                         &lt;span class="selection-count" id="selectionCount"&gt;0 selected&lt;/span&gt;
+-                     &lt;/div&gt;
+-                     &lt;div class="selection-actions"&gt;
+-                         &lt;button class="btn-action btn-export-selected" id="exportSelectedBtn"&gt;
+-                             &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                 &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
+-                                 &lt;polyline points="7 10 12 15 17 10"/&gt;
+-                                 &lt;line x1="12" y1="15" x2="12" y2="3"/&gt;
+-                             &lt;/svg&gt;
+-                             Export Selected
+-                         &lt;/button&gt;
+-                         &lt;button class="btn-action btn-delete-selected" id="deleteSelectedBtn"&gt;
+-                             &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                 &lt;polyline points="3 6 5 6 21 6"/&gt;
+-                                 &lt;path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/&gt;
+-                             &lt;/svg&gt;
+-                             Delete
+-                         &lt;/button&gt;
+-                         &lt;button class="btn-action btn-clear-selection" id="clearSelectionBtn"&gt;
+-                             Clear
+-                         &lt;/button&gt;
+-                     &lt;/div&gt;
+-                 &lt;/div&gt;
+- 
+-                 &lt;div class="records-container" id="recordsContainer"&gt;
+-                     &lt;p class="no-records"&gt;No records found&lt;/p&gt;
+-                 &lt;/div&gt;
+-             &lt;/div&gt;
+-         &lt;/main&gt;
+  
+          &lt;!-- Toast Notification --&gt;
+```
+
+**Chunk 4**
+Lines added: 2, lines removed: 37
+
+```diff
+@@ -259,44 +139,9 @@
+              &lt;span class="toast-message"&gt;Note saved successfully!&lt;/span&gt;
+          &lt;/div&gt;
+- 
+-         &lt;!-- Image Modal --&gt;
+-         &lt;div class="image-modal hidden" id="imageModal"&gt;
+-             &lt;div class="modal-content"&gt;
+-                 &lt;div class="modal-header"&gt;
+-                     &lt;h3&gt;Photo Evidence&lt;/h3&gt;
+-                     &lt;div class="modal-actions"&gt;
+-                         &lt;button class="btn-modal btn-modal-download" id="downloadImageBtn"&gt;
+-                             &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                 &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
+-                                 &lt;polyline points="7 10 12 15 17 10"/&gt;
+-                                 &lt;line x1="12" y1="15" x2="12" y2="3"/&gt;
+-                             &lt;/svg&gt;
+-                             Download
+-                         &lt;/button&gt;
+-                         &lt;button class="btn-modal btn-modal-close" id="closeModalBtn"&gt;
+-                             &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                 &lt;line x1="18" y1="6" x2="6" y2="18"/&gt;
+-                                 &lt;line x1="6" y1="6" x2="18" y2="18"/&gt;
+-                             &lt;/svg&gt;
+-                             Close
+-                         &lt;/button&gt;
+-                     &lt;/div&gt;
+-                 &lt;/div&gt;
+-                 &lt;div class="modal-body" id="modalBody"&gt;
+-                     &lt;div class="modal-loading"&gt;
+-                         &lt;div class="spinner"&gt;&lt;/div&gt;
+-                         &lt;span&gt;Loading image...&lt;/span&gt;
+-                     &lt;/div&gt;
+-                 &lt;/div&gt;
+-             &lt;/div&gt;
+-         &lt;/div&gt;
+      &lt;/div&gt;
+  
+-     &lt;!-- SheetJS for Excel export --&gt;
+-     &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"&gt;&lt;/script&gt;
+-     &lt;!-- jsPDF for PDF export --&gt;
++     &lt;!-- jsPDF for PDF conversion --&gt;
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;
+-     &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"&gt;&lt;/script&gt;
+-     &lt;script src="app.js?v=16"&gt;&lt;/script&gt;
++     &lt;script src="app.js?v=17"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+  &lt;/html&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to update the dashboard.html to add the notes viewing section with all the selection, sorting, delete functionality.</details></think>
+
+---
+
+Now let me update dashboard.html to add the records viewing section:
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: dashboard.html</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I'll rewrite dashboard.html to include a "View Notes" section with all the selection, sorting, and bulk action features before the report filters section.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: dashboard.html</summary>
+
+**Chunk 1**
+Lines added: 2, lines removed: 2
+
+```diff
+@@ -10,6 +10,6 @@
+      &lt;link rel="manifest" href="manifest.json"&gt;
+      &lt;link rel="apple-touch-icon" href="icons/icon-192.png"&gt;
+-     &lt;title&gt;Reports Dashboard - Mighty Note&lt;/title&gt;
+-     &lt;link rel="stylesheet" href="styles.css?v=16"&gt;
++     &lt;title&gt;Dashboard - Mighty Notes&lt;/title&gt;
++     &lt;link rel="stylesheet" href="styles.css?v=17"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+```
+
+**Chunk 2**
+Lines added: 5, lines removed: 5
+
+```diff
+@@ -21,17 +21,17 @@
+              &lt;div class="logo"&gt;
+                  &lt;img src="MW Logo.png" alt="MW Logo" class="logo-img"&gt;
+-                 &lt;span class="logo-text"&gt;Reports Dashboard&lt;/span&gt;
++                 &lt;span class="logo-text"&gt;Dashboard&lt;/span&gt;
+              &lt;/div&gt;
+              &lt;div class="header-actions"&gt;
+-                 &lt;a href="index.html" class="btn-icon" title="Back to Notes"&gt;
++                 &lt;a href="index.html" class="btn-icon btn-add-note" title="Add New Note"&gt;
+                      &lt;svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                         &lt;path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/&gt;
+-                         &lt;polyline points="9 22 9 12 15 12 15 22"/&gt;
++                         &lt;line x1="12" y1="5" x2="12" y2="19"/&gt;
++                         &lt;line x1="5" y1="12" x2="19" y2="12"/&gt;
+                      &lt;/svg&gt;
+                  &lt;/a&gt;
+              &lt;/div&gt;
+          &lt;/header&gt;
+  
+-         &lt;!-- Admin Dashboard Screen --&gt;
++         &lt;!-- Dashboard --&gt;
+          &lt;main class="main-content" id="adminScreen"&gt;
+              &lt;div class="admin-dashboard"&gt;
+```
+
+**Chunk 3**
+Lines added: 78, lines removed: 1
+
+```diff
+@@ -64,5 +64,82 @@
+                  &lt;/div&gt;
+  
+-                 &lt;!-- Report Filters --&gt;
++                 &lt;!-- View Notes Section --&gt;
++                 &lt;div class="notes-section"&gt;
++                     &lt;div class="notes-header"&gt;
++                         &lt;h3&gt;View Notes&lt;/h3&gt;
++                         &lt;div class="notes-filters"&gt;
++                             &lt;div class="filter-group"&gt;
++                                 &lt;label for="filterLocation"&gt;Site:&lt;/label&gt;
++                                 &lt;select id="filterLocation"&gt;
++                                     &lt;option value=""&gt;All Sites&lt;/option&gt;
++                                 &lt;/select&gt;
++                             &lt;/div&gt;
++                             &lt;div class="filter-group"&gt;
++                                 &lt;label for="filterDepartment"&gt;Dept:&lt;/label&gt;
++                                 &lt;select id="filterDepartment"&gt;
++                                     &lt;option value=""&gt;All&lt;/option&gt;
++                                     &lt;option value="Operations"&gt;Operations&lt;/option&gt;
++                                     &lt;option value="Safety"&gt;Safety&lt;/option&gt;
++                                     &lt;option value="Accounting"&gt;Accounting&lt;/option&gt;
++                                 &lt;/select&gt;
++                             &lt;/div&gt;
++                             &lt;div class="filter-group"&gt;
++                                 &lt;label for="sortOrder"&gt;Sort:&lt;/label&gt;
++                                 &lt;select id="sortOrder"&gt;
++                                     &lt;option value="newest"&gt;Newest First&lt;/option&gt;
++                                     &lt;option value="oldest"&gt;Oldest First&lt;/option&gt;
++                                     &lt;option value="site-asc"&gt;Site (1-31)&lt;/option&gt;
++                                     &lt;option value="site-desc"&gt;Site (31-1)&lt;/option&gt;
++                                     &lt;option value="dept"&gt;Department&lt;/option&gt;
++                                 &lt;/select&gt;
++                             &lt;/div&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Selection Actions Bar --&gt;
++                     &lt;div class="selection-bar" id="selectionBar"&gt;
++                         &lt;div class="selection-info"&gt;
++                             &lt;label class="select-all-container"&gt;
++                                 &lt;input type="checkbox" id="selectAllCheckbox"&gt;
++                                 &lt;span class="select-all-check"&gt;&lt;/span&gt;
++                             &lt;/label&gt;
++                             &lt;span class="selection-count" id="selectionCount"&gt;0 selected&lt;/span&gt;
++                         &lt;/div&gt;
++                         &lt;div class="selection-actions"&gt;
++                             &lt;div class="export-dropdown-inline"&gt;
++                                 &lt;button class="btn-action btn-export-selected" id="exportSelectedBtn"&gt;
++                                     &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                         &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
++                                         &lt;polyline points="7 10 12 15 17 10"/&gt;
++                                         &lt;line x1="12" y1="15" x2="12" y2="3"/&gt;
++                                     &lt;/svg&gt;
++                                     Export
++                                 &lt;/button&gt;
++                                 &lt;div class="export-menu hidden" id="exportSelectedMenu"&gt;
++                                     &lt;button class="export-option" data-format="pdf"&gt;Export as PDF&lt;/button&gt;
++                                     &lt;button class="export-option" data-format="excel"&gt;Export as Excel&lt;/button&gt;
++                                     &lt;button class="export-option" data-format="both"&gt;Export Both&lt;/button&gt;
++                                 &lt;/div&gt;
++                             &lt;/div&gt;
++                             &lt;button class="btn-action btn-delete-selected" id="deleteSelectedBtn"&gt;
++                                 &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                     &lt;polyline points="3 6 5 6 21 6"/&gt;
++                                     &lt;path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/&gt;
++                                 &lt;/svg&gt;
++                                 Delete
++                             &lt;/button&gt;
++                             &lt;button class="btn-action btn-clear-selection" id="clearSelectionBtn"&gt;
++                                 Clear
++                             &lt;/button&gt;
++                         &lt;/div&gt;
++                     &lt;/div&gt;
++ 
++                     &lt;!-- Notes List --&gt;
++                     &lt;div class="records-container" id="recordsContainer"&gt;
++                         &lt;p class="no-records"&gt;Loading notes...&lt;/p&gt;
++                     &lt;/div&gt;
++                 &lt;/div&gt;
++ 
++                 &lt;!-- Report Generation Section --&gt;
+                  &lt;div class="report-filters"&gt;
+                      &lt;h3&gt;Generate Report&lt;/h3&gt;
+```
+
+**Chunk 4**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -122,5 +199,5 @@
+                                  &lt;div class="quick-action-btns"&gt;
+                                      &lt;div class="dropdown-container"&gt;
+-                                         &lt;button class="btn-quick" id="monthlyReportBtn"&gt;Monthly Report&lt;/button&gt;
++                                         &lt;button class="btn-quick" id="monthlyReportBtn"&gt;Monthly&lt;/button&gt;
+                                          &lt;div class="dropdown-menu hidden" id="monthlyDropdown"&gt;
+                                              &lt;button class="dropdown-item" data-period="current-month"&gt;Current Month&lt;/button&gt;
+```
+
+**Chunk 5**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -129,5 +206,5 @@
+                                      &lt;/div&gt;
+                                      &lt;div class="dropdown-container"&gt;
+-                                         &lt;button class="btn-quick" id="yearlyReportBtn"&gt;Yearly Report&lt;/button&gt;
++                                         &lt;button class="btn-quick" id="yearlyReportBtn"&gt;Yearly&lt;/button&gt;
+                                          &lt;div class="dropdown-menu hidden" id="yearlyDropdown"&gt;
+                                              &lt;button class="dropdown-item" data-period="current-year"&gt;Current Year&lt;/button&gt;
+```
+
+**Chunk 6**
+Lines added: 3, lines removed: 27
+
+```diff
+@@ -157,31 +234,7 @@
+                              &lt;/button&gt;
+                              &lt;div class="export-menu hidden" id="exportMenu"&gt;
+-                                 &lt;button class="export-option" data-format="pdf"&gt;
+-                                     &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                         &lt;path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/&gt;
+-                                         &lt;polyline points="14 2 14 8 20 8"/&gt;
+-                                         &lt;line x1="16" y1="13" x2="8" y2="13"/&gt;
+-                                         &lt;line x1="16" y1="17" x2="8" y2="17"/&gt;
+-                                     &lt;/svg&gt;
+-                                     Export as PDF
+-                                 &lt;/button&gt;
+-                                 &lt;button class="export-option" data-format="excel"&gt;
+-                                     &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                         &lt;rect x="3" y="3" width="18" height="18" rx="2" ry="2"/&gt;
+-                                         &lt;line x1="3" y1="9" x2="21" y2="9"/&gt;
+-                                         &lt;line x1="3" y1="15" x2="21" y2="15"/&gt;
+-                                         &lt;line x1="9" y1="3" x2="9" y2="21"/&gt;
+-                                         &lt;line x1="15" y1="3" x2="15" y2="21"/&gt;
+-                                     &lt;/svg&gt;
+-                                     Export as Excel
+-                                 &lt;/button&gt;
+-                                 &lt;button class="export-option" data-format="both"&gt;
+-                                     &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                         &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
+-                                         &lt;polyline points="17 8 12 3 7 8"/&gt;
+-                                         &lt;line x1="12" y1="3" x2="12" y2="15"/&gt;
+-                                     &lt;/svg&gt;
+-                                     Export Both
+-                                 &lt;/button&gt;
++                                 &lt;button class="export-option" data-format="pdf"&gt;Export as PDF&lt;/button&gt;
++                                 &lt;button class="export-option" data-format="excel"&gt;Export as Excel&lt;/button&gt;
++                                 &lt;button class="export-option" data-format="both"&gt;Export Both&lt;/button&gt;
+                              &lt;/div&gt;
+                          &lt;/div&gt;
+```
+
+**Chunk 7**
+Lines added: 6, lines removed: 6
+
+```diff
+@@ -196,15 +249,15 @@
+                      &lt;/div&gt;
+                      
+-                     &lt;!-- Summary by Location --&gt;
+-                     &lt;div class="summary-section" id="locationSummary"&gt;
+-                         &lt;h4&gt;By Site&lt;/h4&gt;
+-                         &lt;div class="summary-bars" id="locationBars"&gt;&lt;/div&gt;
+-                     &lt;/div&gt;
+- 
+                      &lt;!-- Summary by Department --&gt;
+                      &lt;div class="summary-section" id="departmentSummary"&gt;
+                          &lt;h4&gt;By Department&lt;/h4&gt;
+                          &lt;div class="summary-bars" id="departmentBars"&gt;&lt;/div&gt;
+                      &lt;/div&gt;
++ 
++                     &lt;!-- Summary by Location --&gt;
++                     &lt;div class="summary-section" id="locationSummary"&gt;
++                         &lt;h4&gt;By Site&lt;/h4&gt;
++                         &lt;div class="summary-bars" id="locationBars"&gt;&lt;/div&gt;
++                     &lt;/div&gt;
+  
+                      &lt;!-- Summary by Note Type --&gt;
+```
+
+**Chunk 8**
+Lines added: 1, lines removed: undefined
+
+```diff
+@@ -226,4 +279,5 @@
+                                          &lt;th&gt;Note Type&lt;/th&gt;
+                                          &lt;th&gt;Details&lt;/th&gt;
++                                         &lt;th&gt;Photo&lt;/th&gt;
+                                      &lt;/tr&gt;
+                                  &lt;/thead&gt;
+```
+
+**Chunk 9**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -240,5 +294,5 @@
+          &lt;div class="toast hidden" id="toast"&gt;
+              &lt;span class="toast-icon"&gt;✓&lt;/span&gt;
+-             &lt;span class="toast-message"&gt;Report exported successfully!&lt;/span&gt;
++             &lt;span class="toast-message"&gt;Success!&lt;/span&gt;
+          &lt;/div&gt;
+      &lt;/div&gt;
+```
+
+**Chunk 10**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -249,5 +303,5 @@
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"&gt;&lt;/script&gt;
+-     &lt;script src="dashboard.js?v=16"&gt;&lt;/script&gt;
++     &lt;script src="dashboard.js?v=17"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+  &lt;/html&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to add CSS for the new notes section in the dashboard and update dashboard.js to include the selection, sorting, and delete functionality.</details></think>
+
+---
+
+Now let me add CSS for the notes section:
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: styles.css</summary>
+
+**Chunk 1**
+Lines added: 64, lines removed: undefined
+
+```diff
+@@ -1163,4 +1163,68 @@
+      gap: var(--space-lg);
+  }
++ 
++ /* ===== Notes Section ===== */
++ .notes-section {
++     background: var(--bg-card);
++     border: 1px solid var(--border-color);
++     border-radius: var(--radius-lg);
++     overflow: hidden;
++ }
++ 
++ .notes-header {
++     display: flex;
++     align-items: center;
++     justify-content: space-between;
++     flex-wrap: wrap;
++     gap: var(--space-md);
++     padding: var(--space-md) var(--space-lg);
++     background: var(--bg-elevated);
++     border-bottom: 1px solid var(--border-subtle);
++ }
++ 
++ .notes-header h3 {
++     font-size: 1.1rem;
++     font-weight: 600;
++     color: var(--white);
++ }
++ 
++ .notes-filters {
++     display: flex;
++     align-items: center;
++     gap: var(--space-md);
++     flex-wrap: wrap;
++ }
++ 
++ .notes-section .selection-bar {
++     border-radius: 0;
++ }
++ 
++ .notes-section .records-container {
++     max-height: 500px;
++     overflow-y: auto;
++ }
++ 
++ /* Add note button styling */
++ .btn-add-note {
++     background: var(--accent-blue) !important;
++     border-color: var(--accent-blue) !important;
++     color: var(--white) !important;
++ }
++ 
++ .btn-add-note:hover {
++     background: #0077ed !important;
++ }
++ 
++ /* Export dropdown inline */
++ .export-dropdown-inline {
++     position: relative;
++ }
++ 
++ .export-dropdown-inline .export-menu {
++     position: absolute;
++     bottom: calc(100% + 6px);
++     left: 0;
++     top: auto;
++ }
+  
+  .admin-header {
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to update dashboard.js to include all the selection, sorting, delete, and note rendering functionality. This is a significant update.</details></think>
+
+---
+
+Now let me update dashboard.js with all the note viewing functionality:
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: dashboard.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+I need to add the selection state, note rendering, sorting, and delete functions to dashboard.js. Let me add these at the top and then update the init function.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 5, lines removed: undefined
+
+```diff
+@@ -1,2 +1,7 @@
++ // ===== Selection State =====
++ let selectedNotes = new Set();
++ let currentNotes = [];
++ let currentSortOrder = 'newest';
++ 
+  // ===== Configuration =====
+  const CONFIG = {
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me add the getPhotoUrl function, getNotes function, and all the selection/rendering functions to dashboard.js. I'll add them after the existing API functions.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 49, lines removed: undefined
+
+```diff
+@@ -102,4 +102,53 @@
+      }
+  }
++ 
++ async function getNotes(location = null, department = null) {
++     try {
++         let url = &#96;${API_BASE}/notes-get&#96;;
++         const params = new URLSearchParams();
++         
++         if (location) params.append('location', location);
++         if (department) params.append('department', department);
++         
++         if (params.toString()) {
++             url += '?' + params.toString();
++         }
++         
++         const response = await fetch(url);
++         const result = await response.json();
++         
++         if (!result.success) {
++             throw new Error(result.error);
++         }
++         
++         return result.notes;
++     } catch (error) {
++         console.error('Error fetching notes:', error);
++         return [];
++     }
++ }
++ 
++ async function deleteNotes(ids) {
++     try {
++         const response = await fetch(&#96;${API_BASE}/notes-delete&#96;, {
++             method: 'POST',
++             headers: {
++                 'Content-Type': 'application/json'
++             },
++             body: JSON.stringify({ ids })
++         });
++         
++         const result = await response.json();
++         
++         if (!result.success) {
++             throw new Error(result.error);
++         }
++         
++         return result;
++     } catch (error) {
++         console.error('Error deleting notes:', error);
++         throw error;
++     }
++ }
+  
+  // ===== UI Functions =====
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to add the rest of the functions - getPhotoUrl, populateLocationDropdown (for filter), renderRecords, selection functions, sorting, etc. Let me add these before the existing UI functions.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 345, lines removed: undefined
+
+```diff
+@@ -151,4 +151,349 @@
+      }
+  }
++ 
++ // ===== Helper Functions =====
++ function getPhotoUrl(noteId) {
++     return &#96;${window.location.origin}/.netlify/functions/notes-view-image?id=${noteId}&#96;;
++ }
++ 
++ function populateLocationFilter() {
++     const filterLocationSelect = document.getElementById('filterLocation');
++     if (!filterLocationSelect) return;
++     
++     CONFIG.locations.forEach(loc =&gt; {
++         const option = document.createElement('option');
++         option.value = loc;
++         option.textContent = &#96;Site ${loc}&#96;;
++         filterLocationSelect.appendChild(option);
++     });
++ }
++ 
++ function sortNotes(notes, sortOrder) {
++     const sorted = [...notes];
++     
++     switch (sortOrder) {
++         case 'newest':
++             sorted.sort((a, b) =&gt; new Date(b.created_at) - new Date(a.created_at));
++             break;
++         case 'oldest':
++             sorted.sort((a, b) =&gt; new Date(a.created_at) - new Date(b.created_at));
++             break;
++         case 'site-asc':
++             sorted.sort((a, b) =&gt; a.location - b.location);
++             break;
++         case 'site-desc':
++             sorted.sort((a, b) =&gt; b.location - a.location);
++             break;
++         case 'dept':
++             sorted.sort((a, b) =&gt; a.department.localeCompare(b.department));
++             break;
++         default:
++             break;
++     }
++     
++     return sorted;
++ }
++ 
++ // ===== Notes Rendering =====
++ function renderRecords(notes) {
++     const container = document.getElementById('recordsContainer');
++     currentNotes = notes;
++     
++     if (notes.length === 0) {
++         container.innerHTML = '&lt;p class="no-records"&gt;No records found&lt;/p&gt;';
++         updateSelectionUI();
++         return;
++     }
++     
++     container.innerHTML = notes.map(note =&gt; {
++         const deptClass = &#96;dept-${note.department.toLowerCase()}&#96;;
++         const displayType = note.note_type === 'Other' &amp;&amp; note.other_description 
++             ? &#96;Other: ${note.other_description}&#96; 
++             : note.note_type;
++         const isSelected = selectedNotes.has(note.id);
++         
++         const imageBadge = note.has_image ? &#96;
++             &lt;a href="${getPhotoUrl(note.id)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()"&gt;
++                 &lt;svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                     &lt;rect x="3" y="3" width="18" height="18" rx="2" ry="2"/&gt;
++                     &lt;circle cx="8.5" cy="8.5" r="1.5"/&gt;
++                     &lt;polyline points="21 15 16 10 5 21"/&gt;
++                 &lt;/svg&gt;
++                 View Photo
++             &lt;/a&gt;
++         &#96; : '';
++         
++         return &#96;
++             &lt;div class="record-card ${isSelected ? 'selected' : ''}" data-id="${note.id}"&gt;
++                 &lt;label class="record-checkbox" onclick="event.stopPropagation()"&gt;
++                     &lt;input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleNoteSelection(${note.id}, this.checked)"&gt;
++                     &lt;span class="record-check"&gt;&lt;/span&gt;
++                 &lt;/label&gt;
++                 &lt;div class="record-header"&gt;
++                     &lt;span class="record-type"&gt;${displayType}&lt;/span&gt;
++                     &lt;span class="record-timestamp"&gt;${formatDate(note.created_at)}&lt;/span&gt;
++                 &lt;/div&gt;
++                 &lt;div class="record-meta"&gt;
++                     &lt;span class="record-badge"&gt;Site ${note.location}&lt;/span&gt;
++                     &lt;span class="record-badge ${deptClass}"&gt;${note.department}&lt;/span&gt;
++                     ${imageBadge}
++                 &lt;/div&gt;
++                 ${note.additional_notes ? &#96;&lt;p class="record-notes"&gt;${note.additional_notes}&lt;/p&gt;&#96; : ''}
++             &lt;/div&gt;
++         &#96;;
++     }).join('');
++     
++     updateSelectionUI();
++ }
++ 
++ async function refreshNotesList() {
++     const location = document.getElementById('filterLocation')?.value;
++     const department = document.getElementById('filterDepartment')?.value;
++     
++     let notes = await getNotes(
++         location ? parseInt(location) : null,
++         department || null
++     );
++     
++     notes = sortNotes(notes, currentSortOrder);
++     renderRecords(notes);
++ }
++ 
++ // ===== Selection Functions =====
++ function toggleNoteSelection(noteId, isSelected) {
++     if (isSelected) {
++         selectedNotes.add(noteId);
++     } else {
++         selectedNotes.delete(noteId);
++     }
++     
++     const card = document.querySelector(&#96;.record-card[data-id="${noteId}"]&#96;);
++     if (card) {
++         card.classList.toggle('selected', isSelected);
++     }
++     
++     updateSelectionUI();
++ }
++ 
++ function selectAllNotes() {
++     const selectAll = document.getElementById('selectAllCheckbox').checked;
++     
++     currentNotes.forEach(note =&gt; {
++         if (selectAll) {
++             selectedNotes.add(note.id);
++         } else {
++             selectedNotes.delete(note.id);
++         }
++     });
++     
++     document.querySelectorAll('.record-card').forEach(card =&gt; {
++         const checkbox = card.querySelector('input[type="checkbox"]');
++         if (checkbox) {
++             checkbox.checked = selectAll;
++             card.classList.toggle('selected', selectAll);
++         }
++     });
++     
++     updateSelectionUI();
++ }
++ 
++ function clearSelection() {
++     selectedNotes.clear();
++     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
++     if (selectAllCheckbox) selectAllCheckbox.checked = false;
++     
++     document.querySelectorAll('.record-card').forEach(card =&gt; {
++         const checkbox = card.querySelector('input[type="checkbox"]');
++         if (checkbox) {
++             checkbox.checked = false;
++             card.classList.remove('selected');
++         }
++     });
++     
++     updateSelectionUI();
++ }
++ 
++ function updateSelectionUI() {
++     const count = selectedNotes.size;
++     const countEl = document.getElementById('selectionCount');
++     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
++     const exportBtn = document.getElementById('exportSelectedBtn');
++     const deleteBtn = document.getElementById('deleteSelectedBtn');
++     
++     if (countEl) {
++         countEl.textContent = &#96;${count} selected&#96;;
++     }
++     
++     if (selectAllCheckbox &amp;&amp; currentNotes.length &gt; 0) {
++         const allSelected = currentNotes.every(note =&gt; selectedNotes.has(note.id));
++         const someSelected = currentNotes.some(note =&gt; selectedNotes.has(note.id));
++         selectAllCheckbox.checked = allSelected;
++         selectAllCheckbox.indeterminate = someSelected &amp;&amp; !allSelected;
++     }
++     
++     if (exportBtn) exportBtn.disabled = count === 0;
++     if (deleteBtn) deleteBtn.disabled = count === 0;
++ }
++ 
++ // ===== Delete Functions =====
++ async function deleteSelectedNotes() {
++     if (selectedNotes.size === 0) {
++         showToast('No notes selected', true);
++         return;
++     }
++     
++     const count = selectedNotes.size;
++     const confirmed = confirm(&#96;Are you sure you want to delete ${count} note(s)? This cannot be undone.&#96;);
++     
++     if (!confirmed) return;
++     
++     try {
++         const ids = Array.from(selectedNotes);
++         const result = await deleteNotes(ids);
++         
++         showToast(&#96;Deleted ${result.deleted} note(s)&#96;);
++         selectedNotes.clear();
++         await refreshNotesList();
++         await updateStats();
++     } catch (error) {
++         showToast('Error deleting notes', true);
++     }
++ }
++ 
++ // ===== Export Selected Notes =====
++ async function exportSelectedNotes(format) {
++     if (selectedNotes.size === 0) {
++         showToast('No notes selected', true);
++         return;
++     }
++     
++     const selectedData = currentNotes.filter(note =&gt; selectedNotes.has(note.id));
++     
++     if (format === 'pdf' || format === 'both') {
++         exportSelectedToPDF(selectedData);
++     }
++     
++     if (format === 'excel' || format === 'both') {
++         exportSelectedToExcel(selectedData);
++     }
++     
++     closeExportSelectedMenu();
++ }
++ 
++ function exportSelectedToExcel(notes) {
++     const wb = XLSX.utils.book_new();
++     
++     const data = notes.map(note =&gt; ({
++         'Date/Time': formatDate(note.created_at),
++         'Site': &#96;Site ${note.location}&#96;,
++         'Department': note.department,
++         'Note Type': note.note_type,
++         'Other Description': note.other_description || '',
++         'Additional Notes': note.additional_notes || '',
++         'Photo': note.has_image ? getPhotoUrl(note.id) : ''
++     }));
++     
++     const ws = XLSX.utils.json_to_sheet(data);
++     
++     notes.forEach((note, index) =&gt; {
++         if (note.has_image) {
++             const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 });
++             if (ws[cellRef]) {
++                 ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
++             }
++         }
++     });
++     
++     ws['!cols'] = [
++         { wch: 22 }, { wch: 12 }, { wch: 12 },
++         { wch: 30 }, { wch: 30 }, { wch: 50 }, { wch: 40 }
++     ];
++     
++     XLSX.utils.book_append_sheet(wb, ws, 'Selected Notes');
++     
++     const timestamp = new Date().toISOString().slice(0, 10);
++     XLSX.writeFile(wb, &#96;Selected_Notes_${timestamp}.xlsx&#96;);
++     showToast(&#96;Exported ${notes.length} notes to Excel&#96;);
++ }
++ 
++ function exportSelectedToPDF(notes) {
++     const { jsPDF } = window.jspdf;
++     const doc = new jsPDF();
++     
++     doc.setFontSize(18);
++     doc.text('Selected Notes Export', 14, 20);
++     
++     doc.setFontSize(10);
++     doc.setTextColor(100);
++     doc.text(&#96;Generated: ${new Date().toLocaleString()}&#96;, 14, 28);
++     doc.text(&#96;Total Records: ${notes.length}&#96;, 14, 34);
++     
++     const tableData = notes.map(note =&gt; [
++         formatDate(note.created_at),
++         &#96;Site ${note.location}&#96;,
++         note.department,
++         note.note_type === 'Other' &amp;&amp; note.other_description 
++             ? &#96;Other: ${note.other_description}&#96; 
++             : note.note_type,
++         note.has_image ? 'View Photo' : '-'
++     ]);
++     
++     const photoLinks = [];
++     
++     doc.autoTable({
++         startY: 42,
++         head: [['Date/Time', 'Site', 'Dept', 'Note Type', 'Photo']],
++         body: tableData,
++         styles: { fontSize: 8, cellPadding: 3 },
++         headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
++         alternateRowStyles: { fillColor: [245, 245, 245] },
++         columnStyles: {
++             0: { cellWidth: 35 },
++             1: { cellWidth: 20 },
++             2: { cellWidth: 25 },
++             3: { cellWidth: 'auto' },
++             4: { cellWidth: 22, halign: 'center' }
++         },
++         didDrawCell: (data) =&gt; {
++             if (data.section === 'body' &amp;&amp; data.column.index === 4) {
++                 const note = notes[data.row.index];
++                 if (note &amp;&amp; note.has_image) {
++                     photoLinks.push({
++                         x: data.cell.x, y: data.cell.y,
++                         width: data.cell.width, height: data.cell.height,
++                         url: getPhotoUrl(note.id)
++                     });
++                 }
++             }
++         },
++         didParseCell: (data) =&gt; {
++             if (data.section === 'body' &amp;&amp; data.column.index === 4) {
++                 const note = notes[data.row.index];
++                 if (note &amp;&amp; note.has_image) {
++                     data.cell.styles.textColor = [10, 132, 255];
++                     data.cell.styles.fontStyle = 'bold';
++                 }
++             }
++         }
++     });
++     
++     photoLinks.forEach(link =&gt; {
++         doc.link(link.x, link.y, link.width, link.height, { url: link.url });
++     });
++     
++     const timestamp = new Date().toISOString().slice(0, 10);
++     doc.save(&#96;Selected_Notes_${timestamp}.pdf&#96;);
++     showToast(&#96;Exported ${notes.length} notes to PDF&#96;);
++ }
++ 
++ function toggleExportSelectedMenu() {
++     const menu = document.getElementById('exportSelectedMenu');
++     if (menu) menu.classList.toggle('hidden');
++ }
++ 
++ function closeExportSelectedMenu() {
++     const menu = document.getElementById('exportSelectedMenu');
++     if (menu) menu.classList.add('hidden');
++ }
+  
+  // ===== UI Functions =====
+```
+
+</details>
+
+</tool-use>
+
+---
+
+
+
+---
+
+_**User (2025-12-07 05:30Z)**_
+
+push it
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
 
 
 

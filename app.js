@@ -1,11 +1,6 @@
 // ===== Photo Upload State =====
 let currentPhotoData = null;
 
-// ===== Selection State =====
-let selectedNotes = new Set();
-let currentNotes = [];
-let currentSortOrder = 'newest';
-
 // ===== Configuration =====
 const CONFIG = {
     locations: Array.from({ length: 31 }, (_, i) => i + 1),
@@ -89,83 +84,15 @@ async function insertNote(location, department, noteType, otherDesc, additionalN
     }
 }
 
-async function getNoteImage(noteId) {
-    try {
-        const response = await fetch(`${API_BASE}/notes-image?id=${noteId}`);
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-        
-        return result.image_pdf;
-    } catch (error) {
-        console.error('Error fetching note image:', error);
-        return null;
-    }
-}
-
-async function getNotes(location = null, department = null) {
-    try {
-        let url = `${API_BASE}/notes-get`;
-        const params = new URLSearchParams();
-        
-        if (location) params.append('location', location);
-        if (department) params.append('department', department);
-        
-        if (params.toString()) {
-            url += '?' + params.toString();
-        }
-        
-        const response = await fetch(url);
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-        
-        return result.notes;
-    } catch (error) {
-        console.error('Error fetching notes:', error);
-        return [];
-    }
-}
-
-async function getNotesForExport(location) {
-    try {
-        const response = await fetch(`${API_BASE}/notes-get?location=${location}`);
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-        
-        // Sort by department and date
-        return result.notes.sort((a, b) => {
-            if (a.department !== b.department) {
-                return a.department.localeCompare(b.department);
-            }
-            return new Date(b.created_at) - new Date(a.created_at);
-        });
-    } catch (error) {
-        console.error('Error fetching notes for export:', error);
-        return [];
-    }
-}
-
 // ===== UI Functions =====
 function populateLocationDropdown() {
     const locationSelect = document.getElementById('location');
-    const filterLocationSelect = document.getElementById('filterLocation');
     
     CONFIG.locations.forEach(loc => {
         const option = document.createElement('option');
         option.value = loc;
         option.textContent = `Site ${loc}`;
         locationSelect.appendChild(option);
-        
-        const filterOption = option.cloneNode(true);
-        filterLocationSelect.appendChild(filterOption);
     });
 }
 
@@ -174,7 +101,6 @@ function updateNoteTypes(department) {
     const noteTypeSelect = document.getElementById('noteType');
     const otherDescGroup = document.getElementById('otherDescGroup');
     
-    // Clear existing options
     noteTypeSelect.innerHTML = '<option value="">Select a note type...</option>';
     otherDescGroup.style.display = 'none';
     
@@ -212,312 +138,6 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-    });
-}
-
-function renderRecords(notes) {
-    const container = document.getElementById('recordsContainer');
-    currentNotes = notes;
-    
-    // Show/hide selection bar
-    const selectionBar = document.getElementById('selectionBar');
-    if (notes.length > 0) {
-        selectionBar.classList.remove('hidden');
-    } else {
-        selectionBar.classList.add('hidden');
-    }
-    
-    if (notes.length === 0) {
-        container.innerHTML = '<p class="no-records">No records found</p>';
-        updateSelectionUI();
-        return;
-    }
-    
-    container.innerHTML = notes.map(note => {
-        const deptClass = `dept-${note.department.toLowerCase()}`;
-        const displayType = note.note_type === 'Other' && note.other_description 
-            ? `Other: ${note.other_description}` 
-            : note.note_type;
-        const isSelected = selectedNotes.has(note.id);
-        
-        const imageBadge = note.has_image ? `
-            <a href="${getPhotoUrl(note.id)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
-                </svg>
-                View Photo
-            </a>
-        ` : '';
-        
-        return `
-            <div class="record-card ${isSelected ? 'selected' : ''}" data-id="${note.id}">
-                <label class="record-checkbox" onclick="event.stopPropagation()">
-                    <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleNoteSelection(${note.id}, this.checked)">
-                    <span class="record-check"></span>
-                </label>
-                <div class="record-header">
-                    <span class="record-type">${displayType}</span>
-                    <span class="record-timestamp">${formatDate(note.created_at)}</span>
-                </div>
-                <div class="record-meta">
-                    <span class="record-badge">Site ${note.location}</span>
-                    <span class="record-badge ${deptClass}">${note.department}</span>
-                    ${imageBadge}
-                </div>
-                ${note.additional_notes ? `<p class="record-notes">${note.additional_notes}</p>` : ''}
-            </div>
-        `;
-    }).join('');
-    
-    updateSelectionUI();
-}
-
-function getPhotoUrl(noteId) {
-    return `${window.location.origin}/.netlify/functions/notes-view-image?id=${noteId}`;
-}
-
-async function exportToExcel(location) {
-    const notes = await getNotesForExport(location);
-    
-    if (notes.length === 0) {
-        showToast('No records to export for this site', true);
-        return;
-    }
-    
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    
-    // Group notes by department
-    const departments = ['Operations', 'Safety', 'Accounting'];
-    
-    departments.forEach(dept => {
-        const deptNotes = notes.filter(n => n.department === dept);
-        
-        if (deptNotes.length > 0) {
-            const data = deptNotes.map(note => ({
-                'Date/Time': formatDate(note.created_at),
-                'Note Type': note.note_type,
-                'Other Description': note.other_description || '',
-                'Additional Notes': note.additional_notes || '',
-                'Photo': note.has_image ? getPhotoUrl(note.id) : ''
-            }));
-            
-            const ws = XLSX.utils.json_to_sheet(data);
-            
-            // Add hyperlinks for photos
-            deptNotes.forEach((note, index) => {
-                if (note.has_image) {
-                    const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 4 }); // Photo column (E)
-                    if (ws[cellRef]) {
-                        ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
-                    }
-                }
-            });
-            
-            // Set column widths
-            ws['!cols'] = [
-                { wch: 22 },
-                { wch: 30 },
-                { wch: 30 },
-                { wch: 50 },
-                { wch: 40 }
-            ];
-            
-            XLSX.utils.book_append_sheet(wb, ws, dept);
-        }
-    });
-    
-    // Also create an "All Records" sheet
-    const allData = notes.map(note => ({
-        'Date/Time': formatDate(note.created_at),
-        'Department': note.department,
-        'Note Type': note.note_type,
-        'Other Description': note.other_description || '',
-        'Additional Notes': note.additional_notes || '',
-        'Photo': note.has_image ? getPhotoUrl(note.id) : ''
-    }));
-    
-    const allWs = XLSX.utils.json_to_sheet(allData);
-    
-    // Add hyperlinks for photos in All Records sheet
-    notes.forEach((note, index) => {
-        if (note.has_image) {
-            const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 5 }); // Photo column (F)
-            if (allWs[cellRef]) {
-                allWs[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
-            }
-        }
-    });
-    
-    allWs['!cols'] = [
-        { wch: 22 },
-        { wch: 15 },
-        { wch: 30 },
-        { wch: 30 },
-        { wch: 50 },
-        { wch: 40 }
-    ];
-    XLSX.utils.book_append_sheet(wb, allWs, 'All Records');
-    
-    // Generate filename with timestamp
-    const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `Site_${location}_Notes_${timestamp}.xlsx`;
-    
-    // Download
-    XLSX.writeFile(wb, filename);
-    showToast(`Exported ${notes.length} records to Excel`);
-}
-
-async function exportToPDF(location) {
-    const notes = await getNotesForExport(location);
-    
-    if (notes.length === 0) {
-        showToast('No records to export for this site', true);
-        return;
-    }
-    
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // Title
-    doc.setFontSize(18);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Site ${location} - Violation Report`, 14, 20);
-    
-    // Subtitle with date
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-    doc.text(`Total Records: ${notes.length}`, 14, 34);
-    
-    // Table data with photo links
-    const tableData = notes.map(note => [
-        formatDate(note.created_at),
-        note.department,
-        note.note_type === 'Other' && note.other_description 
-            ? `Other: ${note.other_description}` 
-            : note.note_type,
-        note.additional_notes || '-',
-        note.has_image ? 'View Photo' : '-'
-    ]);
-    
-    // Store row positions for adding links later
-    const photoLinks = [];
-    
-    // Create table
-    doc.autoTable({
-        startY: 42,
-        head: [['Date/Time', 'Department', 'Note Type', 'Details', 'Photo']],
-        body: tableData,
-        styles: {
-            fontSize: 8,
-            cellPadding: 3,
-        },
-        headStyles: {
-            fillColor: [10, 10, 10],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold',
-        },
-        alternateRowStyles: {
-            fillColor: [245, 245, 245],
-        },
-        columnStyles: {
-            0: { cellWidth: 32 },
-            1: { cellWidth: 22 },
-            2: { cellWidth: 40 },
-            3: { cellWidth: 'auto' },
-            4: { cellWidth: 22, halign: 'center' },
-        },
-        didDrawCell: (data) => {
-            // Track photo cells for adding links
-            if (data.section === 'body' && data.column.index === 4) {
-                const note = notes[data.row.index];
-                if (note && note.has_image) {
-                    photoLinks.push({
-                        x: data.cell.x,
-                        y: data.cell.y,
-                        width: data.cell.width,
-                        height: data.cell.height,
-                        url: getPhotoUrl(note.id)
-                    });
-                }
-            }
-        },
-        didParseCell: (data) => {
-            // Style photo links as blue
-            if (data.section === 'body' && data.column.index === 4) {
-                const note = notes[data.row.index];
-                if (note && note.has_image) {
-                    data.cell.styles.textColor = [10, 132, 255];
-                    data.cell.styles.fontStyle = 'bold';
-                }
-            }
-        }
-    });
-    
-    // Add clickable links for photos
-    photoLinks.forEach(link => {
-        doc.link(link.x, link.y, link.width, link.height, { url: link.url });
-    });
-    
-    // Generate filename
-    const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `Site_${location}_Notes_${timestamp}.pdf`;
-    
-    // Download
-    doc.save(filename);
-    showToast(`Exported ${notes.length} records to PDF`);
-}
-
-async function handleExport(format) {
-    const location = document.getElementById('filterLocation').value;
-    
-    if (!location) {
-        showToast('Please select a site to export', true);
-        return;
-    }
-    
-    const locationNum = parseInt(location);
-    
-    switch (format) {
-        case 'pdf':
-            await exportToPDF(locationNum);
-            break;
-        case 'excel':
-            await exportToExcel(locationNum);
-            break;
-        case 'both':
-            await exportToExcel(locationNum);
-            await exportToPDF(locationNum);
-            break;
-    }
-    
-    // Close the dropdown
-    closeExportMenu();
-}
-
-function toggleExportMenu() {
-    const menu = document.getElementById('exportMenu');
-    menu.classList.toggle('hidden');
-}
-
-function closeExportMenu() {
-    const menu = document.getElementById('exportMenu');
-    if (menu) menu.classList.add('hidden');
-}
-
 // ===== Photo Handling Functions =====
 function setupPhotoHandlers() {
     const takePhotoBtn = document.getElementById('takePhotoBtn');
@@ -544,13 +164,11 @@ async function handlePhotoSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Validate file type
     if (!file.type.startsWith('image/')) {
         showToast('Please select an image file', true);
         return;
     }
     
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
         showToast('Image must be less than 10MB', true);
         return;
@@ -559,16 +177,10 @@ async function handlePhotoSelect(event) {
     try {
         showToast('Processing image...');
         
-        // Compress and convert to base64
         const compressedBase64 = await compressImage(file);
-        
-        // Convert to PDF
         const pdfBase64 = await convertImageToPDF(compressedBase64, file.name);
         
-        // Store the PDF data
         currentPhotoData = pdfBase64;
-        
-        // Show preview
         showPhotoPreview(compressedBase64);
         
         showToast('Photo attached successfully');
@@ -577,7 +189,6 @@ async function handlePhotoSelect(event) {
         showToast('Error processing photo', true);
     }
     
-    // Reset input
     event.target.value = '';
 }
 
@@ -592,7 +203,6 @@ function compressImage(file) {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 
-                // Calculate new dimensions (max 1200px)
                 const maxSize = 1200;
                 let { width, height } = img;
                 
@@ -611,12 +221,10 @@ function compressImage(file) {
                 canvas.width = width;
                 canvas.height = height;
                 
-                // Draw and compress
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, width, height);
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Get compressed base64 (JPEG at 80% quality)
                 const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
                 resolve(compressedBase64);
             };
@@ -638,43 +246,35 @@ async function convertImageToPDF(imageBase64, filename) {
         
         img.onload = () => {
             try {
-                // Determine orientation based on image dimensions
                 const isLandscape = img.width > img.height;
                 const doc = new jsPDF({
                     orientation: isLandscape ? 'landscape' : 'portrait',
                     unit: 'mm'
                 });
                 
-                // Get page dimensions
                 const pageWidth = doc.internal.pageSize.getWidth();
                 const pageHeight = doc.internal.pageSize.getHeight();
                 
-                // Calculate image dimensions to fit page with margins
                 const margin = 10;
                 const maxWidth = pageWidth - (margin * 2);
-                const maxHeight = pageHeight - (margin * 2) - 20; // Leave space for header
+                const maxHeight = pageHeight - (margin * 2) - 20;
                 
                 let imgWidth = img.width;
                 let imgHeight = img.height;
                 
-                // Scale to fit
                 const scale = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
                 imgWidth *= scale;
                 imgHeight *= scale;
                 
-                // Center the image
                 const x = (pageWidth - imgWidth) / 2;
-                const y = margin + 15; // After header
+                const y = margin + 15;
                 
-                // Add header
                 doc.setFontSize(10);
                 doc.setTextColor(100);
                 doc.text(`Photo Evidence - ${new Date().toLocaleString()}`, margin, margin + 5);
                 
-                // Add image
                 doc.addImage(imageBase64, 'JPEG', x, y, imgWidth, imgHeight);
                 
-                // Get as base64
                 const pdfBase64 = doc.output('datauristring');
                 resolve(pdfBase64);
             } catch (error) {
@@ -704,401 +304,16 @@ function clearPhoto() {
     preview.classList.add('hidden');
 }
 
-// ===== Image Modal Functions =====
-let currentModalPdfData = null;
-
-function setupImageModal() {
-    const modal = document.getElementById('imageModal');
-    const closeBtn = document.getElementById('closeModalBtn');
-    const downloadBtn = document.getElementById('downloadImageBtn');
-    
-    closeBtn.addEventListener('click', closeImageModal);
-    downloadBtn.addEventListener('click', downloadCurrentImage);
-    
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeImageModal();
-        }
-    });
-    
-    // Close on escape
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
-            closeImageModal();
-        }
-    });
-}
-
-async function openImageModal(noteId) {
-    const modal = document.getElementById('imageModal');
-    const modalBody = document.getElementById('modalBody');
-    
-    // Show modal with loading state
-    modal.classList.remove('hidden');
-    modalBody.innerHTML = `
-        <div class="modal-loading">
-            <div class="spinner"></div>
-            <span>Loading image...</span>
-        </div>
-    `;
-    
-    try {
-        const pdfData = await getNoteImage(noteId);
-        
-        if (!pdfData) {
-            throw new Error('No image found');
-        }
-        
-        currentModalPdfData = pdfData;
-        
-        // Display PDF in iframe
-        modalBody.innerHTML = `<iframe src="${pdfData}" title="Photo Evidence"></iframe>`;
-    } catch (error) {
-        modalBody.innerHTML = `
-            <div class="modal-loading">
-                <span style="color: var(--accent-red);">Failed to load image</span>
-            </div>
-        `;
-    }
-}
-
-function closeImageModal() {
-    const modal = document.getElementById('imageModal');
-    modal.classList.add('hidden');
-    currentModalPdfData = null;
-}
-
-function downloadCurrentImage() {
-    if (!currentModalPdfData) return;
-    
-    // Create download link
-    const link = document.createElement('a');
-    link.href = currentModalPdfData;
-    link.download = `photo_evidence_${Date.now()}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    showToast('Image downloaded');
-}
-
-// ===== Selection Functions =====
-function toggleNoteSelection(noteId, isSelected) {
-    if (isSelected) {
-        selectedNotes.add(noteId);
-    } else {
-        selectedNotes.delete(noteId);
-    }
-    
-    // Update card visual
-    const card = document.querySelector(`.record-card[data-id="${noteId}"]`);
-    if (card) {
-        card.classList.toggle('selected', isSelected);
-    }
-    
-    updateSelectionUI();
-}
-
-function selectAllNotes() {
-    const selectAll = document.getElementById('selectAllCheckbox').checked;
-    
-    currentNotes.forEach(note => {
-        if (selectAll) {
-            selectedNotes.add(note.id);
-        } else {
-            selectedNotes.delete(note.id);
-        }
-    });
-    
-    // Update all checkboxes
-    document.querySelectorAll('.record-card').forEach(card => {
-        const checkbox = card.querySelector('input[type="checkbox"]');
-        if (checkbox) {
-            checkbox.checked = selectAll;
-            card.classList.toggle('selected', selectAll);
-        }
-    });
-    
-    updateSelectionUI();
-}
-
-function clearSelection() {
-    selectedNotes.clear();
-    document.getElementById('selectAllCheckbox').checked = false;
-    
-    document.querySelectorAll('.record-card').forEach(card => {
-        const checkbox = card.querySelector('input[type="checkbox"]');
-        if (checkbox) {
-            checkbox.checked = false;
-            card.classList.remove('selected');
-        }
-    });
-    
-    updateSelectionUI();
-}
-
-function updateSelectionUI() {
-    const count = selectedNotes.size;
-    const countEl = document.getElementById('selectionCount');
-    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    const exportBtn = document.getElementById('exportSelectedBtn');
-    const deleteBtn = document.getElementById('deleteSelectedBtn');
-    
-    if (countEl) {
-        countEl.textContent = `${count} selected`;
-    }
-    
-    // Update select all checkbox state
-    if (selectAllCheckbox && currentNotes.length > 0) {
-        const allSelected = currentNotes.every(note => selectedNotes.has(note.id));
-        const someSelected = currentNotes.some(note => selectedNotes.has(note.id));
-        selectAllCheckbox.checked = allSelected;
-        selectAllCheckbox.indeterminate = someSelected && !allSelected;
-    }
-    
-    // Enable/disable action buttons
-    if (exportBtn) exportBtn.disabled = count === 0;
-    if (deleteBtn) deleteBtn.disabled = count === 0;
-}
-
-// ===== Delete Functions =====
-async function deleteSelectedNotes() {
-    if (selectedNotes.size === 0) {
-        showToast('No notes selected', true);
-        return;
-    }
-    
-    const count = selectedNotes.size;
-    const confirmed = confirm(`Are you sure you want to delete ${count} note(s)? This cannot be undone.`);
-    
-    if (!confirmed) return;
-    
-    try {
-        const ids = Array.from(selectedNotes);
-        const response = await fetch(`${API_BASE}/notes-delete`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ ids })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showToast(`Deleted ${result.deleted} note(s)`);
-            selectedNotes.clear();
-            refreshRecords();
-        } else {
-            throw new Error(result.error);
-        }
-    } catch (error) {
-        console.error('Error deleting notes:', error);
-        showToast('Error deleting notes', true);
-    }
-}
-
-// ===== Sorting Functions =====
-function sortNotes(notes, sortOrder) {
-    const sorted = [...notes];
-    
-    switch (sortOrder) {
-        case 'newest':
-            sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            break;
-        case 'oldest':
-            sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-            break;
-        case 'site-asc':
-            sorted.sort((a, b) => a.location - b.location);
-            break;
-        case 'site-desc':
-            sorted.sort((a, b) => b.location - a.location);
-            break;
-        case 'dept':
-            sorted.sort((a, b) => a.department.localeCompare(b.department));
-            break;
-        default:
-            break;
-    }
-    
-    return sorted;
-}
-
-// ===== Export Selected Notes =====
-async function exportSelectedNotes(format) {
-    if (selectedNotes.size === 0) {
-        showToast('No notes selected', true);
-        return;
-    }
-    
-    const selectedData = currentNotes.filter(note => selectedNotes.has(note.id));
-    
-    if (format === 'pdf' || format === 'both') {
-        exportSelectedToPDF(selectedData);
-    }
-    
-    if (format === 'excel' || format === 'both') {
-        exportSelectedToExcel(selectedData);
-    }
-    
-    closeExportSelectedMenu();
-}
-
-function exportSelectedToExcel(notes) {
-    const wb = XLSX.utils.book_new();
-    
-    const data = notes.map(note => ({
-        'Date/Time': formatDate(note.created_at),
-        'Site': `Site ${note.location}`,
-        'Department': note.department,
-        'Note Type': note.note_type,
-        'Other Description': note.other_description || '',
-        'Additional Notes': note.additional_notes || '',
-        'Photo': note.has_image ? getPhotoUrl(note.id) : ''
-    }));
-    
-    const ws = XLSX.utils.json_to_sheet(data);
-    
-    // Add hyperlinks for photos
-    notes.forEach((note, index) => {
-        if (note.has_image) {
-            const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 });
-            if (ws[cellRef]) {
-                ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
-            }
-        }
-    });
-    
-    ws['!cols'] = [
-        { wch: 22 }, { wch: 12 }, { wch: 12 },
-        { wch: 30 }, { wch: 30 }, { wch: 50 }, { wch: 40 }
-    ];
-    
-    XLSX.utils.book_append_sheet(wb, ws, 'Selected Notes');
-    
-    const timestamp = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `Selected_Notes_${timestamp}.xlsx`);
-    showToast(`Exported ${notes.length} notes to Excel`);
-}
-
-function exportSelectedToPDF(notes) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    doc.setFontSize(18);
-    doc.text('Selected Notes Export', 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-    doc.text(`Total Records: ${notes.length}`, 14, 34);
-    
-    const tableData = notes.map(note => [
-        formatDate(note.created_at),
-        `Site ${note.location}`,
-        note.department,
-        note.note_type === 'Other' && note.other_description 
-            ? `Other: ${note.other_description}` 
-            : note.note_type,
-        note.has_image ? 'View Photo' : '-'
-    ]);
-    
-    const photoLinks = [];
-    
-    doc.autoTable({
-        startY: 42,
-        head: [['Date/Time', 'Site', 'Dept', 'Note Type', 'Photo']],
-        body: tableData,
-        styles: { fontSize: 8, cellPadding: 3 },
-        headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
-        alternateRowStyles: { fillColor: [245, 245, 245] },
-        columnStyles: {
-            0: { cellWidth: 35 },
-            1: { cellWidth: 20 },
-            2: { cellWidth: 25 },
-            3: { cellWidth: 'auto' },
-            4: { cellWidth: 22, halign: 'center' }
-        },
-        didDrawCell: (data) => {
-            if (data.section === 'body' && data.column.index === 4) {
-                const note = notes[data.row.index];
-                if (note && note.has_image) {
-                    photoLinks.push({
-                        x: data.cell.x, y: data.cell.y,
-                        width: data.cell.width, height: data.cell.height,
-                        url: getPhotoUrl(note.id)
-                    });
-                }
-            }
-        },
-        didParseCell: (data) => {
-            if (data.section === 'body' && data.column.index === 4) {
-                const note = notes[data.row.index];
-                if (note && note.has_image) {
-                    data.cell.styles.textColor = [10, 132, 255];
-                    data.cell.styles.fontStyle = 'bold';
-                }
-            }
-        }
-    });
-    
-    photoLinks.forEach(link => {
-        doc.link(link.x, link.y, link.width, link.height, { url: link.url });
-    });
-    
-    const timestamp = new Date().toISOString().slice(0, 10);
-    doc.save(`Selected_Notes_${timestamp}.pdf`);
-    showToast(`Exported ${notes.length} notes to PDF`);
-}
-
-let exportSelectedMenuOpen = false;
-
-function toggleExportSelectedMenu() {
-    const btn = document.getElementById('exportSelectedBtn');
-    let menu = document.getElementById('exportSelectedMenu');
-    
-    if (!menu) {
-        menu = document.createElement('div');
-        menu.id = 'exportSelectedMenu';
-        menu.className = 'export-menu';
-        menu.innerHTML = `
-            <button class="export-option" onclick="exportSelectedNotes('pdf')">Export as PDF</button>
-            <button class="export-option" onclick="exportSelectedNotes('excel')">Export as Excel</button>
-            <button class="export-option" onclick="exportSelectedNotes('both')">Export Both</button>
-        `;
-        btn.parentElement.appendChild(menu);
-        btn.parentElement.style.position = 'relative';
-    }
-    
-    menu.classList.toggle('hidden');
-    exportSelectedMenuOpen = !menu.classList.contains('hidden');
-}
-
-function closeExportSelectedMenu() {
-    const menu = document.getElementById('exportSelectedMenu');
-    if (menu) menu.classList.add('hidden');
-    exportSelectedMenuOpen = false;
-}
-
 // ===== Event Handlers =====
 function setupEventListeners() {
     const departmentSelect = document.getElementById('department');
     const noteTypeSelect = document.getElementById('noteType');
     const noteForm = document.getElementById('noteForm');
-    const viewDataBtn = document.getElementById('viewDataBtn');
-    const backBtn = document.getElementById('backBtn');
-    const exportBtn = document.getElementById('exportBtn');
-    const filterLocation = document.getElementById('filterLocation');
-    const filterDepartment = document.getElementById('filterDepartment');
     
-    // Department change - update note types
     departmentSelect.addEventListener('change', (e) => {
         updateNoteTypes(e.target.value);
     });
     
-    // Note type change - show/hide other description
     noteTypeSelect.addEventListener('change', (e) => {
         const otherDescGroup = document.getElementById('otherDescGroup');
         otherDescGroup.style.display = e.target.value === 'Other' ? 'block' : 'none';
@@ -1108,7 +323,6 @@ function setupEventListeners() {
         }
     });
     
-    // Form submission
     noteForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -1129,94 +343,17 @@ function setupEventListeners() {
         }
         
         try {
-            // Include photo data if available
             await insertNote(location, department, noteType, otherDesc, additionalNotes, currentPhotoData);
             showToast('Note saved successfully!');
             
-            // Reset form
             noteForm.reset();
             document.getElementById('noteTypeGroup').style.display = 'none';
             document.getElementById('otherDescGroup').style.display = 'none';
-            clearPhoto(); // Clear the photo
+            clearPhoto();
         } catch (error) {
             showToast('Error saving note. Please try again.', true);
         }
     });
-    
-    // View data button
-    viewDataBtn.addEventListener('click', () => {
-        document.getElementById('formScreen').classList.add('hidden');
-        document.getElementById('dataScreen').classList.remove('hidden');
-        refreshRecords();
-    });
-    
-    // Back button
-    backBtn.addEventListener('click', () => {
-        document.getElementById('dataScreen').classList.add('hidden');
-        document.getElementById('formScreen').classList.remove('hidden');
-    });
-    
-    // Filter changes
-    filterLocation.addEventListener('change', () => {
-        clearSelection();
-        refreshRecords();
-    });
-    filterDepartment.addEventListener('change', () => {
-        clearSelection();
-        refreshRecords();
-    });
-    
-    // Sort change
-    const sortOrder = document.getElementById('sortOrder');
-    sortOrder.addEventListener('change', (e) => {
-        currentSortOrder = e.target.value;
-        refreshRecords();
-    });
-    
-    // Selection handlers
-    document.getElementById('selectAllCheckbox').addEventListener('change', selectAllNotes);
-    document.getElementById('clearSelectionBtn').addEventListener('click', clearSelection);
-    document.getElementById('deleteSelectedBtn').addEventListener('click', deleteSelectedNotes);
-    document.getElementById('exportSelectedBtn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleExportSelectedMenu();
-    });
-    
-    // Export button - toggle dropdown
-    exportBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleExportMenu();
-    });
-    
-    // Export menu options
-    document.querySelectorAll('#exportMenu .export-option').forEach(option => {
-        option.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const format = e.currentTarget.dataset.format;
-            handleExport(format);
-        });
-    });
-    
-    // Close export menus when clicking outside
-    document.addEventListener('click', () => {
-        closeExportMenu();
-        closeExportSelectedMenu();
-    });
-}
-
-async function refreshRecords() {
-    const location = document.getElementById('filterLocation').value;
-    const department = document.getElementById('filterDepartment').value;
-    
-    let notes = await getNotes(
-        location ? parseInt(location) : null,
-        department || null
-    );
-    
-    // Apply sorting
-    notes = sortNotes(notes, currentSortOrder);
-    
-    renderRecords(notes);
 }
 
 // ===== PWA Service Worker Registration =====
@@ -1226,18 +363,15 @@ async function registerServiceWorker() {
             const registration = await navigator.serviceWorker.register('sw.js');
             console.log('Service Worker registered:', registration.scope);
             
-            // Check for updates periodically (every 5 minutes)
             setInterval(() => {
                 registration.update();
             }, 5 * 60 * 1000);
             
-            // Listen for new service worker waiting
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
                 
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        // New version available, show update prompt
                         showUpdatePrompt();
                     }
                 });
@@ -1246,24 +380,19 @@ async function registerServiceWorker() {
             console.log('Service Worker registration failed:', error);
         }
         
-        // Listen for messages from service worker
         navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'SW_UPDATED') {
                 console.log('App updated to version:', event.data.version);
             }
         });
         
-        // Handle controller change (new SW took over)
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            // Reload to get fresh content
             window.location.reload();
         });
     }
 }
 
-// Show update available prompt
 function showUpdatePrompt() {
-    // Create update banner
     const banner = document.createElement('div');
     banner.id = 'updateBanner';
     banner.innerHTML = `
@@ -1305,7 +434,6 @@ function showUpdatePrompt() {
     document.body.prepend(banner);
 }
 
-// Apply the update
 function applyUpdate() {
     if (navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
@@ -1319,9 +447,7 @@ async function init() {
     populateLocationDropdown();
     setupEventListeners();
     setupPhotoHandlers();
-    setupImageModal();
     registerServiceWorker();
 }
 
-// Start the app
 document.addEventListener('DOMContentLoaded', init);

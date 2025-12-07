@@ -1,4 +1,4 @@
-const CACHE_VERSION = 16;
+const CACHE_VERSION = 17;
 const CACHE_NAME = `mighty-note-v${CACHE_VERSION}`;
 
 const ASSETS_TO_CACHE = [
