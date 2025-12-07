@@ -1,3 +1,28 @@
+// ===== App Version (for cache busting) =====
+const APP_VERSION = 22;
+
+// ===== Service Worker Message Handler =====
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'FORCE_LOGOUT') {
+            console.log('[Dashboard] Force logout triggered by SW update');
+            localStorage.removeItem('mightyops_user');
+            localStorage.setItem('mightyops_app_version', event.data.version);
+            window.location.href = 'login.html';
+        }
+    });
+}
+
+// Check version on load - force logout if version mismatch
+(function checkVersion() {
+    const storedVersion = localStorage.getItem('mightyops_app_version');
+    if (storedVersion && parseInt(storedVersion) !== APP_VERSION) {
+        console.log('[Dashboard] Version mismatch, forcing logout');
+        localStorage.removeItem('mightyops_user');
+    }
+    localStorage.setItem('mightyops_app_version', APP_VERSION);
+})();
+
 // ===== Authentication =====
 let currentUser = null;
 

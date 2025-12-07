@@ -1,19 +1,10 @@
-const CACHE_VERSION = 21;
+const CACHE_VERSION = 22;
 const CACHE_NAME = `mighty-ops-v${CACHE_VERSION}`;
 
+// Only cache external libraries and static assets - NOT app files
 const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/login.html',
-    '/signup.html',
-    '/home.html',
-    '/settings.html',
-    '/dashboard.html',
-    '/styles.css',
-    '/app.js',
-    '/dashboard.js',
-    '/manifest.json',
     '/MW Logo.png',
+    '/manifest.json',
     'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js'
@@ -38,7 +29,7 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// Activate event - clean up old caches and take control
+// Activate event - clean up old caches, logout users, and take control
 self.addEventListener('activate', (event) => {
     console.log(`[SW] Activating version ${CACHE_VERSION}`);
     
@@ -56,11 +47,11 @@ self.addEventListener('activate', (event) => {
             // Take control of all clients immediately
             return self.clients.claim();
         }).then(() => {
-            // Notify all clients about the update
+            // Notify all clients to logout and refresh (version change = force re-login)
             return self.clients.matchAll().then(clients => {
                 clients.forEach(client => {
                     client.postMessage({
-                        type: 'SW_UPDATED',
+                        type: 'FORCE_LOGOUT',
                         version: CACHE_VERSION
                     });
                 });
@@ -69,7 +60,7 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch event - Network first for app files, cache first for external resources
+// Fetch event - Network ONLY for app files, cache for external resources only
 self.addEventListener('fetch', (event) => {
     // Skip non-GET requests
     if (event.request.method !== 'GET') return;
@@ -82,7 +73,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
     
-    // Check if this is an app file (HTML, CSS, JS) that should use network-first
+    // Check if this is an app file (HTML, CSS, JS) - ALWAYS use network only
     const isAppFile = url.origin === location.origin && (
         url.pathname.endsWith('.html') ||
         url.pathname.endsWith('.css') ||
@@ -91,8 +82,8 @@ self.addEventListener('fetch', (event) => {
     );
     
     if (isAppFile) {
-        // Network-first strategy for app files
-        event.respondWith(networkFirst(event.request));
+        // Network ONLY for app files - no caching at all
+        event.respondWith(fetch(event.request));
     } else {
         // Cache-first strategy for other assets (images, fonts, external libs)
         event.respondWith(cacheFirst(event.request));
