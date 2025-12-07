@@ -4,8 +4,8 @@
     "description": "Document violations and incidents with ease",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#0f0f1a",
-    "theme_color": "#1a1a2e",
+    "background_color": "#000000",
+    "theme_color": "#000000",
     "orientation": "portrait-primary",
     "icons": [
         {

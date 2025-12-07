@@ -29,6 +29,19 @@ exports.handler = async (event, context) => {
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         `;
+        
+        // Add image_pdf column if it doesn't exist
+        await sql`
+            DO $$ 
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'notes' AND column_name = 'image_pdf'
+                ) THEN
+                    ALTER TABLE notes ADD COLUMN image_pdf TEXT;
+                END IF;
+            END $$;
+        `;
 
         return {
             statusCode: 200,

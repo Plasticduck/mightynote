@@ -23,6 +23,7 @@ const initSchema = async () => {
             note_type TEXT NOT NULL,
             other_description TEXT,
             additional_notes TEXT,
+            image_pdf TEXT,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         )
     `;

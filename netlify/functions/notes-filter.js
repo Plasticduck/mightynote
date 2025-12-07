@@ -33,7 +33,12 @@ exports.handler = async (event, context) => {
 
         // Start with base query - we'll filter in JavaScript for complex conditions
         // This is simpler than building dynamic SQL with Neon's tagged template
-        notes = await sql`SELECT * FROM notes ORDER BY id DESC`;
+        // Exclude full image data but include flag for whether image exists
+        notes = await sql`
+            SELECT id, location, department, note_type, other_description, additional_notes, created_at,
+                   CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
+            FROM notes ORDER BY id DESC
+        `;
 
         // Apply filters in JavaScript
         if (locations && locations.length > 0) {

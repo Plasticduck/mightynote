@@ -1,3 +1,6 @@
+// ===== Photo Upload State =====
+let currentPhotoData = null;
+
 // ===== Configuration =====
 const CONFIG = {
     locations: Array.from({ length: 31 }, (_, i) => i + 1),
@@ -51,7 +54,7 @@ async function initDatabase() {
     }
 }
 
-async function insertNote(location, department, noteType, otherDesc, additionalNotes) {
+async function insertNote(location, department, noteType, otherDesc, additionalNotes, imagePdf = null) {
     try {
         const response = await fetch(`${API_BASE}/notes-create`, {
             method: 'POST',
@@ -63,7 +66,8 @@ async function insertNote(location, department, noteType, otherDesc, additionalN
                 department,
                 note_type: noteType,
                 other_description: otherDesc || null,
-                additional_notes: additionalNotes || null
+                additional_notes: additionalNotes || null,
+                image_pdf: imagePdf
             })
         });
         
@@ -77,6 +81,22 @@ async function insertNote(location, department, noteType, otherDesc, additionalN
     } catch (error) {
         console.error('Error inserting note:', error);
         throw error;
+    }
+}
+
+async function getNoteImage(noteId) {
+    try {
+        const response = await fetch(`${API_BASE}/notes-image?id=${noteId}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+        
+        return result.image_pdf;
+    } catch (error) {
+        console.error('Error fetching note image:', error);
+        return null;
     }
 }
 
@@ -214,6 +234,17 @@ function renderRecords(notes) {
             ? `Other: ${note.other_description}` 
             : note.note_type;
         
+        const imageBadge = note.has_image ? `
+            <span class="record-image-badge" onclick="openImageModal(${note.id})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                Photo
+            </span>
+        ` : '';
+        
         return `
             <div class="record-card">
                 <div class="record-header">
@@ -223,6 +254,7 @@ function renderRecords(notes) {
                 <div class="record-meta">
                     <span class="record-badge">Site ${note.location}</span>
                     <span class="record-badge ${deptClass}">${note.department}</span>
+                    ${imageBadge}
                 </div>
                 ${note.additional_notes ? `<p class="record-notes">${note.additional_notes}</p>` : ''}
             </div>
@@ -230,7 +262,7 @@ function renderRecords(notes) {
     }).join('');
 }
 
-async function exportToSpreadsheet(location) {
+async function exportToExcel(location) {
     const notes = await getNotesForExport(location);
     
     if (notes.length === 0) {
@@ -294,7 +326,375 @@ async function exportToSpreadsheet(location) {
     
     // Download
     XLSX.writeFile(wb, filename);
-    showToast(`Exported ${notes.length} records to ${filename}`);
+    showToast(`Exported ${notes.length} records to Excel`);
+}
+
+async function exportToPDF(location) {
+    const notes = await getNotesForExport(location);
+    
+    if (notes.length === 0) {
+        showToast('No records to export for this site', true);
+        return;
+    }
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(18);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Site ${location} - Violation Report`, 14, 20);
+    
+    // Subtitle with date
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+    doc.text(`Total Records: ${notes.length}`, 14, 34);
+    
+    // Table data
+    const tableData = notes.map(note => [
+        formatDate(note.created_at),
+        note.department,
+        note.note_type === 'Other' && note.other_description 
+            ? `Other: ${note.other_description}` 
+            : note.note_type,
+        note.additional_notes || '-'
+    ]);
+    
+    // Create table
+    doc.autoTable({
+        startY: 42,
+        head: [['Date/Time', 'Department', 'Note Type', 'Details']],
+        body: tableData,
+        styles: {
+            fontSize: 8,
+            cellPadding: 3,
+        },
+        headStyles: {
+            fillColor: [10, 10, 10],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+            fillColor: [245, 245, 245],
+        },
+        columnStyles: {
+            0: { cellWidth: 35 },
+            1: { cellWidth: 25 },
+            2: { cellWidth: 45 },
+            3: { cellWidth: 'auto' },
+        },
+    });
+    
+    // Generate filename
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `Site_${location}_Notes_${timestamp}.pdf`;
+    
+    // Download
+    doc.save(filename);
+    showToast(`Exported ${notes.length} records to PDF`);
+}
+
+async function handleExport(format) {
+    const location = document.getElementById('filterLocation').value;
+    
+    if (!location) {
+        showToast('Please select a site to export', true);
+        return;
+    }
+    
+    const locationNum = parseInt(location);
+    
+    switch (format) {
+        case 'pdf':
+            await exportToPDF(locationNum);
+            break;
+        case 'excel':
+            await exportToExcel(locationNum);
+            break;
+        case 'both':
+            await exportToExcel(locationNum);
+            await exportToPDF(locationNum);
+            break;
+    }
+    
+    // Close the dropdown
+    closeExportMenu();
+}
+
+function toggleExportMenu() {
+    const menu = document.getElementById('exportMenu');
+    menu.classList.toggle('hidden');
+}
+
+function closeExportMenu() {
+    const menu = document.getElementById('exportMenu');
+    if (menu) menu.classList.add('hidden');
+}
+
+// ===== Photo Handling Functions =====
+function setupPhotoHandlers() {
+    const takePhotoBtn = document.getElementById('takePhotoBtn');
+    const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+    const cameraInput = document.getElementById('cameraInput');
+    const fileInput = document.getElementById('fileInput');
+    const removePhotoBtn = document.getElementById('removePhotoBtn');
+    
+    takePhotoBtn.addEventListener('click', () => {
+        cameraInput.click();
+    });
+    
+    uploadPhotoBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    cameraInput.addEventListener('change', handlePhotoSelect);
+    fileInput.addEventListener('change', handlePhotoSelect);
+    
+    removePhotoBtn.addEventListener('click', clearPhoto);
+}
+
+async function handlePhotoSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', true);
+        return;
+    }
+    
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+        showToast('Image must be less than 10MB', true);
+        return;
+    }
+    
+    try {
+        showToast('Processing image...');
+        
+        // Compress and convert to base64
+        const compressedBase64 = await compressImage(file);
+        
+        // Convert to PDF
+        const pdfBase64 = await convertImageToPDF(compressedBase64, file.name);
+        
+        // Store the PDF data
+        currentPhotoData = pdfBase64;
+        
+        // Show preview
+        showPhotoPreview(compressedBase64);
+        
+        showToast('Photo attached successfully');
+    } catch (error) {
+        console.error('Error processing photo:', error);
+        showToast('Error processing photo', true);
+    }
+    
+    // Reset input
+    event.target.value = '';
+}
+
+function compressImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            const img = new Image();
+            
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Calculate new dimensions (max 1200px)
+                const maxSize = 1200;
+                let { width, height } = img;
+                
+                if (width > height) {
+                    if (width > maxSize) {
+                        height = (height * maxSize) / width;
+                        width = maxSize;
+                    }
+                } else {
+                    if (height > maxSize) {
+                        width = (width * maxSize) / height;
+                        height = maxSize;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw and compress
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Get compressed base64 (JPEG at 80% quality)
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                resolve(compressedBase64);
+            };
+            
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = e.target.result;
+        };
+        
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
+async function convertImageToPDF(imageBase64, filename) {
+    const { jsPDF } = window.jspdf;
+    
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        
+        img.onload = () => {
+            try {
+                // Determine orientation based on image dimensions
+                const isLandscape = img.width > img.height;
+                const doc = new jsPDF({
+                    orientation: isLandscape ? 'landscape' : 'portrait',
+                    unit: 'mm'
+                });
+                
+                // Get page dimensions
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                
+                // Calculate image dimensions to fit page with margins
+                const margin = 10;
+                const maxWidth = pageWidth - (margin * 2);
+                const maxHeight = pageHeight - (margin * 2) - 20; // Leave space for header
+                
+                let imgWidth = img.width;
+                let imgHeight = img.height;
+                
+                // Scale to fit
+                const scale = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+                imgWidth *= scale;
+                imgHeight *= scale;
+                
+                // Center the image
+                const x = (pageWidth - imgWidth) / 2;
+                const y = margin + 15; // After header
+                
+                // Add header
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Photo Evidence - ${new Date().toLocaleString()}`, margin, margin + 5);
+                
+                // Add image
+                doc.addImage(imageBase64, 'JPEG', x, y, imgWidth, imgHeight);
+                
+                // Get as base64
+                const pdfBase64 = doc.output('datauristring');
+                resolve(pdfBase64);
+            } catch (error) {
+                reject(error);
+            }
+        };
+        
+        img.onerror = () => reject(new Error('Failed to process image for PDF'));
+        img.src = imageBase64;
+    });
+}
+
+function showPhotoPreview(imageBase64) {
+    const preview = document.getElementById('photoPreview');
+    const previewImage = document.getElementById('previewImage');
+    
+    previewImage.src = imageBase64;
+    preview.classList.remove('hidden');
+}
+
+function clearPhoto() {
+    currentPhotoData = null;
+    const preview = document.getElementById('photoPreview');
+    const previewImage = document.getElementById('previewImage');
+    
+    previewImage.src = '';
+    preview.classList.add('hidden');
+}
+
+// ===== Image Modal Functions =====
+let currentModalPdfData = null;
+
+function setupImageModal() {
+    const modal = document.getElementById('imageModal');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const downloadBtn = document.getElementById('downloadImageBtn');
+    
+    closeBtn.addEventListener('click', closeImageModal);
+    downloadBtn.addEventListener('click', downloadCurrentImage);
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeImageModal();
+        }
+    });
+    
+    // Close on escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeImageModal();
+        }
+    });
+}
+
+async function openImageModal(noteId) {
+    const modal = document.getElementById('imageModal');
+    const modalBody = document.getElementById('modalBody');
+    
+    // Show modal with loading state
+    modal.classList.remove('hidden');
+    modalBody.innerHTML = `
+        <div class="modal-loading">
+            <div class="spinner"></div>
+            <span>Loading image...</span>
+        </div>
+    `;
+    
+    try {
+        const pdfData = await getNoteImage(noteId);
+        
+        if (!pdfData) {
+            throw new Error('No image found');
+        }
+        
+        currentModalPdfData = pdfData;
+        
+        // Display PDF in iframe
+        modalBody.innerHTML = `<iframe src="${pdfData}" title="Photo Evidence"></iframe>`;
+    } catch (error) {
+        modalBody.innerHTML = `
+            <div class="modal-loading">
+                <span style="color: var(--accent-red);">Failed to load image</span>
+            </div>
+        `;
+    }
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.add('hidden');
+    currentModalPdfData = null;
+}
+
+function downloadCurrentImage() {
+    if (!currentModalPdfData) return;
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.href = currentModalPdfData;
+    link.download = `photo_evidence_${Date.now()}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('Image downloaded');
 }
 
 // ===== Event Handlers =====
@@ -344,13 +744,15 @@ function setupEventListeners() {
         }
         
         try {
-            await insertNote(location, department, noteType, otherDesc, additionalNotes);
+            // Include photo data if available
+            await insertNote(location, department, noteType, otherDesc, additionalNotes, currentPhotoData);
             showToast('Note saved successfully!');
             
             // Reset form
             noteForm.reset();
             document.getElementById('noteTypeGroup').style.display = 'none';
             document.getElementById('otherDescGroup').style.display = 'none';
+            clearPhoto(); // Clear the photo
         } catch (error) {
             showToast('Error saving note. Please try again.', true);
         }
@@ -373,16 +775,24 @@ function setupEventListeners() {
     filterLocation.addEventListener('change', refreshRecords);
     filterDepartment.addEventListener('change', refreshRecords);
     
-    // Export button
-    exportBtn.addEventListener('click', () => {
-        const location = document.getElementById('filterLocation').value;
-        
-        if (!location) {
-            showToast('Please select a site to export', true);
-            return;
-        }
-        
-        exportToSpreadsheet(parseInt(location));
+    // Export button - toggle dropdown
+    exportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleExportMenu();
+    });
+    
+    // Export menu options
+    document.querySelectorAll('#exportMenu .export-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const format = e.currentTarget.dataset.format;
+            handleExport(format);
+        });
+    });
+    
+    // Close export menu when clicking outside
+    document.addEventListener('click', () => {
+        closeExportMenu();
     });
 }
 
@@ -404,10 +814,92 @@ async function registerServiceWorker() {
         try {
             const registration = await navigator.serviceWorker.register('sw.js');
             console.log('Service Worker registered:', registration.scope);
+            
+            // Check for updates periodically (every 5 minutes)
+            setInterval(() => {
+                registration.update();
+            }, 5 * 60 * 1000);
+            
+            // Listen for new service worker waiting
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // New version available, show update prompt
+                        showUpdatePrompt();
+                    }
+                });
+            });
         } catch (error) {
             console.log('Service Worker registration failed:', error);
         }
+        
+        // Listen for messages from service worker
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+                console.log('App updated to version:', event.data.version);
+            }
+        });
+        
+        // Handle controller change (new SW took over)
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            // Reload to get fresh content
+            window.location.reload();
+        });
     }
+}
+
+// Show update available prompt
+function showUpdatePrompt() {
+    // Create update banner
+    const banner = document.createElement('div');
+    banner.id = 'updateBanner';
+    banner.innerHTML = `
+        <div class="update-banner">
+            <span>A new version is available</span>
+            <button onclick="applyUpdate()">Update Now</button>
+        </div>
+    `;
+    banner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
+        background: linear-gradient(135deg, #0a84ff, #0077ed);
+        color: white;
+        padding: 12px 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    `;
+    
+    const button = banner.querySelector('button');
+    button.style.cssText = `
+        background: white;
+        color: #0a84ff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 13px;
+    `;
+    
+    document.body.prepend(banner);
+}
+
+// Apply the update
+function applyUpdate() {
+    if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+    }
+    window.location.reload();
 }
 
 // ===== Initialize App =====
@@ -415,6 +907,8 @@ async function init() {
     await initDatabase();
     populateLocationDropdown();
     setupEventListeners();
+    setupPhotoHandlers();
+    setupImageModal();
     registerServiceWorker();
 }
 

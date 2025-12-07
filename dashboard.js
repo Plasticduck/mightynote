@@ -351,7 +351,7 @@ function renderReportTable(notes) {
     }).join('');
 }
 
-async function exportReport() {
+async function exportReportToExcel() {
     const filters = getSelectedFilters();
     const notes = await getFilteredNotes(filters);
     
@@ -462,7 +462,125 @@ async function exportReport() {
     
     // Download
     XLSX.writeFile(wb, filename);
-    showToast(`Exported ${notes.length} records to ${filename}`);
+    showToast(`Exported ${notes.length} records to Excel`);
+}
+
+async function exportReportToPDF() {
+    const filters = getSelectedFilters();
+    const notes = await getFilteredNotes(filters);
+    
+    if (notes.length === 0) {
+        showToast('No records to export', true);
+        return;
+    }
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape');
+    
+    // Title
+    doc.setFontSize(20);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Mighty Note - Violation Report', 14, 20);
+    
+    // Summary info
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+    
+    // Stats
+    const operationsCount = notes.filter(n => n.department === 'Operations').length;
+    const safetyCount = notes.filter(n => n.department === 'Safety').length;
+    const accountingCount = notes.filter(n => n.department === 'Accounting').length;
+    
+    doc.text(`Total: ${notes.length}  |  Operations: ${operationsCount}  |  Safety: ${safetyCount}  |  Accounting: ${accountingCount}`, 14, 36);
+    
+    // Filters applied
+    const sitesText = filters.locations.length === CONFIG.locations.length ? 'All Sites' : `Sites: ${filters.locations.slice(0, 10).join(', ')}${filters.locations.length > 10 ? '...' : ''}`;
+    const dateText = filters.startDate && filters.endDate ? `${filters.startDate} to ${filters.endDate}` : 'All dates';
+    doc.text(`${sitesText}  |  Date Range: ${dateText}`, 14, 42);
+    
+    // Table data
+    const tableData = notes.map(note => [
+        formatDate(note.created_at),
+        `Site ${note.location}`,
+        note.department,
+        note.note_type === 'Other' && note.other_description 
+            ? `Other: ${note.other_description.substring(0, 30)}${note.other_description.length > 30 ? '...' : ''}` 
+            : note.note_type,
+        (note.additional_notes || '-').substring(0, 50) + ((note.additional_notes || '').length > 50 ? '...' : '')
+    ]);
+    
+    // Create table
+    doc.autoTable({
+        startY: 50,
+        head: [['Date/Time', 'Site', 'Department', 'Note Type', 'Details']],
+        body: tableData,
+        styles: {
+            fontSize: 8,
+            cellPadding: 3,
+        },
+        headStyles: {
+            fillColor: [10, 10, 10],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+            fillColor: [245, 245, 245],
+        },
+        columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 25 },
+            2: { cellWidth: 30 },
+            3: { cellWidth: 50 },
+            4: { cellWidth: 'auto' },
+        },
+        didDrawPage: function(data) {
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(
+                `Page ${doc.internal.getNumberOfPages()}`,
+                doc.internal.pageSize.width / 2,
+                doc.internal.pageSize.height - 10,
+                { align: 'center' }
+            );
+        }
+    });
+    
+    // Generate filename
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `Mighty_Note_Report_${timestamp}.pdf`;
+    
+    // Download
+    doc.save(filename);
+    showToast(`Exported ${notes.length} records to PDF`);
+}
+
+async function handleReportExport(format) {
+    switch (format) {
+        case 'pdf':
+            await exportReportToPDF();
+            break;
+        case 'excel':
+            await exportReportToExcel();
+            break;
+        case 'both':
+            await exportReportToExcel();
+            await exportReportToPDF();
+            break;
+    }
+    
+    closeExportMenu();
+}
+
+function toggleExportMenu() {
+    const menu = document.getElementById('exportMenu');
+    menu.classList.toggle('hidden');
+}
+
+function closeExportMenu() {
+    const menu = document.getElementById('exportMenu');
+    if (menu) menu.classList.add('hidden');
 }
 
 // ===== Quick Report Functions =====
@@ -548,8 +666,25 @@ function setupEventListeners() {
     // Generate report button
     document.getElementById('generateReportBtn').addEventListener('click', generateReport);
     
-    // Export report button
-    document.getElementById('exportReportBtn').addEventListener('click', exportReport);
+    // Export report button - toggle dropdown
+    document.getElementById('exportReportBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleExportMenu();
+    });
+    
+    // Export menu options
+    document.querySelectorAll('#exportMenu .export-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const format = e.currentTarget.dataset.format;
+            handleReportExport(format);
+        });
+    });
+    
+    // Close export menu when clicking outside
+    document.addEventListener('click', () => {
+        closeExportMenu();
+    });
     
     // Monthly report dropdown
     document.getElementById('monthlyReportBtn').addEventListener('click', (e) => {
@@ -593,12 +728,95 @@ function setupEventListeners() {
     });
 }
 
+// ===== PWA Service Worker Update Handling =====
+function initServiceWorkerUpdates() {
+    if ('serviceWorker' in navigator) {
+        // Listen for messages from service worker
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+                console.log('Dashboard updated to version:', event.data.version);
+            }
+        });
+        
+        // Handle controller change
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload();
+        });
+        
+        // Check for waiting service worker
+        navigator.serviceWorker.ready.then(registration => {
+            if (registration.waiting) {
+                showUpdatePrompt();
+            }
+            
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        showUpdatePrompt();
+                    }
+                });
+            });
+        });
+    }
+}
+
+function showUpdatePrompt() {
+    if (document.getElementById('updateBanner')) return;
+    
+    const banner = document.createElement('div');
+    banner.id = 'updateBanner';
+    banner.innerHTML = `
+        <span>A new version is available</span>
+        <button onclick="applyUpdate()">Update Now</button>
+    `;
+    banner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
+        background: linear-gradient(135deg, #0a84ff, #0077ed);
+        color: white;
+        padding: 12px 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    `;
+    
+    const button = banner.querySelector('button');
+    button.style.cssText = `
+        background: white;
+        color: #0a84ff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 13px;
+    `;
+    
+    document.body.prepend(banner);
+}
+
+function applyUpdate() {
+    if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+    }
+    window.location.reload();
+}
+
 // ===== Initialize Dashboard =====
 async function init() {
     await initDatabase();
     await updateStats();
     populateFilterCheckboxes();
     setupEventListeners();
+    initServiceWorkerUpdates();
 }
 
 // Start the dashboard
