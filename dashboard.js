@@ -612,11 +612,14 @@ async function deleteReportSelectedNotes() {
         showToast(`Deleted ${result.deleted} note(s)`);
         reportSelectedNotes.clear();
         
-        // Refresh both views
+        // Update stats
         await updateStats();
-        await refreshNotesList();
-        await generateReport(); // Re-run the report
+        
+        // Small delay then refresh the report
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await generateReport();
     } catch (error) {
+        console.error('Delete error:', error);
         showToast('Error deleting notes', true);
     }
 }
