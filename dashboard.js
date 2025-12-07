@@ -1511,79 +1511,16 @@ function applyUpdate() {
 async function init() {
     await initDatabase();
     await updateStats();
-    populateLocationFilter();
     populateFilterCheckboxes();
     setupEventListeners();
-    setupNotesListeners();
+    setupReportListeners();
     initServiceWorkerUpdates();
-    await refreshNotesList();
 }
 
-// ===== Notes List Event Listeners =====
-function setupNotesListeners() {
-    // Filter changes
-    const filterLocation = document.getElementById('filterLocation');
-    const filterDepartment = document.getElementById('filterDepartment');
-    const sortOrder = document.getElementById('sortOrder');
-    
-    if (filterLocation) {
-        filterLocation.addEventListener('change', () => {
-            clearSelection();
-            refreshNotesList();
-        });
-    }
-    
-    if (filterDepartment) {
-        filterDepartment.addEventListener('change', () => {
-            clearSelection();
-            refreshNotesList();
-        });
-    }
-    
-    if (sortOrder) {
-        sortOrder.addEventListener('change', (e) => {
-            currentSortOrder = e.target.value;
-            refreshNotesList();
-        });
-    }
-    
-    // Selection handlers
-    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
-    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-    const exportSelectedBtn = document.getElementById('exportSelectedBtn');
-    
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', selectAllNotes);
-    }
-    
-    if (clearSelectionBtn) {
-        clearSelectionBtn.addEventListener('click', clearSelection);
-    }
-    
-    if (deleteSelectedBtn) {
-        deleteSelectedBtn.addEventListener('click', deleteSelectedNotes);
-    }
-    
-    if (exportSelectedBtn) {
-        exportSelectedBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleExportSelectedMenu();
-        });
-    }
-    
-    // Export selected menu options
-    document.querySelectorAll('#exportSelectedMenu .export-option').forEach(option => {
-        option.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const format = e.currentTarget.dataset.format;
-            exportSelectedNotes(format);
-        });
-    });
-    
+// ===== Report Selection Event Listeners =====
+function setupReportListeners() {
     // Close menus on outside click
     document.addEventListener('click', () => {
-        closeExportSelectedMenu();
         closeReportExportSelectedMenu();
     });
     

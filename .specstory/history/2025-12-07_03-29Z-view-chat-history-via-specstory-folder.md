@@ -10285,6 +10285,1061 @@ Let me continue with the CSS changes and then update the JavaScript, then push.<
 
 ---
 
+The string to replace was not found in the file.
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me read the styles.css file to see the current state of the report-results-header section.</details></think>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="grep">
+<details>
+<summary>Tool use: **grep** • Grep for "report-results-header" in "styles.css" • 2 matches</summary>
+
+Output mode: content
+
+
+| File | Content | Line |
+|------|------|------|
+| `styles.css` | `.report-results-header \{` | L1577 |
+| `styles.css` | `.report-results-header h3 \{` | L1588 |
+
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Looks like the CSS was partially applied. Let me check if there's more and add the missing styles.</details></think>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="grep">
+<details>
+<summary>Tool use: **grep** • Grep for "btn-select-mode" in "styles.css" • 3 matches</summary>
+
+Output mode: content
+
+
+| File | Content | Line |
+|------|------|------|
+| `styles.css` | `.btn-select-mode \{` | L1626 |
+| `styles.css` | `.btn-select-mode:hover \{` | L1642 |
+| `styles.css` | `.btn-select-mode.active \{` | L1647 |
+
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Good, the CSS styles have been applied. Now I need to update the dashboard.js to handle the new report results with selectable cards and the select mode toggle. Let me update the generateReport function and add the new event handlers.</details></think>
+
+---
+
+Good, the CSS is already there. Now let me update dashboard.js to handle the new report view with select mode:
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="grep">
+<details>
+<summary>Tool use: **grep** • Grep for "async function generateReport" in "dashboard.js" • 1 match</summary>
+
+Output mode: content
+
+
+| File | Content | Line |
+|------|------|------|
+| `dashboard.js` | `async function generateReport() \{` | L598 |
+
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+I need to update the generateReport function and add new functions for the report results view. Let me also add the report selection state and handlers.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 5, lines removed: undefined
+
+```diff
+@@ -3,4 +3,9 @@
+  let currentNotes = [];
+  let currentSortOrder = 'newest';
++ 
++ // Report selection state
++ let reportSelectedNotes = new Set();
++ let reportNotes = [];
++ let reportSelectMode = false;
+  
+  // ===== Configuration =====
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me update the generateReport function to render cards instead of charts/tables.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 75, lines removed: 9
+
+```diff
+@@ -604,19 +604,85 @@
+      const filters = getSelectedFilters();
+      const notes = await getFilteredNotes(filters);
++     
++     reportNotes = notes;
++     reportSelectedNotes.clear();
++     reportSelectMode = false;
+      
+      // Show results section
+-     document.getElementById('reportResults').classList.remove('hidden');
++     const resultsSection = document.getElementById('reportResults');
++     resultsSection.classList.remove('hidden');
++     resultsSection.classList.remove('select-mode');
++     
++     // Update stats
+      document.getElementById('resultsCount').textContent = &#96;${notes.length} records&#96;;
+-     
+-     // Generate summary charts
+-     renderLocationSummary(notes);
+-     renderDepartmentSummary(notes);
+-     renderNoteTypeSummary(notes);
++     document.getElementById('reportOpsCount').textContent = &#96;${notes.filter(n =&gt; n.department === 'Operations').length} Ops&#96;;
++     document.getElementById('reportSafetyCount').textContent = &#96;${notes.filter(n =&gt; n.department === 'Safety').length} Safety&#96;;
++     document.getElementById('reportAcctCount').textContent = &#96;${notes.filter(n =&gt; n.department === 'Accounting').length} Acct&#96;;
++     
++     // Reset select button
++     document.getElementById('toggleSelectMode').classList.remove('active');
++     document.getElementById('toggleSelectMode').innerHTML = &#96;
++         &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++             &lt;polyline points="9 11 12 14 22 4"/&gt;
++             &lt;path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/&gt;
++         &lt;/svg&gt;
++         Select
++     &#96;;
++     
++     // Hide selection bar
++     document.getElementById('reportSelectionBar').classList.add('hidden');
+      
+-     // Render table
+-     renderReportTable(notes);
++     // Render notes as cards
++     renderReportNotes(notes);
+      
+      // Scroll to results
+-     document.getElementById('reportResults').scrollIntoView({ behavior: 'smooth' });
++     resultsSection.scrollIntoView({ behavior: 'smooth' });
++ }
++ 
++ function renderReportNotes(notes) {
++     const container = document.getElementById('reportRecordsContainer');
++     
++     if (notes.length === 0) {
++         container.innerHTML = '&lt;p class="no-records"&gt;No records match the selected criteria&lt;/p&gt;';
++         return;
++     }
++     
++     container.innerHTML = notes.map(note =&gt; {
++         const deptClass = &#96;dept-${note.department.toLowerCase()}&#96;;
++         const displayType = note.note_type === 'Other' &amp;&amp; note.other_description 
++             ? &#96;Other: ${note.other_description}&#96; 
++             : note.note_type;
++         const isSelected = reportSelectedNotes.has(note.id);
++         
++         const imageBadge = note.has_image ? &#96;
++             &lt;a href="${getPhotoUrl(note.id)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()"&gt;
++                 &lt;svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                     &lt;rect x="3" y="3" width="18" height="18" rx="2" ry="2"/&gt;
++                     &lt;circle cx="8.5" cy="8.5" r="1.5"/&gt;
++                     &lt;polyline points="21 15 16 10 5 21"/&gt;
++                 &lt;/svg&gt;
++                 View Photo
++             &lt;/a&gt;
++         &#96; : '';
++         
++         return &#96;
++             &lt;div class="record-card ${isSelected ? 'selected' : ''}" data-id="${note.id}"&gt;
++                 &lt;label class="record-checkbox" onclick="event.stopPropagation()"&gt;
++                     &lt;input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleReportNoteSelection(${note.id}, this.checked)"&gt;
++                     &lt;span class="record-check"&gt;&lt;/span&gt;
++                 &lt;/label&gt;
++                 &lt;div class="record-header"&gt;
++                     &lt;span class="record-type"&gt;${displayType}&lt;/span&gt;
++                     &lt;span class="record-timestamp"&gt;${formatDate(note.created_at)}&lt;/span&gt;
++                 &lt;/div&gt;
++                 &lt;div class="record-meta"&gt;
++                     &lt;span class="record-badge"&gt;Site ${note.location}&lt;/span&gt;
++                     &lt;span class="record-badge ${deptClass}"&gt;${note.department}&lt;/span&gt;
++                     ${imageBadge}
++                 &lt;/div&gt;
++                 ${note.additional_notes ? &#96;&lt;p class="record-notes"&gt;${note.additional_notes}&lt;/p&gt;&#96; : ''}
++             &lt;/div&gt;
++         &#96;;
++     }).join('');
+  }
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to add the report selection functions and event handlers. Let me add them.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 149, lines removed: undefined
+
+```diff
+@@ -501,4 +501,153 @@
+      if (menu) menu.classList.add('hidden');
+  }
++ 
++ // ===== Report Selection Functions =====
++ function toggleReportSelectMode() {
++     reportSelectMode = !reportSelectMode;
++     const resultsSection = document.getElementById('reportResults');
++     const selectionBar = document.getElementById('reportSelectionBar');
++     const selectBtn = document.getElementById('toggleSelectMode');
++     
++     if (reportSelectMode) {
++         resultsSection.classList.add('select-mode');
++         selectionBar.classList.remove('hidden');
++         selectBtn.classList.add('active');
++         selectBtn.innerHTML = &#96;
++             &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                 &lt;line x1="18" y1="6" x2="6" y2="18"/&gt;
++                 &lt;line x1="6" y1="6" x2="18" y2="18"/&gt;
++             &lt;/svg&gt;
++             Cancel
++         &#96;;
++     } else {
++         resultsSection.classList.remove('select-mode');
++         selectionBar.classList.add('hidden');
++         selectBtn.classList.remove('active');
++         selectBtn.innerHTML = &#96;
++             &lt;svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                 &lt;polyline points="9 11 12 14 22 4"/&gt;
++                 &lt;path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/&gt;
++             &lt;/svg&gt;
++             Select
++         &#96;;
++         // Clear selection when exiting select mode
++         reportSelectedNotes.clear();
++         updateReportSelectionUI();
++         renderReportNotes(reportNotes);
++     }
++ }
++ 
++ function toggleReportNoteSelection(noteId, isSelected) {
++     if (isSelected) {
++         reportSelectedNotes.add(noteId);
++     } else {
++         reportSelectedNotes.delete(noteId);
++     }
++     
++     const card = document.querySelector(&#96;#reportRecordsContainer .record-card[data-id="${noteId}"]&#96;);
++     if (card) {
++         card.classList.toggle('selected', isSelected);
++     }
++     
++     updateReportSelectionUI();
++ }
++ 
++ function selectAllReportNotes() {
++     const selectAll = document.getElementById('reportSelectAllCheckbox').checked;
++     
++     reportNotes.forEach(note =&gt; {
++         if (selectAll) {
++             reportSelectedNotes.add(note.id);
++         } else {
++             reportSelectedNotes.delete(note.id);
++         }
++     });
++     
++     document.querySelectorAll('#reportRecordsContainer .record-card').forEach(card =&gt; {
++         const checkbox = card.querySelector('input[type="checkbox"]');
++         if (checkbox) {
++             checkbox.checked = selectAll;
++             card.classList.toggle('selected', selectAll);
++         }
++     });
++     
++     updateReportSelectionUI();
++ }
++ 
++ function updateReportSelectionUI() {
++     const count = reportSelectedNotes.size;
++     const countEl = document.getElementById('reportSelectionCount');
++     const selectAllCheckbox = document.getElementById('reportSelectAllCheckbox');
++     const exportBtn = document.getElementById('reportExportSelectedBtn');
++     const deleteBtn = document.getElementById('reportDeleteSelectedBtn');
++     
++     if (countEl) countEl.textContent = &#96;${count} selected&#96;;
++     
++     if (selectAllCheckbox &amp;&amp; reportNotes.length &gt; 0) {
++         const allSelected = reportNotes.every(note =&gt; reportSelectedNotes.has(note.id));
++         const someSelected = reportNotes.some(note =&gt; reportSelectedNotes.has(note.id));
++         selectAllCheckbox.checked = allSelected;
++         selectAllCheckbox.indeterminate = someSelected &amp;&amp; !allSelected;
++     }
++     
++     if (exportBtn) exportBtn.disabled = count === 0;
++     if (deleteBtn) deleteBtn.disabled = count === 0;
++ }
++ 
++ async function deleteReportSelectedNotes() {
++     if (reportSelectedNotes.size === 0) {
++         showToast('No notes selected', true);
++         return;
++     }
++     
++     const count = reportSelectedNotes.size;
++     const confirmed = confirm(&#96;Are you sure you want to delete ${count} note(s)? This cannot be undone.&#96;);
++     
++     if (!confirmed) return;
++     
++     try {
++         const ids = Array.from(reportSelectedNotes);
++         const result = await deleteNotes(ids);
++         
++         showToast(&#96;Deleted ${result.deleted} note(s)&#96;);
++         reportSelectedNotes.clear();
++         
++         // Refresh both views
++         await updateStats();
++         await refreshNotesList();
++         await generateReport(); // Re-run the report
++     } catch (error) {
++         showToast('Error deleting notes', true);
++     }
++ }
++ 
++ function exportReportSelectedNotes(format) {
++     if (reportSelectedNotes.size === 0) {
++         showToast('No notes selected', true);
++         return;
++     }
++     
++     const selectedData = reportNotes.filter(note =&gt; reportSelectedNotes.has(note.id));
++     
++     if (format === 'pdf' || format === 'both') {
++         exportSelectedToPDF(selectedData);
++     }
++     
++     if (format === 'excel' || format === 'both') {
++         exportSelectedToExcel(selectedData);
++     }
++     
++     closeReportExportSelectedMenu();
++ }
++ 
++ function toggleReportExportSelectedMenu() {
++     const menu = document.getElementById('reportExportSelectedMenu');
++     if (menu) menu.classList.toggle('hidden');
++ }
++ 
++ function closeReportExportSelectedMenu() {
++     const menu = document.getElementById('reportExportSelectedMenu');
++     if (menu) menu.classList.add('hidden');
++ }
+  
+  // ===== UI Functions =====
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to add the event listeners for the report selection mode. Let me update the setupNotesListeners function or add a new one for the report section.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 41, lines removed: 1
+
+```diff
+@@ -1585,5 +1585,45 @@
+      document.addEventListener('click', () =&gt; {
+          closeExportSelectedMenu();
+-     });
++         closeReportExportSelectedMenu();
++     });
++     
++     // Report selection handlers
++     const toggleSelectBtn = document.getElementById('toggleSelectMode');
++     const reportSelectAllCheckbox = document.getElementById('reportSelectAllCheckbox');
++     const reportCancelSelectBtn = document.getElementById('reportCancelSelectBtn');
++     const reportDeleteSelectedBtn = document.getElementById('reportDeleteSelectedBtn');
++     const reportExportSelectedBtn = document.getElementById('reportExportSelectedBtn');
++     
++     if (toggleSelectBtn) {
++         toggleSelectBtn.addEventListener('click', toggleReportSelectMode);
++     }
++     
++     if (reportSelectAllCheckbox) {
++         reportSelectAllCheckbox.addEventListener('change', selectAllReportNotes);
++     }
++     
++     if (reportCancelSelectBtn) {
++         reportCancelSelectBtn.addEventListener('click', toggleReportSelectMode);
++     }
++     
++     if (reportDeleteSelectedBtn) {
++         reportDeleteSelectedBtn.addEventListener('click', deleteReportSelectedNotes);
++     }
++     
++     if (reportExportSelectedBtn) {
++         reportExportSelectedBtn.addEventListener('click', (e) =&gt; {
++             e.stopPropagation();
++             toggleReportExportSelectedMenu();
++         });
++     }
++     
++     // Report export selected menu options
++     document.querySelectorAll('#reportExportSelectedMenu .export-option').forEach(option =&gt; {
++         option.addEventListener('click', (e) =&gt; {
++             e.stopPropagation();
++             const format = e.currentTarget.dataset.format;
++             exportReportSelectedNotes(format);
++         });
++     });
+  }
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me bump the version and push.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: sw.js</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -1,3 +1,3 @@
+- const CACHE_VERSION = 17;
++ const CACHE_VERSION = 18;
+  const CACHE_NAME = &#96;mighty-note-v${CACHE_VERSION}&#96;;
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: index.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -11,5 +11,5 @@
+      &lt;link rel="apple-touch-icon" href="icons/icon-192.png"&gt;
+      &lt;title&gt;Mighty Notes&lt;/title&gt;
+-     &lt;link rel="stylesheet" href="styles.css?v=17"&gt;
++     &lt;link rel="stylesheet" href="styles.css?v=18"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: index.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -143,5 +143,5 @@
+      &lt;!-- jsPDF for PDF conversion --&gt;
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;
+-     &lt;script src="app.js?v=17"&gt;&lt;/script&gt;
++     &lt;script src="app.js?v=18"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+  &lt;/html&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -11,5 +11,5 @@
+      &lt;link rel="apple-touch-icon" href="icons/icon-192.png"&gt;
+      &lt;title&gt;Dashboard - Mighty Notes&lt;/title&gt;
+-     &lt;link rel="stylesheet" href="styles.css?v=17"&gt;
++     &lt;link rel="stylesheet" href="styles.css?v=18"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -319,5 +319,5 @@
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"&gt;&lt;/script&gt;
+-     &lt;script src="dashboard.js?v=17"&gt;&lt;/script&gt;
++     &lt;script src="dashboard.js?v=18"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+  &lt;/html&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me push all the changes.</details></think>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: git add -A; git commit -m "Replace report charts with selectable notes view, add Select mode button"; git push</summary>
+
+```bash
+git add -A; git commit -m "Replace report charts with selectable notes view, add Select mode button"; git push
+```
+
+```
+[main f661a6b] Replace report charts with selectable notes view, add Select mode button                                                                         
+ 6 files changed, 2122 insertions(+), 53 deletions(-)
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 12.97 KiB | 2.16 MiB/s, done.
+Total 10 (delta 8), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (8/8), completed with 8 local objects.
+To https://github.com/Plasticduck/mightynote.git
+   0e87eb1..f661a6b  main -&gt; main
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Done! The push was successful.</details></think>
+
+---
+
+Pushed! ✓
+
+**Commit:** `f661a6b` - "Replace report charts with selectable notes view, add Select mode button"
+
+## Changes Made:
+
+### Report Results Section (below Generate Report)
+- **Removed** the old charts and table view
+- **Added** note cards view (same style as View Notes section)
+- **Stats bar** showing: Total records, Operations count, Safety count, Accounting count
+- **"Select" button** - click to enable selection mode
+  - When clicked, checkboxes appear on all cards
+  - Shows selection bar with: Select All, Export, Delete, Cancel
+  - Click Cancel or Select again to exit selection mode
+
+### Flow:
+1. Set your filters in Generate Report
+2. Click "View Report" 
+3. Notes matching your criteria appear as cards below
+4. Click **Select** to enable selection mode
+5. Select notes → Export or Delete them
+6. Click **Cancel** to exit selection mode
+
+Version bumped to **v18**!
+
+---
+
+_**User (2025-12-07 05:30Z)**_
+
+yes but keep only the one that pops up after clicking view report, remove the one above the generate report box please then push it.
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants to remove the "View Notes" section that's above the "Generate Report" box, and keep only the one that appears after clicking "View Report". Let me update dashboard.html to remove that section.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: dashboard.html</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+I need to remove the entire "View Notes Section" (lines 66-141) from dashboard.html. Let me do that.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.html</summary>
+
+**Chunk 1**
+Lines added: undefined, lines removed: 77
+
+```diff
+@@ -63,81 +63,4 @@
+                      &lt;/div&gt;
+                  &lt;/div&gt;
+- 
+-                 &lt;!-- View Notes Section --&gt;
+-                 &lt;div class="notes-section"&gt;
+-                     &lt;div class="notes-header"&gt;
+-                         &lt;h3&gt;View Notes&lt;/h3&gt;
+-                         &lt;div class="notes-filters"&gt;
+-                             &lt;div class="filter-group"&gt;
+-                                 &lt;label for="filterLocation"&gt;Site:&lt;/label&gt;
+-                                 &lt;select id="filterLocation"&gt;
+-                                     &lt;option value=""&gt;All Sites&lt;/option&gt;
+-                                 &lt;/select&gt;
+-                             &lt;/div&gt;
+-                             &lt;div class="filter-group"&gt;
+-                                 &lt;label for="filterDepartment"&gt;Dept:&lt;/label&gt;
+-                                 &lt;select id="filterDepartment"&gt;
+-                                     &lt;option value=""&gt;All&lt;/option&gt;
+-                                     &lt;option value="Operations"&gt;Operations&lt;/option&gt;
+-                                     &lt;option value="Safety"&gt;Safety&lt;/option&gt;
+-                                     &lt;option value="Accounting"&gt;Accounting&lt;/option&gt;
+-                                 &lt;/select&gt;
+-                             &lt;/div&gt;
+-                             &lt;div class="filter-group"&gt;
+-                                 &lt;label for="sortOrder"&gt;Sort:&lt;/label&gt;
+-                                 &lt;select id="sortOrder"&gt;
+-                                     &lt;option value="newest"&gt;Newest First&lt;/option&gt;
+-                                     &lt;option value="oldest"&gt;Oldest First&lt;/option&gt;
+-                                     &lt;option value="site-asc"&gt;Site (1-31)&lt;/option&gt;
+-                                     &lt;option value="site-desc"&gt;Site (31-1)&lt;/option&gt;
+-                                     &lt;option value="dept"&gt;Department&lt;/option&gt;
+-                                 &lt;/select&gt;
+-                             &lt;/div&gt;
+-                         &lt;/div&gt;
+-                     &lt;/div&gt;
+- 
+-                     &lt;!-- Selection Actions Bar --&gt;
+-                     &lt;div class="selection-bar" id="selectionBar"&gt;
+-                         &lt;div class="selection-info"&gt;
+-                             &lt;label class="select-all-container"&gt;
+-                                 &lt;input type="checkbox" id="selectAllCheckbox"&gt;
+-                                 &lt;span class="select-all-check"&gt;&lt;/span&gt;
+-                             &lt;/label&gt;
+-                             &lt;span class="selection-count" id="selectionCount"&gt;0 selected&lt;/span&gt;
+-                         &lt;/div&gt;
+-                         &lt;div class="selection-actions"&gt;
+-                             &lt;div class="export-dropdown-inline"&gt;
+-                                 &lt;button class="btn-action btn-export-selected" id="exportSelectedBtn"&gt;
+-                                     &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                         &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;
+-                                         &lt;polyline points="7 10 12 15 17 10"/&gt;
+-                                         &lt;line x1="12" y1="15" x2="12" y2="3"/&gt;
+-                                     &lt;/svg&gt;
+-                                     Export
+-                                 &lt;/button&gt;
+-                                 &lt;div class="export-menu hidden" id="exportSelectedMenu"&gt;
+-                                     &lt;button class="export-option" data-format="pdf"&gt;Export as PDF&lt;/button&gt;
+-                                     &lt;button class="export-option" data-format="excel"&gt;Export as Excel&lt;/button&gt;
+-                                     &lt;button class="export-option" data-format="both"&gt;Export Both&lt;/button&gt;
+-                                 &lt;/div&gt;
+-                             &lt;/div&gt;
+-                             &lt;button class="btn-action btn-delete-selected" id="deleteSelectedBtn"&gt;
+-                                 &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                     &lt;polyline points="3 6 5 6 21 6"/&gt;
+-                                     &lt;path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/&gt;
+-                                 &lt;/svg&gt;
+-                                 Delete
+-                             &lt;/button&gt;
+-                             &lt;button class="btn-action btn-clear-selection" id="clearSelectionBtn"&gt;
+-                                 Clear
+-                             &lt;/button&gt;
+-                         &lt;/div&gt;
+-                     &lt;/div&gt;
+- 
+-                     &lt;!-- Notes List --&gt;
+-                     &lt;div class="records-container" id="recordsContainer"&gt;
+-                         &lt;p class="no-records"&gt;Loading notes...&lt;/p&gt;
+-                     &lt;/div&gt;
+-                 &lt;/div&gt;
+  
+                  &lt;!-- Report Generation Section --&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to update dashboard.js to remove the code that deals with the removed View Notes section. I should remove the setupNotesListeners function call and the related functions since they're no longer needed. Let me also remove the refreshNotesList call from init.</details></think>
+
+---
+
+Now let me update dashboard.js to remove the code for the removed section:
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 3
+
+```diff
+@@ -1512,10 +1512,8 @@
+      await initDatabase();
+      await updateStats();
+-     populateLocationFilter();
+      populateFilterCheckboxes();
+      setupEventListeners();
+-     setupNotesListeners();
++     setupReportListeners();
+      initServiceWorkerUpdates();
+-     await refreshNotesList();
+  }
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to rename setupNotesListeners to setupReportListeners and update it to only handle the report selection handlers. Let me find and update that function.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.js</summary>
+
+**Chunk 1**
+Lines added: 2, lines removed: 63
+
+```diff
+@@ -1518,69 +1518,8 @@
+  }
+  
+- // ===== Notes List Event Listeners =====
+- function setupNotesListeners() {
+-     // Filter changes
+-     const filterLocation = document.getElementById('filterLocation');
+-     const filterDepartment = document.getElementById('filterDepartment');
+-     const sortOrder = document.getElementById('sortOrder');
+-     
+-     if (filterLocation) {
+-         filterLocation.addEventListener('change', () =&gt; {
+-             clearSelection();
+-             refreshNotesList();
+-         });
+-     }
+-     
+-     if (filterDepartment) {
+-         filterDepartment.addEventListener('change', () =&gt; {
+-             clearSelection();
+-             refreshNotesList();
+-         });
+-     }
+-     
+-     if (sortOrder) {
+-         sortOrder.addEventListener('change', (e) =&gt; {
+-             currentSortOrder = e.target.value;
+-             refreshNotesList();
+-         });
+-     }
+-     
+-     // Selection handlers
+-     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+-     const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+-     const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+-     const exportSelectedBtn = document.getElementById('exportSelectedBtn');
+-     
+-     if (selectAllCheckbox) {
+-         selectAllCheckbox.addEventListener('change', selectAllNotes);
+-     }
+-     
+-     if (clearSelectionBtn) {
+-         clearSelectionBtn.addEventListener('click', clearSelection);
+-     }
+-     
+-     if (deleteSelectedBtn) {
+-         deleteSelectedBtn.addEventListener('click', deleteSelectedNotes);
+-     }
+-     
+-     if (exportSelectedBtn) {
+-         exportSelectedBtn.addEventListener('click', (e) =&gt; {
+-             e.stopPropagation();
+-             toggleExportSelectedMenu();
+-         });
+-     }
+-     
+-     // Export selected menu options
+-     document.querySelectorAll('#exportSelectedMenu .export-option').forEach(option =&gt; {
+-         option.addEventListener('click', (e) =&gt; {
+-             e.stopPropagation();
+-             const format = e.currentTarget.dataset.format;
+-             exportSelectedNotes(format);
+-         });
+-     });
+-     
++ // ===== Report Selection Event Listeners =====
++ function setupReportListeners() {
+      // Close menus on outside click
+      document.addEventListener('click', () =&gt; {
+-         closeExportSelectedMenu();
+          closeReportExportSelectedMenu();
+      });
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me bump the version and push.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: sw.js</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -1,3 +1,3 @@
+- const CACHE_VERSION = 18;
++ const CACHE_VERSION = 19;
+  const CACHE_NAME = &#96;mighty-note-v${CACHE_VERSION}&#96;;
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: index.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -11,5 +11,5 @@
+      &lt;link rel="apple-touch-icon" href="icons/icon-192.png"&gt;
+      &lt;title&gt;Mighty Notes&lt;/title&gt;
+-     &lt;link rel="stylesheet" href="styles.css?v=18"&gt;
++     &lt;link rel="stylesheet" href="styles.css?v=19"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: index.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -143,5 +143,5 @@
+      &lt;!-- jsPDF for PDF conversion --&gt;
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;
+-     &lt;script src="app.js?v=18"&gt;&lt;/script&gt;
++     &lt;script src="app.js?v=19"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+  &lt;/html&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -11,5 +11,5 @@
+      &lt;link rel="apple-touch-icon" href="icons/icon-192.png"&gt;
+      &lt;title&gt;Dashboard - Mighty Notes&lt;/title&gt;
+-     &lt;link rel="stylesheet" href="styles.css?v=18"&gt;
++     &lt;link rel="stylesheet" href="styles.css?v=19"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: dashboard.html</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -242,5 +242,5 @@
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"&gt;&lt;/script&gt;
+-     &lt;script src="dashboard.js?v=18"&gt;&lt;/script&gt;
++     &lt;script src="dashboard.js?v=19"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+  &lt;/html&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me push.</details></think>
+
+---
+
+Cancelled
+
+---
+
+_**User (2025-12-07 05:30Z)**_
+
+for some reason its doing this,
+
+
+
+
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+Looking at the screenshot, I can see the issue - the checkboxes are appearing but the text is being cut off on the left side. The note type text like "Safety Protocol Violation" is showing as "ety Protocol Violation" because the checkbox area is overlapping with the content.
+
+This is a CSS issue where the padding-left isn't being applied correctly when in select mode, or the checkbox is positioned incorrectly. Let me fix the CSS for the report results section.
+
+The issue is that when select mode is enabled, the record cards need more left padding to accommodate the checkbox, but currently the text is being cut off.
+
+Let me check and fix the CSS.</details></think>
+
+---
+
+I see the issue - the checkboxes are overlapping the text content. The left padding isn't being applied correctly in select mode. Let me fix the CSS:
+
+---
+
 <tool-use data-tool-type="unknown" data-tool-name="search_replace">
 <details>
 <summary>Tool use: **search_replace**</summary>
@@ -10301,7 +11356,7 @@ Additional data:
 
 ```json
 {
-  "codeblockId": "4d06ce25-1ed0-4a83-a37b-8126dc8ec0d3"
+  "codeblockId": "c5f7c730-b7cf-440e-9763-d5d0d397bbe6"
 }
 ```
 User decision: **accepted**
