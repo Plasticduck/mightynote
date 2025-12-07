@@ -17452,7 +17452,482 @@ Add two more apps one called Site Evaluations and other being called Staffing, L
 _**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
-The user wants to add 4</details></think>
+The user wants to add 4 more app cards to the home page:
+1. Site Evaluations
+2. Staffing, Leadership, and Culture Notes (all one app)
+3. Capital Improvement Requests
+4. Market Research
+
+These should be added as "coming soon" apps like the "More Apps" placeholder, but with actual names and icons. Let me read the current home.html to see the structure and add these apps.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: home.html</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I'll add the 4 new app cards:
+1. Site Evaluations - clipboard/checklist icon
+2. Staffing, Leadership, and Culture Notes - people/team icon
+3. Capital Improvement Requests - building/construction icon
+4. Market Research - chart/graph icon
+
+I'll make them all "coming soon" like the placeholder, but with unique icons and colors.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: home.html</summary>
+
+**Chunk 1**
+Lines added: 51, lines removed: 7
+
+```diff
+@@ -207,15 +207,59 @@
+                      &lt;/a&gt;
+                      
+-                     &lt;!-- Placeholder for future apps --&gt;
++                     &lt;!-- Site Evaluations App --&gt;
++                     &lt;div class="app-card coming-soon"&gt;
++                         &lt;div class="app-icon" style="background: linear-gradient(135deg, #34c759, #28a745);"&gt;
++                             &lt;svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                 &lt;path d="M9 11l3 3L22 4"/&gt;
++                                 &lt;path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/&gt;
++                             &lt;/svg&gt;
++                         &lt;/div&gt;
++                         &lt;h3&gt;Site Evaluations&lt;/h3&gt;
++                         &lt;p&gt;Assess locations&lt;/p&gt;
++                         &lt;span class="coming-soon-badge"&gt;Coming Soon&lt;/span&gt;
++                     &lt;/div&gt;
++                     
++                     &lt;!-- Staffing, Leadership, and Culture Notes App --&gt;
++                     &lt;div class="app-card coming-soon"&gt;
++                         &lt;div class="app-icon" style="background: linear-gradient(135deg, #af52de, #9b30d9);"&gt;
++                             &lt;svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                 &lt;path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/&gt;
++                                 &lt;circle cx="9" cy="7" r="4"/&gt;
++                                 &lt;path d="M23 21v-2a4 4 0 0 0-3-3.87"/&gt;
++                                 &lt;path d="M16 3.13a4 4 0 0 1 0 7.75"/&gt;
++                             &lt;/svg&gt;
++                         &lt;/div&gt;
++                         &lt;h3&gt;Staffing, Leadership, and Culture Notes&lt;/h3&gt;
++                         &lt;p&gt;Team insights&lt;/p&gt;
++                         &lt;span class="coming-soon-badge"&gt;Coming Soon&lt;/span&gt;
++                     &lt;/div&gt;
++                     
++                     &lt;!-- Capital Improvement Requests App --&gt;
++                     &lt;div class="app-card coming-soon"&gt;
++                         &lt;div class="app-icon" style="background: linear-gradient(135deg, #ff9500, #e68a00);"&gt;
++                             &lt;svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
++                                 &lt;rect x="1" y="4" width="22" height="16" rx="2" ry="2"/&gt;
++                                 &lt;line x1="1" y1="10" x2="23" y2="10"/&gt;
++                                 &lt;path d="M7 15h4"/&gt;
++                                 &lt;path d="M7 18h2"/&gt;
++                             &lt;/svg&gt;
++                         &lt;/div&gt;
++                         &lt;h3&gt;Capital Improvement Requests&lt;/h3&gt;
++                         &lt;p&gt;Budget proposals&lt;/p&gt;
++                         &lt;span class="coming-soon-badge"&gt;Coming Soon&lt;/span&gt;
++                     &lt;/div&gt;
++                     
++                     &lt;!-- Market Research App --&gt;
+                      &lt;div class="app-card coming-soon"&gt;
+-                         &lt;div class="app-icon" style="background: linear-gradient(135deg, #666, #444);"&gt;
++                         &lt;div class="app-icon" style="background: linear-gradient(135deg, #5ac8fa, #32b5e9);"&gt;
+                              &lt;svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+-                                 &lt;rect x="3" y="3" width="18" height="18" rx="2" ry="2"/&gt;
+-                                 &lt;line x1="12" y1="8" x2="12" y2="16"/&gt;
+-                                 &lt;line x1="8" y1="12" x2="16" y2="12"/&gt;
++                                 &lt;line x1="18" y1="20" x2="18" y2="10"/&gt;
++                                 &lt;line x1="12" y1="20" x2="12" y2="4"/&gt;
++                                 &lt;line x1="6" y1="20" x2="6" y2="14"/&gt;
++                                 &lt;line x1="2" y1="20" x2="22" y2="20"/&gt;
+                              &lt;/svg&gt;
+                          &lt;/div&gt;
+-                         &lt;h3&gt;More Apps&lt;/h3&gt;
+-                         &lt;p&gt;Additional tools&lt;/p&gt;
++                         &lt;h3&gt;Market Research&lt;/h3&gt;
++                         &lt;p&gt;Data &amp; analytics&lt;/p&gt;
+                          &lt;span class="coming-soon-badge"&gt;Coming Soon&lt;/span&gt;
+                      &lt;/div&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to adjust the grid to accommodate more apps. Let me check the current grid styling.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: home.html</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+The grid should handle this automatically with `auto-fill`, but I should also make sure longer titles wrap nicely. Let me also check if the h3 styling needs adjustment for the longer title "Staffing, Leadership, and Culture Notes".</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: home.html</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me update the h3 styling to center the text and handle wrapping for longer titles.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: home.html</summary>
+
+**Chunk 1**
+Lines added: 3, lines removed: 1
+
+```diff
+@@ -102,8 +102,10 @@
+          
+          .app-card h3 {
+-             font-size: 1rem;
++             font-size: 0.9rem;
+              font-weight: 600;
+              color: var(--white);
+              margin-bottom: var(--space-xs);
++             text-align: center;
++             line-height: 1.3;
+          }
+          
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me push the changes.</details></think>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: git add -A; git reset HEAD mightyops.key mightyops.csr; git commit -m "Add 4 new coming soon apps: Site Evaluations, Staffing/Leadership/Culture Notes, Capital Improvement Requests, Market Research"; git push</summary>
+
+```bash
+git add -A; git reset HEAD mightyops.key mightyops.csr; git commit -m "Add 4 new coming soon apps: Site Evaluations, Staffing/Leadership/Culture Notes, Capital Improvement Requests, Market Research"; git push
+```
+
+```
+h"; git push                                                                    
+[main 3dcad05] Add 4 new coming soon apps: Site Evaluations, Staffing/Leadership/Culture Notes, Capital Improvement Requests, Market Research                   
+ 2 files changed, 209 insertions(+), 8 deletions(-)
+Enumerating objects: 11, done.
+Counting objects: 100% (11/11), done.  
+Delta compression using up to 6 threads
+Compressing objects: 100% (6/6), done. 
+Writing objects: 100% (6/6), 2.40 KiB | 245.00 KiB/s, done.  
+Total 6 (delta 4), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (4/4), completed with 4 local objects.
+To https://github.com/Plasticduck/mightynote.git
+   26f9d67..3dcad05  main -&gt; main
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Done! I added all 4 new apps with unique icons and colors:
+1. Site Evaluations - green checkmark icon
+2. Staffing, Leadership, and Culture Notes - purple people icon
+3. Capital Improvement Requests - orange card/payment icon
+4. Market Research - light blue bar chart icon
+
+All marked as "Coming Soon" with no functionality yet.</details></think>
+
+---
+
+Done! Added 4 new apps to the home screen, all marked as "Coming Soon":
+
+1. **Site Evaluations** (green) - checkmark icon, "Assess locations"
+2. **Staffing, Leadership, and Culture Notes** (purple) - people icon, "Team insights"
+3. **Capital Improvement Requests** (orange) - card icon, "Budget proposals"
+4. **Market Research** (light blue) - bar chart icon, "Data & analytics"
+
+Each has a unique color and icon. They're all disabled/greyed out until you're ready to build them. ✅
+
+---
+
+_**User (2025-12-07 20:26Z)**_
+
+Executive Site Review — Dropdown Question
+
+This will be what this app does, implement this
+
+
+
+Each question is answered via dropdown (with options shown).
+
+1. Was the General Manager present during your visit?
+
+Yes
+
+No
+
+Acting Manager Present
+
+No Manager Present
+
+2. How would you rate overall site leadership at the time of the visit?
+
+Excellent
+
+Good
+
+Fair
+
+Poor
+
+3. Staffing levels observed:
+
+Adequately staffed
+
+Slightly understaffed
+
+Severely understaffed
+
+Overstaffed
+
+4. Employee engagement during the visit:
+
+Very engaged
+
+Moderately engaged
+
+Minimally engaged
+
+Disengaged
+
+5. Was the site following the proper SOP flow?
+
+Fully compliant
+
+Mostly compliant
+
+Partially compliant
+
+Non-compliant
+
+6. Cleanliness inside the site (office / lobby / waiting area):
+
+Excellent
+
+Good
+
+Needs improvement
+
+Poor
+
+7. Cleanliness outside (lot / vacuums / entrance / signage):
+
+Excellent
+
+Good
+
+Needs improvement
+
+Poor
+
+8. Equipment status at the time of inspection:
+
+Fully operational
+
+Minor issues observed
+
+Major issues observed
+
+Critical failures
+
+9. Customer experience during your visit:
+
+Excellent
+
+Good
+
+Acceptable
+
+Poor
+
+10. Did you observe any safety concerns?
+
+No issues observed
+
+Minor safety concerns
+
+Moderate safety concerns
+
+Serious safety hazard
+
+11. Accuracy of POS operations you observed:
+
+Fully accurate
+
+Mostly accurate
+
+Inconsistent
+
+Not accurate
+
+12. Uniform compliance:
+
+Fully compliant
+
+Mostly compliant
+
+Partially compliant
+
+Not compliant
+
+13. Professionalism of staff:
+
+Excellent
+
+Good
+
+Fair
+
+Poor
+
+14. Was the site operating according to the posted hours?
+
+Yes
+
+No (Opened late)
+
+No (Closed early)
+
+No (Unapproved adjustment)
+
+15. Fleet and vendor processes observed:
+
+No concerns
+
+Minor issues
+
+Moderate issues
+
+Major issues
+
+16. Condition of chemical rooms / inventory areas:
+
+Excellent
+
+Organized but needs attention
+
+Disorganized
+
+Serious issues
+
+17. Did the GM provide an update on current initiatives?
+
+Yes, detailed update
+
+Brief update
+
+Minimal update
+
+No update provided
+
+18. Overall assessment of site performance:
+
+Excellent
+
+Good
+
+Fair
+
+Poor
+
+19. Immediate follow-up required?
+
+No
+
+Yes (minor follow-up)
+
+Yes (moderate follow-up)
+
+Yes (urgent follow-up required)
+
+OPTIONAL COMMENT BOXES (non-dropdown)
+
+Additional Notes
+
+Photos / Attachments
+
+Follow-Up Instructions
+
+
+
+Add a dashboard just like the site violations app but only export as pdf, no excel exports. 
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants me to implement the "Site Evaluations" app as an "Executive Site Review" with dropdown questions. This is a substantial feature that includes:
+
+1. A form with 19 dropdown questions
+2. Optional comment boxes for notes, photos, and follow-up instructions
+3. A dashboard similar to Site Violations but with PDF export only (no Excel)
+
+Let me create the necessary files:
+1. `site-evaluations.html` - The main form page
+2. `site-evaluations-dashboard.html` - The dashboard for viewing/exporting reviews
+3. `site-evaluations.js` - JavaScript for the form
+4. `site-evaluations-dashboard.js` - JavaScript for the dashboard
+5. Update the home.html to link to the new app
+6. Create necessary Netlify functions for database operations
+
+Let me start building this out.</details></think>
+
+---
+
+I'll implement the Executive Site Review app with all 19 dropdown questions, optional comment boxes, and a dashboard with PDF export. Let me create the necessary files.
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [-] Create site-evaluations.html form with 19 dropdown questions
+- [ ] Create site-evaluations-dashboard.html with PDF export
+- [ ] Create Netlify functions for site evaluations database
+
+</details>
+</tool-use>
+
+---
+
+
 
 ---
 

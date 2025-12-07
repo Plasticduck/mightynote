@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mighty Ops">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <title>Executive Site Review - Mighty Ops</title>
+    <link rel="stylesheet" href="styles.css?v=23">
+    <style>
+        .evaluation-form {
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+        
+        .question-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            padding-bottom: var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .question-group:last-of-type {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        
+        .question-number {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .question-text {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--white);
+            line-height: 1.4;
+        }
+        
+        .optional-section {
+            margin-top: var(--space-md);
+            padding-top: var(--space-lg);
+            border-top: 2px solid var(--border-color);
+        }
+        
+        .optional-section h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-lg);
+        }
+        
+        .form-card {
+            max-width: 640px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="bg-decoration"></div>
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <img src="MW Logo.png" alt="MW Logo" class="logo-img">
+                <span class="logo-text">Executive Site Review</span>
+            </div>
+            <div class="header-actions">
+                <a href="site-evaluations-dashboard.html" class="btn-icon" title="View Reviews & Reports">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
+                    </svg>
+                </a>
+                <a href="home.html" class="btn-icon" title="Back to Apps">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Form Screen -->
+        <main class="main-content" id="formScreen">
+            <div class="form-card">
+                <div class="form-header">
+                    <h2>Executive Site Review</h2>
+                    <p class="form-subtitle">Submitting as: <strong id="submitterName">Loading...</strong></p>
+                </div>
+
+                <form id="evaluationForm" class="evaluation-form">
+                    <!-- Site Selection -->
+                    <div class="form-group">
+                        <label for="location">Site Location</label>
+                        <div class="select-wrapper">
+                            <select id="location" required>
+                                <option value="">Select a site...</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 1 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 1</span>
+                        <span class="question-text">Was the General Manager present during your visit?</span>
+                        <div class="select-wrapper">
+                            <select id="q1" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                                <option value="Acting Manager Present">Acting Manager Present</option>
+                                <option value="No Manager Present">No Manager Present</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 2</span>
+                        <span class="question-text">How would you rate overall site leadership at the time of the visit?</span>
+                        <div class="select-wrapper">
+                            <select id="q2" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 3 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 3</span>
+                        <span class="question-text">Staffing levels observed:</span>
+                        <div class="select-wrapper">
+                            <select id="q3" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Adequately staffed">Adequately staffed</option>
+                                <option value="Slightly understaffed">Slightly understaffed</option>
+                                <option value="Severely understaffed">Severely understaffed</option>
+                                <option value="Overstaffed">Overstaffed</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 4 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 4</span>
+                        <span class="question-text">Employee engagement during the visit:</span>
+                        <div class="select-wrapper">
+                            <select id="q4" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Very engaged">Very engaged</option>
+                                <option value="Moderately engaged">Moderately engaged</option>
+                                <option value="Minimally engaged">Minimally engaged</option>
+                                <option value="Disengaged">Disengaged</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 5 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 5</span>
+                        <span class="question-text">Was the site following the proper SOP flow?</span>
+                        <div class="select-wrapper">
+                            <select id="q5" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Fully compliant">Fully compliant</option>
+                                <option value="Mostly compliant">Mostly compliant</option>
+                                <option value="Partially compliant">Partially compliant</option>
+                                <option value="Non-compliant">Non-compliant</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 6 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 6</span>
+                        <span class="question-text">Cleanliness inside the site (office / lobby / waiting area):</span>
+                        <div class="select-wrapper">
+                            <select id="q6" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Needs improvement">Needs improvement</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 7 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 7</span>
+                        <span class="question-text">Cleanliness outside (lot / vacuums / entrance / signage):</span>
+                        <div class="select-wrapper">
+                            <select id="q7" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Needs improvement">Needs improvement</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 8 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 8</span>
+                        <span class="question-text">Equipment status at the time of inspection:</span>
+                        <div class="select-wrapper">
+                            <select id="q8" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Fully operational">Fully operational</option>
+                                <option value="Minor issues observed">Minor issues observed</option>
+                                <option value="Major issues observed">Major issues observed</option>
+                                <option value="Critical failures">Critical failures</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 9 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 9</span>
+                        <span class="question-text">Customer experience during your visit:</span>
+                        <div class="select-wrapper">
+                            <select id="q9" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Acceptable">Acceptable</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 10 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 10</span>
+                        <span class="question-text">Did you observe any safety concerns?</span>
+                        <div class="select-wrapper">
+                            <select id="q10" required>
+                                <option value="">Select an answer...</option>
+                                <option value="No issues observed">No issues observed</option>
+                                <option value="Minor safety concerns">Minor safety concerns</option>
+                                <option value="Moderate safety concerns">Moderate safety concerns</option>
+                                <option value="Serious safety hazard">Serious safety hazard</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 11 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 11</span>
+                        <span class="question-text">Accuracy of POS operations you observed:</span>
+                        <div class="select-wrapper">
+                            <select id="q11" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Fully accurate">Fully accurate</option>
+                                <option value="Mostly accurate">Mostly accurate</option>
+                                <option value="Inconsistent">Inconsistent</option>
+                                <option value="Not accurate">Not accurate</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 12 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 12</span>
+                        <span class="question-text">Uniform compliance:</span>
+                        <div class="select-wrapper">
+                            <select id="q12" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Fully compliant">Fully compliant</option>
+                                <option value="Mostly compliant">Mostly compliant</option>
+                                <option value="Partially compliant">Partially compliant</option>
+                                <option value="Not compliant">Not compliant</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 13 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 13</span>
+                        <span class="question-text">Professionalism of staff:</span>
+                        <div class="select-wrapper">
+                            <select id="q13" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 14 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 14</span>
+                        <span class="question-text">Was the site operating according to the posted hours?</span>
+                        <div class="select-wrapper">
+                            <select id="q14" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No (Opened late)">No (Opened late)</option>
+                                <option value="No (Closed early)">No (Closed early)</option>
+                                <option value="No (Unapproved adjustment)">No (Unapproved adjustment)</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 15 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 15</span>
+                        <span class="question-text">Fleet and vendor processes observed:</span>
+                        <div class="select-wrapper">
+                            <select id="q15" required>
+                                <option value="">Select an answer...</option>
+                                <option value="No concerns">No concerns</option>
+                                <option value="Minor issues">Minor issues</option>
+                                <option value="Moderate issues">Moderate issues</option>
+                                <option value="Major issues">Major issues</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 16 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 16</span>
+                        <span class="question-text">Condition of chemical rooms / inventory areas:</span>
+                        <div class="select-wrapper">
+                            <select id="q16" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Organized but needs attention">Organized but needs attention</option>
+                                <option value="Disorganized">Disorganized</option>
+                                <option value="Serious issues">Serious issues</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 17 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 17</span>
+                        <span class="question-text">Did the GM provide an update on current initiatives?</span>
+                        <div class="select-wrapper">
+                            <select id="q17" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Yes, detailed update">Yes, detailed update</option>
+                                <option value="Brief update">Brief update</option>
+                                <option value="Minimal update">Minimal update</option>
+                                <option value="No update provided">No update provided</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 18 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 18</span>
+                        <span class="question-text">Overall assessment of site performance:</span>
+                        <div class="select-wrapper">
+                            <select id="q18" required>
+                                <option value="">Select an answer...</option>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Question 19 -->
+                    <div class="question-group">
+                        <span class="question-number">Question 19</span>
+                        <span class="question-text">Immediate follow-up required?</span>
+                        <div class="select-wrapper">
+                            <select id="q19" required>
+                                <option value="">Select an answer...</option>
+                                <option value="No">No</option>
+                                <option value="Yes (minor follow-up)">Yes (minor follow-up)</option>
+                                <option value="Yes (moderate follow-up)">Yes (moderate follow-up)</option>
+                                <option value="Yes (urgent follow-up required)">Yes (urgent follow-up required)</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Optional Section -->
+                    <div class="optional-section">
+                        <h3>Optional Information</h3>
+                        
+                        <!-- Additional Notes -->
+                        <div class="form-group">
+                            <label for="additionalNotes">Additional Notes</label>
+                            <textarea id="additionalNotes" rows="4" placeholder="Enter any additional observations or comments..."></textarea>
+                        </div>
+
+                        <!-- Photo Upload -->
+                        <div class="form-group">
+                            <label>Photos / Attachments</label>
+                            <div class="photo-upload-container">
+                                <div class="photo-buttons">
+                                    <button type="button" class="btn-photo" id="takePhotoBtn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                            <circle cx="12" cy="13" r="4"/>
+                                        </svg>
+                                        Take Photo
+                                    </button>
+                                    <button type="button" class="btn-photo" id="uploadPhotoBtn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                            <polyline points="17 8 12 3 7 8"/>
+                                            <line x1="12" y1="3" x2="12" y2="15"/>
+                                        </svg>
+                                        Upload Photo
+                                    </button>
+                                </div>
+                                <!-- Hidden file inputs -->
+                                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+                                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                                <!-- Photo preview -->
+                                <div class="photo-preview hidden" id="photoPreview">
+                                    <img id="previewImage" alt="Photo preview">
+                                    <button type="button" class="btn-remove-photo" id="removePhotoBtn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                    <span class="photo-status">Photo attached</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Follow-Up Instructions -->
+                        <div class="form-group">
+                            <label for="followUpInstructions">Follow-Up Instructions</label>
+                            <textarea id="followUpInstructions" rows="3" placeholder="Enter any follow-up instructions or action items..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-submit">
+                        <span class="btn-text">Submit Review</span>
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- Toast Notification -->
+        <div class="toast hidden" id="toast">
+            <span class="toast-icon">✓</span>
+            <span class="toast-message">Review saved successfully!</span>
+        </div>
+    </div>
+
+    <!-- jsPDF for PDF conversion -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="site-evaluations.js?v=1"></script>
+</body>
+</html>
+
