@@ -48,22 +48,39 @@ let selectMode = false;
 document.addEventListener('DOMContentLoaded', () => {
     initializeDateInputs();
     populateLocationCheckboxes();
-    loadStats();
+    setupEventListeners();
+    loadStats().then(() => {
+        // Automatically generate report on page load
+        generateReport();
+    });
 });
 
 // Initialize date inputs for mobile
 function initializeDateInputs() {
-    const dateInputs = document.querySelectorAll('.date-input');
-    dateInputs.forEach(input => {
-        input.addEventListener('focus', function() {
+    const startInput = document.getElementById('startDate');
+    const endInput = document.getElementById('endDate');
+    
+    if (startInput) {
+        startInput.addEventListener('focus', function() {
             this.type = 'date';
         });
-        input.addEventListener('blur', function() {
+        startInput.addEventListener('blur', function() {
             if (!this.value) {
                 this.type = 'text';
             }
         });
-    });
+    }
+    
+    if (endInput) {
+        endInput.addEventListener('focus', function() {
+            this.type = 'date';
+        });
+        endInput.addEventListener('blur', function() {
+            if (!this.value) {
+                this.type = 'text';
+            }
+        });
+    }
 }
 
 // Populate location checkboxes
@@ -73,7 +90,7 @@ function populateLocationCheckboxes() {
         const label = document.createElement('label');
         label.className = 'checkbox-item';
         label.innerHTML = `
-            <input type="checkbox" value="${loc}" checked>
+            <input type="checkbox" value="${loc}" checked class="location-checkbox">
             <span class="checkmark"></span>
             ${loc}
         `;
@@ -108,41 +125,86 @@ function updateStats(reviews) {
 }
 
 // Date range helpers
-function setDateRange(range) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+function getDateRange(period) {
+    const now = new Date();
+    let startDate, endDate;
     
-    let start, end;
-    
-    switch(range) {
-        case 'today':
-            start = end = today;
+    switch (period) {
+        case 'current-month':
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
             break;
-        case 'week':
-            start = new Date(today);
-            start.setDate(today.getDate() - today.getDay());
-            end = today;
+        case 'last-month':
+            startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            endDate = new Date(now.getFullYear(), now.getMonth(), 0);
             break;
-        case 'month':
-            start = new Date(today.getFullYear(), today.getMonth(), 1);
-            end = today;
+        case 'current-year':
+            startDate = new Date(now.getFullYear(), 0, 1);
+            endDate = new Date(now.getFullYear(), 11, 31);
             break;
-        case 'all':
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
-            document.getElementById('startDate').type = 'text';
-            document.getElementById('endDate').type = 'text';
-            return;
+        case 'last-year':
+            startDate = new Date(now.getFullYear() - 1, 0, 1);
+            endDate = new Date(now.getFullYear() - 1, 11, 31);
+            break;
+        default:
+            return null;
     }
     
-    document.getElementById('startDate').type = 'date';
-    document.getElementById('endDate').type = 'date';
-    document.getElementById('startDate').value = formatDateForInput(start);
-    document.getElementById('endDate').value = formatDateForInput(end);
+    // Format as YYYY-MM-DD
+    const formatDateStr = (d) => d.toISOString().split('T')[0];
+    
+    return {
+        start: formatDateStr(startDate),
+        end: formatDateStr(endDate)
+    };
 }
 
-function formatDateForInput(date) {
-    return date.toISOString().split('T')[0];
+function applyQuickReport(period) {
+    const range = getDateRange(period);
+    if (!range) return;
+    
+    // Set the date inputs
+    const startInput = document.getElementById('startDate');
+    const endInput = document.getElementById('endDate');
+    
+    startInput.type = 'date';
+    endInput.type = 'date';
+    startInput.value = range.start;
+    endInput.value = range.end;
+    
+    // Close any open dropdowns
+    closeAllDropdowns();
+    
+    // Generate the report
+    generateReport();
+    
+    // Show toast with period name
+    const periodNames = {
+        'current-month': 'Current Month',
+        'last-month': 'Last Month',
+        'current-year': 'Current Year',
+        'last-year': 'Last Year'
+    };
+    showToast(`Showing ${periodNames[period]} report`);
+}
+
+function toggleDropdown(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    const isHidden = dropdown.classList.contains('hidden');
+    
+    // Close all dropdowns first
+    closeAllDropdowns();
+    
+    // Toggle the clicked dropdown
+    if (isHidden) {
+        dropdown.classList.remove('hidden');
+    }
+}
+
+function closeAllDropdowns() {
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.classList.add('hidden');
+    });
 }
 
 // Format date for display (CST 12-hour)
@@ -159,17 +221,17 @@ function formatDate(dateStr) {
 }
 
 // Generate report
-async function generateReport() {
-    // Get selected locations
-    const selectedLocations = Array.from(document.querySelectorAll('#locationCheckboxes input:checked'))
+function generateReport() {
+    // Get selected locations (exclude "Select All" checkbox)
+    const selectedLocations = Array.from(document.querySelectorAll('#locationCheckboxes .location-checkbox:checked'))
         .map(cb => cb.value);
     
-    // Get selected ratings
-    const selectedRatings = Array.from(document.querySelectorAll('#ratingCheckboxes input:checked'))
+    // Get selected ratings (exclude "Select All" checkbox)
+    const selectedRatings = Array.from(document.querySelectorAll('#ratingCheckboxes .rating-checkbox:checked'))
         .map(cb => cb.value);
     
-    // Get selected follow-up statuses
-    const selectedFollowups = Array.from(document.querySelectorAll('#followupCheckboxes input:checked'))
+    // Get selected follow-up statuses (exclude "Select All" checkbox)
+    const selectedFollowups = Array.from(document.querySelectorAll('#followupCheckboxes .followup-checkbox:checked'))
         .map(cb => cb.value);
     
     // Get date range
@@ -179,15 +241,15 @@ async function generateReport() {
     // Filter reviews
     filteredReviews = allReviews.filter(review => {
         // Location filter
-        if (!selectedLocations.includes(review.location)) return false;
+        if (selectedLocations.length > 0 && !selectedLocations.includes(review.location)) return false;
         
         // Rating filter
         const rating = review.answers?.q18;
-        if (rating && !selectedRatings.includes(rating)) return false;
+        if (selectedRatings.length > 0 && rating && !selectedRatings.includes(rating)) return false;
         
         // Follow-up filter
         const followup = review.answers?.q19;
-        if (followup && !selectedFollowups.includes(followup)) return false;
+        if (selectedFollowups.length > 0 && followup && !selectedFollowups.includes(followup)) return false;
         
         // Date filter
         if (startDate || endDate) {
@@ -556,6 +618,176 @@ function showToast(message, type = 'success') {
         toast.classList.remove('show');
         setTimeout(() => toast.classList.add('hidden'), 300);
     }, 3000);
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    // Generate report button
+    const generateBtn = document.getElementById('generateReportBtn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', generateReport);
+    }
+    
+    // Export report button - toggle dropdown
+    const exportBtn = document.getElementById('exportReportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleExportMenu();
+        });
+    }
+    
+    // Export menu options
+    document.querySelectorAll('#exportMenu .export-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const format = e.currentTarget.dataset.format;
+            if (format === 'pdf') {
+                exportAllToPDF();
+            }
+            closeExportMenu();
+        });
+    });
+    
+    // Close export menu when clicking outside
+    document.addEventListener('click', () => {
+        closeExportMenu();
+    });
+    
+    // Monthly report dropdown
+    const monthlyBtn = document.getElementById('monthlyReportBtn');
+    if (monthlyBtn) {
+        monthlyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleDropdown('monthlyDropdown');
+        });
+    }
+    
+    // Yearly report dropdown
+    const yearlyBtn = document.getElementById('yearlyReportBtn');
+    if (yearlyBtn) {
+        yearlyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleDropdown('yearlyDropdown');
+        });
+    }
+    
+    // Handle dropdown item clicks
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const period = e.target.dataset.period;
+            applyQuickReport(period);
+        });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', () => {
+        closeAllDropdowns();
+    });
+    
+    // "Select All" for locations
+    const selectAllLocations = document.getElementById('selectAllLocations');
+    if (selectAllLocations) {
+        selectAllLocations.addEventListener('change', (e) => {
+            document.querySelectorAll('.location-checkbox').forEach(cb => {
+                cb.checked = e.target.checked;
+            });
+            generateReport();
+        });
+    }
+    
+    // Update "Select All" locations checkbox when individual checkboxes change
+    const locationContainer = document.getElementById('locationCheckboxes');
+    if (locationContainer) {
+        locationContainer.addEventListener('change', (e) => {
+            if (e.target.classList.contains('location-checkbox')) {
+                const allChecked = document.querySelectorAll('.location-checkbox:not(:checked)').length === 0;
+                if (selectAllLocations) selectAllLocations.checked = allChecked;
+                generateReport();
+            }
+        });
+    }
+    
+    // "Select All" for ratings
+    const selectAllRatings = document.getElementById('selectAllRatings');
+    if (selectAllRatings) {
+        selectAllRatings.addEventListener('change', (e) => {
+            document.querySelectorAll('.rating-checkbox').forEach(cb => {
+                cb.checked = e.target.checked;
+            });
+            generateReport();
+        });
+    }
+    
+    // Update "Select All" ratings checkbox when individual checkboxes change
+    const ratingContainer = document.getElementById('ratingCheckboxes');
+    if (ratingContainer) {
+        ratingContainer.addEventListener('change', (e) => {
+            if (e.target.classList.contains('rating-checkbox')) {
+                const allChecked = document.querySelectorAll('.rating-checkbox:not(:checked)').length === 0;
+                if (selectAllRatings) selectAllRatings.checked = allChecked;
+                generateReport();
+            }
+        });
+    }
+    
+    // "Select All" for follow-ups
+    const selectAllFollowups = document.getElementById('selectAllFollowups');
+    if (selectAllFollowups) {
+        selectAllFollowups.addEventListener('change', (e) => {
+            document.querySelectorAll('.followup-checkbox').forEach(cb => {
+                cb.checked = e.target.checked;
+            });
+            generateReport();
+        });
+    }
+    
+    // Update "Select All" follow-ups checkbox when individual checkboxes change
+    const followupContainer = document.getElementById('followupCheckboxes');
+    if (followupContainer) {
+        followupContainer.addEventListener('change', (e) => {
+            if (e.target.classList.contains('followup-checkbox')) {
+                const allChecked = document.querySelectorAll('.followup-checkbox:not(:checked)').length === 0;
+                if (selectAllFollowups) selectAllFollowups.checked = allChecked;
+                generateReport();
+            }
+        });
+    }
+    
+    // Auto-generate report when date inputs change
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    if (startDateInput) {
+        startDateInput.addEventListener('change', generateReport);
+        startDateInput.addEventListener('blur', () => {
+            if (startDateInput.value || endDateInput?.value) {
+                generateReport();
+            }
+        });
+    }
+    if (endDateInput) {
+        endDateInput.addEventListener('change', generateReport);
+        endDateInput.addEventListener('blur', () => {
+            if (endDateInput.value || startDateInput?.value) {
+                generateReport();
+            }
+        });
+    }
+}
+
+function toggleExportMenu() {
+    const menu = document.getElementById('exportMenu');
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+}
+
+function closeExportMenu() {
+    const menu = document.getElementById('exportMenu');
+    if (menu) {
+        menu.classList.add('hidden');
+    }
 }
 
 

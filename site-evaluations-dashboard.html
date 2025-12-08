@@ -253,7 +253,11 @@
                         <div class="filter-section">
                             <label>Locations</label>
                             <div class="checkbox-group" id="locationCheckboxes">
-                                <!-- Populated by JS -->
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="selectAllLocations" checked>
+                                    <span class="checkmark"></span>
+                                    Select All
+                                </label>
                             </div>
                         </div>
 
@@ -262,22 +266,27 @@
                             <label>Overall Rating</label>
                             <div class="checkbox-group" id="ratingCheckboxes">
                                 <label class="checkbox-item">
-                                    <input type="checkbox" value="Excellent" checked>
+                                    <input type="checkbox" id="selectAllRatings" checked>
+                                    <span class="checkmark"></span>
+                                    Select All
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" value="Excellent" checked class="rating-checkbox">
                                     <span class="checkmark"></span>
                                     Excellent
                                 </label>
                                 <label class="checkbox-item">
-                                    <input type="checkbox" value="Good" checked>
+                                    <input type="checkbox" value="Good" checked class="rating-checkbox">
                                     <span class="checkmark"></span>
                                     Good
                                 </label>
                                 <label class="checkbox-item">
-                                    <input type="checkbox" value="Fair" checked>
+                                    <input type="checkbox" value="Fair" checked class="rating-checkbox">
                                     <span class="checkmark"></span>
                                     Fair
                                 </label>
                                 <label class="checkbox-item">
-                                    <input type="checkbox" value="Poor" checked>
+                                    <input type="checkbox" value="Poor" checked class="rating-checkbox">
                                     <span class="checkmark"></span>
                                     Poor
                                 </label>
@@ -289,22 +298,27 @@
                             <label>Follow-up Status</label>
                             <div class="checkbox-group" id="followupCheckboxes">
                                 <label class="checkbox-item">
-                                    <input type="checkbox" value="No" checked>
+                                    <input type="checkbox" id="selectAllFollowups" checked>
+                                    <span class="checkmark"></span>
+                                    Select All
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" value="No" checked class="followup-checkbox">
                                     <span class="checkmark"></span>
                                     No Follow-up
                                 </label>
                                 <label class="checkbox-item">
-                                    <input type="checkbox" value="Yes (minor follow-up)" checked>
+                                    <input type="checkbox" value="Yes (minor follow-up)" checked class="followup-checkbox">
                                     <span class="checkmark"></span>
                                     Minor Follow-up
                                 </label>
                                 <label class="checkbox-item">
-                                    <input type="checkbox" value="Yes (moderate follow-up)" checked>
+                                    <input type="checkbox" value="Yes (moderate follow-up)" checked class="followup-checkbox">
                                     <span class="checkmark"></span>
                                     Moderate Follow-up
                                 </label>
                                 <label class="checkbox-item">
-                                    <input type="checkbox" value="Yes (urgent follow-up required)" checked>
+                                    <input type="checkbox" value="Yes (urgent follow-up required)" checked class="followup-checkbox">
                                     <span class="checkmark"></span>
                                     Urgent Follow-up
                                 </label>
@@ -315,46 +329,57 @@
                         <div class="filter-section">
                             <label>Date Range</label>
                             <div class="date-inputs">
-                                <input type="text" class="date-input" id="startDate" placeholder="mm/dd/yyyy">
+                                <input type="text" class="date-input" id="startDate" placeholder="mm/dd/yyyy" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
                                 <span class="date-separator">to</span>
-                                <input type="text" class="date-input" id="endDate" placeholder="mm/dd/yyyy">
+                                <input type="text" class="date-input" id="endDate" placeholder="mm/dd/yyyy" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
                             </div>
                             <div class="quick-actions">
-                                <label>Quick Select</label>
+                                <label>Quick Reports</label>
                                 <div class="quick-action-btns">
-                                    <button type="button" class="btn-quick" onclick="setDateRange('today')">Today</button>
-                                    <button type="button" class="btn-quick" onclick="setDateRange('week')">This Week</button>
-                                    <button type="button" class="btn-quick" onclick="setDateRange('month')">This Month</button>
-                                    <button type="button" class="btn-quick" onclick="setDateRange('all')">All Time</button>
+                                    <div class="dropdown-container">
+                                        <button class="btn-quick" id="monthlyReportBtn">Monthly</button>
+                                        <div class="dropdown-menu hidden" id="monthlyDropdown">
+                                            <button class="dropdown-item" data-period="current-month">Current Month</button>
+                                            <button class="dropdown-item" data-period="last-month">Last Month</button>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown-container">
+                                        <button class="btn-quick" id="yearlyReportBtn">Yearly</button>
+                                        <div class="dropdown-menu hidden" id="yearlyDropdown">
+                                            <button class="dropdown-item" data-period="current-year">Current Year</button>
+                                            <button class="dropdown-item" data-period="last-year">Last Year</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="report-actions">
-                        <button class="btn-generate" onclick="generateReport()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                                <line x1="16" y1="13" x2="8" y2="13"/>
-                                <line x1="16" y1="17" x2="8" y2="17"/>
-                            </svg>
-                            Generate Report
+                        <button class="btn-generate" id="generateReportBtn">
+                            View Report
                         </button>
-                        <button class="btn-export-report" onclick="exportAllToPDF()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                                <line x1="12" y1="18" x2="12" y2="12"/>
-                                <polyline points="9 15 12 12 15 15"/>
-                            </svg>
-                            Export as PDF
-                        </button>
+                        <div class="export-dropdown">
+                            <button class="btn-export-report" id="exportReportBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Export Report
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="dropdown-chevron">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </button>
+                            <div class="export-menu hidden" id="exportMenu">
+                                <button class="export-option" data-format="pdf">Export as PDF</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Report Results -->
-                <div class="report-results hidden" id="reportResults">
+                <div class="report-results" id="reportResults">
                     <div class="report-results-header">
                         <h3>Report Results</h3>
                         <div class="report-stats" id="reportStats">

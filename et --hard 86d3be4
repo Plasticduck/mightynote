@@ -1,0 +1,37 @@
+[33ma5e03e7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Remove Google OAuth and revert to email/password authentication
+[33m0e3ddc2[m Add user list view to settings page
+[33m67944f6[m Use Google OAuth directly and sync with Stack Auth server-side
+[33md240efa[m Fix Stack Auth SDK loading with script tag and wait mechanism
+[33m794137a[m Improve Stack Auth SDK loading with multiple CDN sources and method detection
+[33ma50df73[m Fix Stack Auth SDK loading with dynamic script loader
+[33m125dfd3[m Fix Stack Auth SDK loading with ES modules
+[33mfb2c0bb[m Pass Stack Auth credentials as URL params
+[33m58e31af[m Fix Google OAuth to use Stack Auth client SDK
+[33m576aa70[m Use Neon Auth's configured Google OAuth to sync to database
+[33m958e23e[m Fix Google OAuth - use direct Google OAuth flow
+[33mfb5b0fa[m Add Google Sign-In/Sign-Up with Neon Auth
+[33m4ffd69b[m Add Neon Auth (Stack Auth) integration
+[33m86d3be4[m Use mwico.ico as apple-touch-icon
+[33m3f2dcee[m Reorder apps: Site Evaluations first
+[33m04282f2[m Rename to MightyOps and update app colors
+[33m75b632b[m Add mwico.ico favicon to all pages
+[33m79da30d[m Update site evaluations dashboard
+[33ma1491a5[m Fix evaluation DB issues and rename PDF to Site Evaluation Report
+[33mebb351d[m Remove key files from repo
+[33m920a7ff[m Change site locations to Site #1-31
+[33m1f155e3[m Add Site Evaluations app with 19-question executive review form and PDF export dashboard
+[33m3dcad05[m Add 4 new coming soon apps: Site Evaluations, Staffing/Leadership/Culture Notes, Capital Improvement Requests, Market Research
+[33m26f9d67[m Add subtitle to Site Violations app card for balanced layout
+[33mcab8407[m Reduce app card padding and remove bottom margin on title
+[33md2eb86f[m Center app card titles on home screen
+[33m7e20798[m Disable caching for app files, force logout on version update
+[33mc6e0da1[m Rename to Site Violations, fix time to CST 12hr, fix mobile date picker placeholder
+[33m3526ed7[m Add auth system, settings page, and UI improvements
+[33m9da5a4f[m Fix delete error false reporting, add delay before refresh
+[33m3aa3f08[m Remove View Notes section, fix checkbox overlap in report results
+[33mf661a6b[m Replace report charts with selectable notes view, add Select mode button
+[33m0e87eb1[m Move records view to dashboard, simplify index to form only
+[33m8ec61fe[m Add note selection, bulk delete, sorting, photo opens in new tab
+[33m7633f9a[m Add photo hyperlinks to PDF and Excel exports
+[33ma77e433[m Add photo upload with PDF conversion, export dropdown, modern UI revamp
+[33m71f121e[m Initial commit: Mighty Note PWA with Neon PostgreSQL backend
