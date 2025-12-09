@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MightyOps">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="mwico.ico">
+    <link rel="icon" type="image/x-icon" href="mwico.ico">
+    <title>Staffing, Leadership & Culture - MightyOps</title>
+    <link rel="stylesheet" href="styles.css?v=23">
+    <style>
+        .evaluation-form {
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+        
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .question-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            padding-bottom: var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .question-group:last-of-type {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        
+        .question-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--white);
+            line-height: 1.4;
+        }
+        
+        .tag-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
+        }
+        
+        .tag-option {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        
+        .tag-option:hover {
+            background: var(--bg-hover);
+            border-color: var(--white-15);
+        }
+        
+        .tag-option input[type="checkbox"] {
+            margin-right: 6px;
+        }
+        
+        .tag-option.selected {
+            background: var(--accent-blue-dim);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+        
+        .rating-container {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            margin-top: var(--space-sm);
+        }
+        
+        .star-rating {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .star {
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all var(--transition-base);
+        }
+        
+        .star.active {
+            color: var(--accent-yellow);
+        }
+        
+        .star:hover {
+            transform: scale(1.1);
+        }
+        
+        .form-card {
+            max-width: 640px;
+        }
+        
+        .rating-value {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-left: var(--space-sm);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="bg-decoration"></div>
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <img src="MW Logo.png" alt="MW Logo" class="logo-img">
+                <span class="logo-text">Staffing, Leadership & Culture</span>
+            </div>
+            <div class="header-actions">
+                <a href="staffing-leadership-culture-dashboard.html" class="btn-icon" title="View Reports">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
+                    </svg>
+                </a>
+                <a href="home.html" class="btn-icon" title="Back to Apps">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Form Screen -->
+        <main class="main-content" id="formScreen">
+            <div class="form-card">
+                <div class="form-header">
+                    <h2>Staffing, Leadership & Culture Notes</h2>
+                    <p class="form-subtitle">Submitting as: <strong id="submitterName">Loading...</strong></p>
+                </div>
+
+                <form id="evaluationForm" class="evaluation-form">
+                    <!-- Site Selection -->
+                    <div class="form-group">
+                        <label for="location">Site Location</label>
+                        <div class="select-wrapper">
+                            <select id="location" required>
+                                <option value="">Select a site...</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 1 — Staffing Assessment -->
+                    <div>
+                        <h3 class="section-header">SECTION 1 — Staffing Assessment</h3>
+                        
+                        <div class="question-group">
+                            <label class="question-label">1. Staffing Levels</label>
+                            <div class="select-wrapper">
+                                <select id="staffingLevels" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Adequate">Adequate</option>
+                                    <option value="Slightly understaffed">Slightly understaffed</option>
+                                    <option value="Severely understaffed">Severely understaffed</option>
+                                    <option value="Overstaffed">Overstaffed</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">2. Skill Level of Staff Observed</label>
+                            <div class="rating-container">
+                                <div class="star-rating" id="skillLevelRating">
+                                    <span class="star" data-value="1">★</span>
+                                    <span class="star" data-value="2">★</span>
+                                    <span class="star" data-value="3">★</span>
+                                    <span class="star" data-value="4">★</span>
+                                    <span class="star" data-value="5">★</span>
+                                </div>
+                                <span class="rating-value" id="skillLevelValue">(1 = Low skill, 5 = Highly skilled)</span>
+                            </div>
+                            <input type="hidden" id="skillLevel" required>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">3. Key Staffing Concerns (Select all that apply)</label>
+                            <div class="tag-selector" id="staffingConcerns">
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Attendance problems">
+                                    <span>Attendance problems</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Lack of training">
+                                    <span>Lack of training</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Slow workflow / inefficiency">
+                                    <span>Slow workflow / inefficiency</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="High turnover risk">
+                                    <span>High turnover risk</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Wrong staff in wrong roles">
+                                    <span>Wrong staff in wrong roles</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="New staff needing mentorship">
+                                    <span>New staff needing mentorship</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="None observed">
+                                    <span>None observed</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">4. High-Potential Employees Noted (optional)</label>
+                            <textarea id="highPotentialEmployees" rows="3" placeholder="Enter names or descriptions of high-potential employees..."></textarea>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">5. Employees Needing Coaching or Correction</label>
+                            <textarea id="employeesNeedingCoaching" rows="3" placeholder="Enter names or descriptions of employees needing coaching..."></textarea>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">6. Staffing Summary (Overall)</label>
+                            <textarea id="staffingSummary" rows="4" placeholder="Summarize your staffing observations during this visit." required></textarea>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2 — Leadership Evaluation -->
+                    <div>
+                        <h3 class="section-header">SECTION 2 — Leadership Evaluation</h3>
+                        
+                        <div class="question-group">
+                            <label class="question-label">1. Site Leadership Presence</label>
+                            <div class="select-wrapper">
+                                <select id="leadershipPresence" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Strong leadership present">Strong leadership present</option>
+                                    <option value="Adequate leadership">Adequate leadership</option>
+                                    <option value="Leadership inconsistent">Leadership inconsistent</option>
+                                    <option value="Weak or absent leadership">Weak or absent leadership</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">2. Leadership Behaviors Observed (Select all that apply)</label>
+                            <div class="tag-selector" id="leadershipBehaviors">
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Clear communication">
+                                    <span>Clear communication</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Good delegation">
+                                    <span>Good delegation</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Poor delegation">
+                                    <span>Poor delegation</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Strong floor presence">
+                                    <span>Strong floor presence</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Avoiding responsibility">
+                                    <span>Avoiding responsibility</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Positive morale-building">
+                                    <span>Positive morale-building</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Reactive, not proactive">
+                                    <span>Reactive, not proactive</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Coaching employees effectively">
+                                    <span>Coaching employees effectively</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Micromanagement">
+                                    <span>Micromanagement</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Not visible / unavailable">
+                                    <span>Not visible / unavailable</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">3. GM Performance Snapshot</label>
+                            <div class="rating-container">
+                                <div class="star-rating" id="gmPerformanceRating">
+                                    <span class="star" data-value="1">★</span>
+                                    <span class="star" data-value="2">★</span>
+                                    <span class="star" data-value="3">★</span>
+                                    <span class="star" data-value="4">★</span>
+                                    <span class="star" data-value="5">★</span>
+                                </div>
+                                <span class="rating-value" id="gmPerformanceValue">(1 = Poor, 5 = Excellent)</span>
+                            </div>
+                            <input type="hidden" id="gmPerformance" required>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">4. Notes Regarding GM or Leadership Team</label>
+                            <textarea id="gmNotes" rows="4" placeholder="Document strengths, weaknesses, and any leadership behaviors that stood out." required></textarea>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">5. Leadership Follow-Up Needed</label>
+                            <div class="select-wrapper">
+                                <select id="leadershipFollowUp" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="None">None</option>
+                                    <option value="Coaching conversation">Coaching conversation</option>
+                                    <option value="Formal write-up review">Formal write-up review</option>
+                                    <option value="Executive intervention">Executive intervention</option>
+                                    <option value="Replacement consideration">Replacement consideration</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">6. Potential Future Leaders Identified</label>
+                            <textarea id="potentialLeaders" rows="3" placeholder="Enter names or descriptions..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 3 — Culture & Morale -->
+                    <div>
+                        <h3 class="section-header">SECTION 3 — Culture & Morale</h3>
+                        
+                        <div class="question-group">
+                            <label class="question-label">1. Team Morale</label>
+                            <div class="select-wrapper">
+                                <select id="teamMorale" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Very positive">Very positive</option>
+                                    <option value="Positive">Positive</option>
+                                    <option value="Neutral">Neutral</option>
+                                    <option value="Negative">Negative</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">2. Culture Observed on Site (Select all that apply)</label>
+                            <div class="tag-selector" id="cultureObserved">
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Customer-first mindset">
+                                    <span>Customer-first mindset</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Fast-paced, organized">
+                                    <span>Fast-paced, organized</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Cleanliness-focused">
+                                    <span>Cleanliness-focused</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Safety-focused">
+                                    <span>Safety-focused</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Relaxed but productive">
+                                    <span>Relaxed but productive</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Low energy">
+                                    <span>Low energy</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Resistance to SOP">
+                                    <span>Resistance to SOP</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Blame culture">
+                                    <span>Blame culture</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Strong teamwork">
+                                    <span>Strong teamwork</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Clear pride in site">
+                                    <span>Clear pride in site</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Poor communication">
+                                    <span>Poor communication</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="New culture forming">
+                                    <span>New culture forming</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Toxic or concerning behavior">
+                                    <span>Toxic or concerning behavior</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">3. Employee Interactions with Customers</label>
+                            <div class="rating-container">
+                                <div class="star-rating" id="customerInteractionsRating">
+                                    <span class="star" data-value="1">★</span>
+                                    <span class="star" data-value="2">★</span>
+                                    <span class="star" data-value="3">★</span>
+                                    <span class="star" data-value="4">★</span>
+                                    <span class="star" data-value="5">★</span>
+                                </div>
+                                <span class="rating-value" id="customerInteractionsValue">(1 = Poor, 5 = Excellent)</span>
+                            </div>
+                            <input type="hidden" id="customerInteractions" required>
+                            <textarea id="customerInteractionsNotes" rows="2" placeholder="Optional notes..." style="margin-top: var(--space-sm);"></textarea>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">4. Recognition Moments</label>
+                            <textarea id="recognitionMoments" rows="3" placeholder="Any employees who demonstrated exceptional service or leadership?"></textarea>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">5. Culture Issues or Risks</label>
+                            <textarea id="cultureIssues" rows="4" placeholder="Document any emerging cultural risks or negative trends to monitor."></textarea>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">6. Overall Culture Assessment</label>
+                            <div class="select-wrapper">
+                                <select id="overallCulture" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Strong and healthy">Strong and healthy</option>
+                                    <option value="Mostly healthy">Mostly healthy</option>
+                                    <option value="Needs improvement">Needs improvement</option>
+                                    <option value="Concerning">Concerning</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 4 — Summary & Action Items -->
+                    <div>
+                        <h3 class="section-header">SECTION 4 — Summary & Action Items</h3>
+                        
+                        <div class="question-group">
+                            <label class="question-label">1. Key Takeaways</label>
+                            <textarea id="keyTakeaways" rows="5" placeholder="What are the top 3–5 points leadership needs to know?" required></textarea>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">2. Recommended Follow-Up Actions (Select all that apply)</label>
+                            <div class="tag-selector" id="followUpActions">
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Leadership coaching">
+                                    <span>Leadership coaching</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Staffing adjustments">
+                                    <span>Staffing adjustments</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="HR involvement">
+                                    <span>HR involvement</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Additional training">
+                                    <span>Additional training</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="Culture reset">
+                                    <span>Culture reset</span>
+                                </label>
+                                <label class="tag-option">
+                                    <input type="checkbox" value="No action required">
+                                    <span>No action required</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="question-group">
+                            <label class="question-label">3. Specific Follow-Up Instructions</label>
+                            <textarea id="followUpInstructions" rows="4" placeholder="Enter specific follow-up instructions..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-submit">
+                        <span class="btn-text">Submit Notes</span>
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- Toast Notification -->
+        <div class="toast hidden" id="toast">
+            <span class="toast-icon">✓</span>
+            <span class="toast-message">Notes saved successfully!</span>
+        </div>
+    </div>
+
+    <script src="staffing-leadership-culture.js?v=1"></script>
+</body>
+</html>
+

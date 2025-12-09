@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MightyOps">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="mwico.ico">
+    <link rel="icon" type="image/x-icon" href="mwico.ico">
+    <title>Capital Improvement Requests Dashboard - MightyOps</title>
+    <link rel="stylesheet" href="styles.css?v=23">
+    <style>
+        .review-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-bottom: var(--space-md);
+            transition: all var(--transition-base);
+            position: relative;
+        }
+        .review-card:hover {
+            background: var(--bg-hover);
+            border-color: var(--white-15);
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-sm);
+        }
+        .review-location {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--white);
+        }
+        .review-timestamp {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .review-meta {
+            display: flex;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-sm);
+        }
+        .review-badge {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            background: var(--white-05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+        .review-card.selectable {
+            padding-left: 56px;
+        }
+        .review-checkbox {
+            position: absolute;
+            top: var(--space-md);
+            left: var(--space-md);
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            display: none;
+        }
+        .select-mode .review-checkbox {
+            display: block;
+        }
+        .review-check {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-input);
+            transition: all var(--transition-fast);
+        }
+        .review-checkbox input:checked + .review-check {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+        .review-checkbox input:checked + .review-check::after {
+            content: '✓';
+            color: var(--white);
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .review-card.selected {
+            background: var(--accent-blue-dim);
+            border-color: rgba(10, 132, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="bg-decoration"></div>
+        <header class="app-header">
+            <div class="logo">
+                <img src="MW Logo.png" alt="MW Logo" class="logo-img">
+                <span class="logo-text">Capital Improvement Requests</span>
+            </div>
+            <div class="header-actions">
+                <a href="capital-improvement-requests.html" class="btn-icon btn-add-note" title="New Request">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                </a>
+                <a href="home.html" class="btn-icon" title="Back to Apps">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </a>
+            </div>
+        </header>
+        <main class="main-content">
+            <div class="admin-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card stat-total">
+                        <div class="stat-content">
+                            <span class="stat-value" id="totalRequests">0</span>
+                            <span class="stat-label">Total Requests</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-operations">
+                        <div class="stat-content">
+                            <span class="stat-value" id="pendingCount">0</span>
+                            <span class="stat-label">Pending</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-safety">
+                        <div class="stat-content">
+                            <span class="stat-value" id="approvedCount">0</span>
+                            <span class="stat-label">Approved</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-accounting">
+                        <div class="stat-content">
+                            <span class="stat-value" id="criticalCount">0</span>
+                            <span class="stat-label">Critical (5)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="report-filters">
+                    <h3>Generate Report</h3>
+                    <div class="filters-grid">
+                        <div class="filter-section">
+                            <label>Locations</label>
+                            <div class="checkbox-group" id="locationCheckboxes">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="selectAllLocations" checked>
+                                    <span class="checkmark"></span>
+                                    Select All
+                                </label>
+                            </div>
+                        </div>
+                        <div class="filter-section">
+                            <label>Date Range</label>
+                            <div class="date-inputs">
+                                <input type="text" class="date-input" id="startDate" placeholder="mm/dd/yyyy" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
+                                <span class="date-separator">to</span>
+                                <input type="text" class="date-input" id="endDate" placeholder="mm/dd/yyyy" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="report-actions">
+                        <button class="btn-generate" id="generateReportBtn">View Report</button>
+                        <div class="export-dropdown">
+                            <button class="btn-export-report" id="exportReportBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Export Report
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="dropdown-chevron">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </button>
+                            <div class="export-menu hidden" id="exportMenu">
+                                <button class="export-option" data-format="pdf">Export as PDF</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="report-results hidden" id="reportResults">
+                    <div class="report-results-header">
+                        <h3>Report Results</h3>
+                        <div class="report-stats" id="reportStats"></div>
+                        <button class="btn-select-mode" id="selectModeBtn" onclick="toggleSelectMode()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 11 12 14 22 4"/>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                            </svg>
+                            Select
+                        </button>
+                    </div>
+                    <div class="selection-bar hidden" id="selectionBar">
+                        <div class="selection-info">
+                            <label class="select-all-container">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                                <span class="select-all-check"></span>
+                            </label>
+                            <span class="selection-count" id="selectionCount">0 selected</span>
+                        </div>
+                        <div class="selection-actions">
+                            <button class="btn-action btn-export-selected" onclick="exportSelectedToPDF()" id="exportSelectedBtn" disabled>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Export PDF
+                            </button>
+                            <button class="btn-action btn-delete-selected" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                                Delete
+                            </button>
+                            <button class="btn-action btn-clear-selection" onclick="clearSelection()">Clear</button>
+                        </div>
+                    </div>
+                    <div class="filter-bar">
+                        <div class="filter-group">
+                            <label>Sort by:</label>
+                            <select id="sortSelect" onchange="sortResults()">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="location">Location A-Z</option>
+                                <option value="importance">Importance (High First)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="records-container" id="resultsContainer"></div>
+                </div>
+            </div>
+        </main>
+        <div class="toast hidden" id="toast">
+            <span class="toast-icon">✓</span>
+            <span class="toast-message">Success!</span>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="capital-improvement-requests-dashboard.js?v=1"></script>
+</body>
+</html>
+

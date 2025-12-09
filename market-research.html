@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MightyOps">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="mwico.ico">
+    <link rel="icon" type="image/x-icon" href="mwico.ico">
+    <title>Market Research - MightyOps</title>
+    <link rel="stylesheet" href="styles.css?v=23">
+    <style>
+        .evaluation-form {
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 2px solid var(--border-color);
+        }
+        .question-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            padding-bottom: var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .question-group:last-of-type {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .question-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--white);
+            line-height: 1.4;
+        }
+        .tag-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
+        }
+        .tag-option {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        .tag-option:hover {
+            background: var(--bg-hover);
+            border-color: var(--white-15);
+        }
+        .tag-option input[type="checkbox"] {
+            margin-right: 6px;
+        }
+        .tag-option.selected {
+            background: var(--accent-blue-dim);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+        .rating-container {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            margin-top: var(--space-sm);
+        }
+        .rating-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-input);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .rating-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+        }
+        .rating-value {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            min-width: 40px;
+            text-align: right;
+        }
+        .form-card {
+            max-width: 640px;
+        }
+        .pricing-entry {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+            align-items: center;
+        }
+        .pricing-entry input {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="bg-decoration"></div>
+        <header class="app-header">
+            <div class="logo">
+                <img src="MW Logo.png" alt="MW Logo" class="logo-img">
+                <span class="logo-text">Market Research</span>
+            </div>
+            <div class="header-actions">
+                <a href="market-research-dashboard.html" class="btn-icon" title="View Reports">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
+                    </svg>
+                </a>
+                <a href="home.html" class="btn-icon" title="Back to Apps">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </a>
+            </div>
+        </header>
+        <main class="main-content" id="formScreen">
+            <div class="form-card">
+                <div class="form-header">
+                    <h2>Market Research (Competitor Visit)</h2>
+                    <p class="form-subtitle">Submitting as: <strong id="submitterName">Loading...</strong></p>
+                </div>
+                <form id="researchForm" class="evaluation-form">
+                    <div>
+                        <h3 class="section-header">SECTION 1 — Competitor Site Basics</h3>
+                        <div class="question-group">
+                            <label class="question-label">1. Competitor Brand Name</label>
+                            <input type="text" id="competitorBrand" placeholder="Enter competitor brand name" required>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">2. Address / Location</label>
+                            <input type="text" id="competitorAddress" placeholder="Enter address" required>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">3. Type of Operation</label>
+                            <div class="select-wrapper">
+                                <select id="operationType" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Express tunnel">Express tunnel</option>
+                                    <option value="Full service">Full service</option>
+                                    <option value="Flex service">Flex service</option>
+                                    <option value="Self-serve">Self-serve</option>
+                                    <option value="In-bay automatic">In-bay automatic</option>
+                                    <option value="Quick lube + wash combo">Quick lube + wash combo</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">4. Approximate Tunnel Length</label>
+                            <div class="select-wrapper">
+                                <select id="tunnelLength">
+                                    <option value="">Select an answer...</option>
+                                    <option value="Under 70 ft">Under 70 ft</option>
+                                    <option value="70–90 ft">70–90 ft</option>
+                                    <option value="90–120 ft">90–120 ft</option>
+                                    <option value="120–150 ft">120–150 ft</option>
+                                    <option value="150+ ft">150+ ft</option>
+                                    <option value="Unknown">Unknown</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">5. Date and Time of Visit</label>
+                            <input type="datetime-local" id="visitDateTime" required>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-header">SECTION 2 — Operational Evaluation</h3>
+                        <div class="question-group">
+                            <label class="question-label">1. Staffing Levels Observed</label>
+                            <div class="select-wrapper">
+                                <select id="staffingLevels" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Fully staffed">Fully staffed</option>
+                                    <option value="Slightly understaffed">Slightly understaffed</option>
+                                    <option value="Severely understaffed">Severely understaffed</option>
+                                    <option value="Overstaffed">Overstaffed</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">2. Staff Professionalism / Appearance</label>
+                            <div class="rating-container">
+                                <input type="range" min="1" max="5" value="3" class="rating-slider" id="staffProfessionalism">
+                                <span class="rating-value" id="staffProfessionalismValue">3</span>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">(1-5)</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">3. Speed of Service</label>
+                            <div class="rating-container">
+                                <input type="range" min="1" max="5" value="3" class="rating-slider" id="speedOfService">
+                                <span class="rating-value" id="speedOfServiceValue">3</span>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">(1-5)</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">4. Queue Length at Time of Visit</label>
+                            <div class="select-wrapper">
+                                <select id="queueLength" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="No line">No line</option>
+                                    <option value="Short (1–3 cars)">Short (1–3 cars)</option>
+                                    <option value="Moderate (4–7 cars)">Moderate (4–7 cars)</option>
+                                    <option value="Long (8+ cars)">Long (8+ cars)</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">5. Equipment Condition</label>
+                            <div class="tag-selector" id="equipmentCondition">
+                                <label class="tag-option"><input type="checkbox" value="New / modern"><span>New / modern</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Well-maintained"><span>Well-maintained</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Aging"><span>Aging</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Poor condition"><span>Poor condition</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Down equipment observed"><span>Down equipment observed</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Rust / cosmetic issues"><span>Rust / cosmetic issues</span></label>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">6. Notable Technology Used (Select all that apply)</label>
+                            <div class="tag-selector" id="technologyUsed">
+                                <label class="tag-option"><input type="checkbox" value="LPR / camera recognition"><span>LPR / camera recognition</span></label>
+                                <label class="tag-option"><input type="checkbox" value="POS tablets"><span>POS tablets</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Conveyor load assist"><span>Conveyor load assist</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Smart queueing"><span>Smart queueing</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Modern pay stations"><span>Modern pay stations</span></label>
+                                <label class="tag-option"><input type="checkbox" value="App integration"><span>App integration</span></label>
+                                <label class="tag-option"><input type="checkbox" value="LED show features"><span>LED show features</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Basic / no advanced tech"><span>Basic / no advanced tech</span></label>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">7. Any unique operational strengths noticed?</label>
+                            <textarea id="operationalStrengths" rows="3" placeholder="Enter operational strengths..."></textarea>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">8. Any operational weaknesses observed?</label>
+                            <textarea id="operationalWeaknesses" rows="3" placeholder="Enter operational weaknesses..."></textarea>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-header">SECTION 3 — Customer Experience</h3>
+                        <div class="question-group">
+                            <label class="question-label">1. Greeting / Customer Service Quality</label>
+                            <div class="rating-container">
+                                <input type="range" min="1" max="5" value="3" class="rating-slider" id="customerServiceQuality">
+                                <span class="rating-value" id="customerServiceQualityValue">3</span>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">(1-5)</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">2. Site Cleanliness</label>
+                            <div class="rating-container">
+                                <input type="range" min="1" max="5" value="3" class="rating-slider" id="siteCleanliness">
+                                <span class="rating-value" id="siteCleanlinessValue">3</span>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">(1-5)</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">3. Vacuum Area Condition</label>
+                            <div class="rating-container">
+                                <input type="range" min="1" max="5" value="3" class="rating-slider" id="vacuumAreaCondition">
+                                <span class="rating-value" id="vacuumAreaConditionValue">3</span>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">(1-5)</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">4. Amenities Offered (Select all that apply)</label>
+                            <div class="tag-selector" id="amenitiesOffered">
+                                <label class="tag-option"><input type="checkbox" value="Free vacuums"><span>Free vacuums</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Towels"><span>Towels</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Cleaners / window spray"><span>Cleaners / window spray</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Air tools"><span>Air tools</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Mat cleaners"><span>Mat cleaners</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Vending machines"><span>Vending machines</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Interior cleaning services"><span>Interior cleaning services</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Arcade / dogs / extras"><span>Arcade / dogs / extras</span></label>
+                                <label class="tag-option"><input type="checkbox" value="None"><span>None</span></label>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">5. Did you observe trash, clutter, or poor upkeep?</label>
+                            <div class="select-wrapper">
+                                <select id="upkeepIssues" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="No">No</option>
+                                    <option value="Minimal">Minimal</option>
+                                    <option value="Noticeable">Noticeable</option>
+                                    <option value="Serious issues">Serious issues</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">6. Customer Volume During Visit</label>
+                            <div class="select-wrapper">
+                                <select id="customerVolume" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Moderate">Moderate</option>
+                                    <option value="Busy">Busy</option>
+                                    <option value="Very busy">Very busy</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-header">SECTION 4 — Pricing & Membership Insights</h3>
+                        <div class="question-group">
+                            <label class="question-label">1. Competitor's Wash Package Names</label>
+                            <textarea id="washPackages" rows="4" placeholder="Enter wash package names (one per line)"></textarea>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">2. Pricing for Each Wash Level</label>
+                            <textarea id="pricing" rows="4" placeholder="e.g., Basic $10, Mid-tier $18, Top $25"></textarea>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">3. Membership Pricing</label>
+                            <textarea id="membershipPricing" rows="3" placeholder="Record monthly prices per tier"></textarea>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">4. Membership Perks Observed (Select all that apply)</label>
+                            <div class="tag-selector" id="membershipPerks">
+                                <label class="tag-option"><input type="checkbox" value="Unlimited plan"><span>Unlimited plan</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Free vacuums"><span>Free vacuums</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Multi-car discount"><span>Multi-car discount</span></label>
+                                <label class="tag-option"><input type="checkbox" value="App rewards"><span>App rewards</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Free air fresheners"><span>Free air fresheners</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Priority lane"><span>Priority lane</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Other"><span>Other</span></label>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">5. Promotional Offers</label>
+                            <textarea id="promotionalOffers" rows="3" placeholder="Examples: first month $1, free birthday wash, rain check program"></textarea>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">6. Upgrades or Add-ons</label>
+                            <textarea id="upgradesAddons" rows="3" placeholder="E.g., ceramic, tire shine, bug prep, wax, show lighting"></textarea>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-header">SECTION 5 — Competitive Intelligence</h3>
+                        <div class="question-group">
+                            <label class="question-label">1. What stands out about this competitor?</label>
+                            <textarea id="competitorStandout" rows="4" placeholder="Enter observations..." required></textarea>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">2. What are their biggest strengths? (Select all that apply)</label>
+                            <div class="tag-selector" id="competitorStrengths">
+                                <label class="tag-option"><input type="checkbox" value="Price positioning"><span>Price positioning</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Modern equipment"><span>Modern equipment</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Speed"><span>Speed</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Customer service"><span>Customer service</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Branding"><span>Branding</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Technology"><span>Technology</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Location"><span>Location</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Strong membership program"><span>Strong membership program</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Clean site"><span>Clean site</span></label>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">3. What are their biggest weaknesses? (Select all that apply)</label>
+                            <div class="tag-selector" id="competitorWeaknesses">
+                                <label class="tag-option"><input type="checkbox" value="Poor speed"><span>Poor speed</span></label>
+                                <label class="tag-option"><input type="checkbox" value="High pricing"><span>High pricing</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Low staff engagement"><span>Low staff engagement</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Weak branding"><span>Weak branding</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Poor upkeep"><span>Poor upkeep</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Equipment issues"><span>Equipment issues</span></label>
+                                <label class="tag-option"><input type="checkbox" value="No added value / amenities"><span>No added value / amenities</span></label>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">4. What opportunities does this competitor create for Mighty Wash?</label>
+                            <textarea id="opportunities" rows="4" placeholder="Where can we outperform them? What do they lack?" required></textarea>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">5. Photos / Attachments From Visit</label>
+                            <div class="photo-upload-container">
+                                <div class="photo-buttons">
+                                    <button type="button" class="btn-photo" id="takePhotoBtn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                            <circle cx="12" cy="13" r="4"/>
+                                        </svg>
+                                        Take Photo
+                                    </button>
+                                    <button type="button" class="btn-photo" id="uploadPhotoBtn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                            <polyline points="17 8 12 3 7 8"/>
+                                            <line x1="12" y1="3" x2="12" y2="15"/>
+                                        </svg>
+                                        Upload Photo
+                                    </button>
+                                </div>
+                                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" multiple>
+                                <input type="file" id="fileInput" accept="image/*" style="display: none;" multiple>
+                                <div class="photo-preview hidden" id="photoPreview">
+                                    <div id="photoGrid"></div>
+                                    <span class="photo-status">Photos attached</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit">
+                        <span class="btn-text">Submit Research</span>
+                    </button>
+                </form>
+            </div>
+        </main>
+        <div class="toast hidden" id="toast">
+            <span class="toast-icon">✓</span>
+            <span class="toast-message">Research saved successfully!</span>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="market-research.js?v=1"></script>
+</body>
+</html>
+

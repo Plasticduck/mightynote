@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MightyOps">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="mwico.ico">
+    <link rel="icon" type="image/x-icon" href="mwico.ico">
+    <title>Capital Improvement Requests - MightyOps</title>
+    <link rel="stylesheet" href="styles.css?v=23">
+    <style>
+        .evaluation-form {
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 2px solid var(--border-color);
+        }
+        .question-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            padding-bottom: var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .question-group:last-of-type {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .question-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--white);
+            line-height: 1.4;
+        }
+        .tag-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
+        }
+        .tag-option {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        .tag-option:hover {
+            background: var(--bg-hover);
+            border-color: var(--white-15);
+        }
+        .tag-option input[type="checkbox"] {
+            margin-right: 6px;
+        }
+        .tag-option.selected {
+            background: var(--accent-blue-dim);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+        .rating-container {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            margin-top: var(--space-sm);
+        }
+        .rating-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-input);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .rating-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+        }
+        .rating-value {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            min-width: 40px;
+            text-align: right;
+        }
+        .form-card {
+            max-width: 640px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="bg-decoration"></div>
+        <header class="app-header">
+            <div class="logo">
+                <img src="MW Logo.png" alt="MW Logo" class="logo-img">
+                <span class="logo-text">Capital Improvement Requests</span>
+            </div>
+            <div class="header-actions">
+                <a href="capital-improvement-requests-dashboard.html" class="btn-icon" title="View Reports">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
+                    </svg>
+                </a>
+                <a href="home.html" class="btn-icon" title="Back to Apps">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </a>
+            </div>
+        </header>
+        <main class="main-content" id="formScreen">
+            <div class="form-card">
+                <div class="form-header">
+                    <h2>Capital Improvement Requests</h2>
+                    <p class="form-subtitle">Submitting as: <strong id="submitterName">Loading...</strong></p>
+                </div>
+                <form id="requestForm" class="evaluation-form">
+                    <div class="form-group">
+                        <label for="location">Site Location</label>
+                        <div class="select-wrapper">
+                            <select id="location" required>
+                                <option value="">Select a site...</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-header">SECTION 1 — Request Details</h3>
+                        <div class="question-group">
+                            <label class="question-label">1. Type of Capital Request (Select all that apply)</label>
+                            <div class="tag-selector" id="requestType">
+                                <label class="tag-option"><input type="checkbox" value="Equipment replacement"><span>Equipment replacement</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Equipment upgrade"><span>Equipment upgrade</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Facility repair"><span>Facility repair</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Facility remodel"><span>Facility remodel</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Technology upgrade"><span>Technology upgrade</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Safety enhancement"><span>Safety enhancement</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Building/structural improvement"><span>Building/structural improvement</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Utility-related repair"><span>Utility-related repair</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Vehicle / fleet equipment"><span>Vehicle / fleet equipment</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Other"><span>Other</span></label>
+                            </div>
+                            <input type="text" id="requestTypeOther" placeholder="Other (specify)" style="margin-top: var(--space-sm);" class="hidden">
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">2. Equipment or Area Involved</label>
+                            <input type="text" id="equipmentArea" placeholder="e.g., Blowers, Vacuum islands, POS terminal, Compressor, Roof, Oil bay lifts" required>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">3. Description of the Request</label>
+                            <textarea id="description" rows="5" placeholder="Describe the issue or improvement being requested." required></textarea>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">4. Photo / File Upload (Optional)</label>
+                            <div class="photo-upload-container">
+                                <div class="photo-buttons">
+                                    <button type="button" class="btn-photo" id="takePhotoBtn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                            <circle cx="12" cy="13" r="4"/>
+                                        </svg>
+                                        Take Photo
+                                    </button>
+                                    <button type="button" class="btn-photo" id="uploadPhotoBtn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                            <polyline points="17 8 12 3 7 8"/>
+                                            <line x1="12" y1="3" x2="12" y2="15"/>
+                                        </svg>
+                                        Upload File
+                                    </button>
+                                </div>
+                                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+                                <input type="file" id="fileInput" accept="image/*,.pdf" style="display: none;">
+                                <div class="photo-preview hidden" id="photoPreview">
+                                    <img id="previewImage" alt="Preview">
+                                    <button type="button" class="btn-remove-photo" id="removePhotoBtn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                    <span class="photo-status">File attached</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-header">SECTION 2 — Impact Assessment</h3>
+                        <div class="question-group">
+                            <label class="question-label">1. Operational Impact</label>
+                            <div class="select-wrapper">
+                                <select id="operationalImpact" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="High impact (affects daily operations)">High impact (affects daily operations)</option>
+                                    <option value="Moderate impact">Moderate impact</option>
+                                    <option value="Low impact">Low impact</option>
+                                    <option value="No current impact (preventative)">No current impact (preventative)</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">2. Customer Experience Impact</label>
+                            <div class="select-wrapper">
+                                <select id="customerImpact" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Significant negative impact">Significant negative impact</option>
+                                    <option value="Minor negative impact">Minor negative impact</option>
+                                    <option value="Neutral">Neutral</option>
+                                    <option value="Improvement opportunity">Improvement opportunity</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">3. Safety Impact</label>
+                            <div class="select-wrapper">
+                                <select id="safetyImpact" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Immediate safety risk">Immediate safety risk</option>
+                                    <option value="Moderate safety concern">Moderate safety concern</option>
+                                    <option value="Potential future risk">Potential future risk</option>
+                                    <option value="No safety impact">No safety impact</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">4. Does this impact revenue or site throughput?</label>
+                            <div class="select-wrapper">
+                                <select id="revenueImpact" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Yes, significantly">Yes, significantly</option>
+                                    <option value="Yes, slightly">Yes, slightly</option>
+                                    <option value="No">No</option>
+                                    <option value="Unknown">Unknown</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">5. Importance Ranking</label>
+                            <div class="rating-container">
+                                <input type="range" min="1" max="5" value="3" class="rating-slider" id="importanceRanking">
+                                <span class="rating-value" id="importanceValue">3</span>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">(1 = Not urgent, 5 = Critical)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-header">SECTION 3 — Financial Scope</h3>
+                        <div class="question-group">
+                            <label class="question-label">1. Estimated Cost Range</label>
+                            <div class="select-wrapper">
+                                <select id="costRange" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Under $1,000">Under $1,000</option>
+                                    <option value="$1,000–$5,000">$1,000–$5,000</option>
+                                    <option value="$5,000–$15,000">$5,000–$15,000</option>
+                                    <option value="$15,000–$50,000">$15,000–$50,000</option>
+                                    <option value="$50,000+">$50,000+</option>
+                                    <option value="Unknown (needs vendor quote)">Unknown (needs vendor quote)</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">2. Vendor or Supplier (If Known)</label>
+                            <input type="text" id="vendorSupplier" placeholder="Enter vendor or supplier name...">
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">3. Can the site operate without this improvement?</label>
+                            <div class="select-wrapper">
+                                <select id="operationalRequirement" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Yes, with no issues">Yes, with no issues</option>
+                                    <option value="Yes, with reduced efficiency">Yes, with reduced efficiency</option>
+                                    <option value="Yes, but temporarily">Yes, but temporarily</option>
+                                    <option value="No, site is compromised">No, site is compromised</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-header">SECTION 4 — Approvals & Follow-Up</h3>
+                        <div class="question-group">
+                            <label class="question-label">1. Recommendation from Regional Manager</label>
+                            <div class="select-wrapper">
+                                <select id="recommendation" required>
+                                    <option value="">Select an answer...</option>
+                                    <option value="Approve">Approve</option>
+                                    <option value="Defer">Defer</option>
+                                    <option value="Not recommended">Not recommended</option>
+                                    <option value="Needs further review">Needs further review</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">2. Required Follow-Up Actions (Select all that apply)</label>
+                            <div class="tag-selector" id="followUpActions">
+                                <label class="tag-option"><input type="checkbox" value="Obtain vendor quote"><span>Obtain vendor quote</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Schedule site inspection"><span>Schedule site inspection</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Temporary fix needed"><span>Temporary fix needed</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Submit to Finance for budget approval"><span>Submit to Finance for budget approval</span></label>
+                                <label class="tag-option"><input type="checkbox" value="Submit to C-suite for final approval"><span>Submit to C-suite for final approval</span></label>
+                                <label class="tag-option"><input type="checkbox" value="No follow-up needed"><span>No follow-up needed</span></label>
+                            </div>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">3. Additional Notes or Justification</label>
+                            <textarea id="justification" rows="4" placeholder="Explain why this should be approved and the urgency."></textarea>
+                        </div>
+                        <div class="question-group">
+                            <label class="question-label">4. Follow-Up Deadline (Optional)</label>
+                            <input type="date" id="followUpDeadline">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit">
+                        <span class="btn-text">Submit Request</span>
+                    </button>
+                </form>
+            </div>
+        </main>
+        <div class="toast hidden" id="toast">
+            <span class="toast-icon">✓</span>
+            <span class="toast-message">Request saved successfully!</span>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="capital-improvement-requests.js?v=1"></script>
+</body>
+</html>
+
