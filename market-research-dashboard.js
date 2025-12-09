@@ -210,6 +210,7 @@ function exportSelectedToPDF() {
 function generatePDF(research) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    
     doc.setFontSize(18);
     doc.setFont(undefined, 'bold');
     doc.text('Market Research Report', 14, 20);
@@ -219,25 +220,195 @@ function generatePDF(research) {
     doc.text(`Total Entries: ${research.length}`, 14, 34);
     
     let yPos = 45;
+    
     research.forEach((entry, index) => {
         if (yPos > 250) {
             doc.addPage();
             yPos = 20;
         }
+        
+        // Entry header
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
         doc.text(`Entry ${index + 1}: ${entry.competitor_brand || 'Unknown'}`, 14, yPos);
         yPos += 6;
+        
         doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
         doc.text(`Date: ${formatDate(entry.submitted_at)} | Submitted by: ${entry.submitted_by || 'Unknown'}`, 14, yPos);
+        yPos += 8;
+        
+        // Section 1 - Competitor Site Basics
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('SECTION 1 — Competitor Site Basics', 14, yPos);
         yPos += 6;
-        if (entry.competitor_standout) {
-            const splitText = doc.splitTextToSize(`Standout: ${entry.competitor_standout}`, 180);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        if (entry.competitor_address) doc.text(`Address: ${entry.competitor_address}`, 14, yPos);
+        yPos += 5;
+        if (entry.operation_type) doc.text(`Operation Type: ${entry.operation_type}`, 14, yPos);
+        yPos += 5;
+        if (entry.tunnel_length) doc.text(`Tunnel Length: ${entry.tunnel_length}`, 14, yPos);
+        yPos += 5;
+        if (entry.visit_date_time) {
+            const visitDate = new Date(entry.visit_date_time).toLocaleString('en-US', {
+                timeZone: 'America/Chicago',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+            doc.text(`Visit Date/Time: ${visitDate}`, 14, yPos);
+            yPos += 5;
+        }
+        yPos += 3;
+        
+        // Section 2 - Operational Evaluation
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+        }
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('SECTION 2 — Operational Evaluation', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        if (entry.staffing_levels) doc.text(`Staffing Levels: ${entry.staffing_levels}`, 14, yPos);
+        yPos += 5;
+        if (entry.staff_professionalism) doc.text(`Staff Professionalism: ${entry.staff_professionalism}/5`, 14, yPos);
+        yPos += 5;
+        if (entry.speed_of_service) doc.text(`Speed of Service: ${entry.speed_of_service}/5`, 14, yPos);
+        yPos += 5;
+        if (entry.queue_length) doc.text(`Queue Length: ${entry.queue_length}`, 14, yPos);
+        yPos += 5;
+        if (entry.equipment_condition && Array.isArray(entry.equipment_condition) && entry.equipment_condition.length > 0) {
+            doc.text(`Equipment Condition: ${entry.equipment_condition.join(', ')}`, 14, yPos);
+            yPos += 5;
+        }
+        if (entry.technology_used && Array.isArray(entry.technology_used) && entry.technology_used.length > 0) {
+            doc.text(`Technology Used: ${entry.technology_used.join(', ')}`, 14, yPos);
+            yPos += 5;
+        }
+        if (entry.operational_strengths) {
+            const splitText = doc.splitTextToSize(`Operational Strengths: ${entry.operational_strengths}`, 180);
             doc.text(splitText, 14, yPos);
             yPos += splitText.length * 4;
         }
+        if (entry.operational_weaknesses) {
+            const splitText = doc.splitTextToSize(`Operational Weaknesses: ${entry.operational_weaknesses}`, 180);
+            doc.text(splitText, 14, yPos);
+            yPos += splitText.length * 4;
+        }
+        yPos += 3;
+        
+        // Section 3 - Customer Experience
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+        }
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('SECTION 3 — Customer Experience', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        if (entry.customer_service_quality) doc.text(`Customer Service Quality: ${entry.customer_service_quality}/5`, 14, yPos);
         yPos += 5;
+        if (entry.site_cleanliness) doc.text(`Site Cleanliness: ${entry.site_cleanliness}/5`, 14, yPos);
+        yPos += 5;
+        if (entry.vacuum_area_condition) doc.text(`Vacuum Area Condition: ${entry.vacuum_area_condition}/5`, 14, yPos);
+        yPos += 5;
+        if (entry.amenities_offered && Array.isArray(entry.amenities_offered) && entry.amenities_offered.length > 0) {
+            doc.text(`Amenities: ${entry.amenities_offered.join(', ')}`, 14, yPos);
+            yPos += 5;
+        }
+        if (entry.upkeep_issues) doc.text(`Upkeep Issues: ${entry.upkeep_issues}`, 14, yPos);
+        yPos += 5;
+        if (entry.customer_volume) doc.text(`Customer Volume: ${entry.customer_volume}`, 14, yPos);
+        yPos += 3;
+        
+        // Section 4 - Pricing & Membership
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+        }
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('SECTION 4 — Pricing & Membership Insights', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        if (entry.wash_packages) {
+            const splitText = doc.splitTextToSize(`Wash Packages: ${entry.wash_packages}`, 180);
+            doc.text(splitText, 14, yPos);
+            yPos += splitText.length * 4;
+        }
+        if (entry.pricing) {
+            const splitText = doc.splitTextToSize(`Pricing: ${entry.pricing}`, 180);
+            doc.text(splitText, 14, yPos);
+            yPos += splitText.length * 4;
+        }
+        if (entry.membership_pricing) {
+            const splitText = doc.splitTextToSize(`Membership Pricing: ${entry.membership_pricing}`, 180);
+            doc.text(splitText, 14, yPos);
+            yPos += splitText.length * 4;
+        }
+        if (entry.membership_perks && Array.isArray(entry.membership_perks) && entry.membership_perks.length > 0) {
+            doc.text(`Membership Perks: ${entry.membership_perks.join(', ')}`, 14, yPos);
+            yPos += 5;
+        }
+        if (entry.promotional_offers) {
+            const splitText = doc.splitTextToSize(`Promotional Offers: ${entry.promotional_offers}`, 180);
+            doc.text(splitText, 14, yPos);
+            yPos += splitText.length * 4;
+        }
+        if (entry.upgrades_addons) {
+            const splitText = doc.splitTextToSize(`Upgrades/Add-ons: ${entry.upgrades_addons}`, 180);
+            doc.text(splitText, 14, yPos);
+            yPos += splitText.length * 4;
+        }
+        yPos += 3;
+        
+        // Section 5 - Competitive Intelligence
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+        }
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('SECTION 5 — Competitive Intelligence', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        if (entry.competitor_standout) {
+            const splitText = doc.splitTextToSize(`What Stands Out: ${entry.competitor_standout}`, 180);
+            doc.text(splitText, 14, yPos);
+            yPos += splitText.length * 4;
+        }
+        if (entry.competitor_strengths && Array.isArray(entry.competitor_strengths) && entry.competitor_strengths.length > 0) {
+            doc.text(`Strengths: ${entry.competitor_strengths.join(', ')}`, 14, yPos);
+            yPos += 5;
+        }
+        if (entry.competitor_weaknesses && Array.isArray(entry.competitor_weaknesses) && entry.competitor_weaknesses.length > 0) {
+            doc.text(`Weaknesses: ${entry.competitor_weaknesses.join(', ')}`, 14, yPos);
+            yPos += 5;
+        }
+        if (entry.opportunities) {
+            const splitText = doc.splitTextToSize(`Opportunities for Mighty Wash: ${entry.opportunities}`, 180);
+            doc.text(splitText, 14, yPos);
+            yPos += splitText.length * 4;
+        }
+        
+        // Separator
+        yPos += 10;
+        if (index < research.length - 1) {
+            doc.setDrawColor(200);
+            doc.line(14, yPos - 5, 196, yPos - 5);
+        }
     });
     
     const dateStr = new Date().toISOString().split('T')[0];

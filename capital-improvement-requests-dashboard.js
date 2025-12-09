@@ -228,6 +228,7 @@ function exportSelectedToPDF() {
 function generatePDF(requests) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    
     doc.setFontSize(18);
     doc.setFont(undefined, 'bold');
     doc.text('Capital Improvement Requests Report', 14, 20);
@@ -237,25 +238,123 @@ function generatePDF(requests) {
     doc.text(`Total Requests: ${requests.length}`, 14, 34);
     
     let yPos = 45;
+    
     requests.forEach((request, index) => {
         if (yPos > 250) {
             doc.addPage();
             yPos = 20;
         }
+        
+        // Request header
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
         doc.text(`Request ${index + 1}: ${request.location}`, 14, yPos);
         yPos += 6;
+        
         doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
-        doc.text(`Equipment/Area: ${request.equipment_area || 'N/A'} | Cost: ${request.cost_range || 'N/A'}`, 14, yPos);
+        doc.text(`Date: ${formatDate(request.submitted_at)} | Submitted by: ${request.submitted_by || 'Unknown'}`, 14, yPos);
+        yPos += 8;
+        
+        // Section 1 - Request Details
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('SECTION 1 — Request Details', 14, yPos);
         yPos += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        if (request.request_types && Array.isArray(request.request_types) && request.request_types.length > 0) {
+            doc.text(`Type of Request: ${request.request_types.join(', ')}`, 14, yPos);
+            yPos += 5;
+        }
+        if (request.equipment_area) doc.text(`Equipment/Area: ${request.equipment_area}`, 14, yPos);
+        yPos += 5;
         if (request.description) {
-            const splitDesc = doc.splitTextToSize(request.description, 180);
+            const splitDesc = doc.splitTextToSize(`Description: ${request.description}`, 180);
             doc.text(splitDesc, 14, yPos);
             yPos += splitDesc.length * 4;
         }
+        yPos += 3;
+        
+        // Section 2 - Impact Assessment
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+        }
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('SECTION 2 — Impact Assessment', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        if (request.operational_impact) doc.text(`Operational Impact: ${request.operational_impact}`, 14, yPos);
         yPos += 5;
+        if (request.customer_impact) doc.text(`Customer Experience Impact: ${request.customer_impact}`, 14, yPos);
+        yPos += 5;
+        if (request.safety_impact) doc.text(`Safety Impact: ${request.safety_impact}`, 14, yPos);
+        yPos += 5;
+        if (request.revenue_impact) doc.text(`Revenue/Throughput Impact: ${request.revenue_impact}`, 14, yPos);
+        yPos += 5;
+        if (request.importance_ranking) doc.text(`Importance Ranking: ${request.importance_ranking}/5 (1 = Not urgent, 5 = Critical)`, 14, yPos);
+        yPos += 3;
+        
+        // Section 3 - Financial Scope
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+        }
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('SECTION 3 — Financial Scope', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        if (request.cost_range) doc.text(`Estimated Cost Range: ${request.cost_range}`, 14, yPos);
+        yPos += 5;
+        if (request.vendor_supplier) doc.text(`Vendor/Supplier: ${request.vendor_supplier}`, 14, yPos);
+        yPos += 5;
+        if (request.operational_requirement) doc.text(`Can Site Operate Without This: ${request.operational_requirement}`, 14, yPos);
+        yPos += 3;
+        
+        // Section 4 - Approvals & Follow-Up
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+        }
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('SECTION 4 — Approvals & Follow-Up', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        if (request.recommendation) doc.text(`Recommendation: ${request.recommendation}`, 14, yPos);
+        yPos += 5;
+        if (request.follow_up_actions && Array.isArray(request.follow_up_actions) && request.follow_up_actions.length > 0) {
+            doc.text(`Follow-Up Actions: ${request.follow_up_actions.join(', ')}`, 14, yPos);
+            yPos += 5;
+        }
+        if (request.justification) {
+            const splitText = doc.splitTextToSize(`Justification: ${request.justification}`, 180);
+            doc.text(splitText, 14, yPos);
+            yPos += splitText.length * 4;
+        }
+        if (request.follow_up_deadline) {
+            const deadline = new Date(request.follow_up_deadline).toLocaleDateString('en-US', {
+                timeZone: 'America/Chicago',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            doc.text(`Follow-Up Deadline: ${deadline}`, 14, yPos);
+            yPos += 5;
+        }
+        
+        // Separator
+        yPos += 10;
+        if (index < requests.length - 1) {
+            doc.setDrawColor(200);
+            doc.line(14, yPos - 5, 196, yPos - 5);
+        }
     });
     
     const dateStr = new Date().toISOString().split('T')[0];
