@@ -5,10 +5,13 @@ const APP_VERSION = 22;
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'FORCE_LOGOUT') {
-            console.log('[Dashboard] Force logout triggered by SW update');
+            console.log('[Dashboard] Force logout triggered by SW version update');
             localStorage.removeItem('mightyops_user');
             localStorage.setItem('mightyops_app_version', event.data.version);
-            window.location.href = 'login.html';
+            // Only redirect if not already on login page
+            if (!window.location.pathname.includes('login.html')) {
+                window.location.href = 'login.html';
+            }
         }
     });
 }
@@ -16,10 +19,13 @@ if ('serviceWorker' in navigator) {
 // Check version on load - force logout if version mismatch
 (function checkVersion() {
     const storedVersion = localStorage.getItem('mightyops_app_version');
+    // Only logout if version exists and doesn't match (don't logout on first visit)
     if (storedVersion && parseInt(storedVersion) !== APP_VERSION) {
-        console.log('[Dashboard] Version mismatch, forcing logout');
+        console.log('[Dashboard] Version mismatch detected, forcing logout');
         localStorage.removeItem('mightyops_user');
+        // Don't redirect here - let checkAuth() handle it naturally
     }
+    // Always update to current version
     localStorage.setItem('mightyops_app_version', APP_VERSION);
 })();
 

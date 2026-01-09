@@ -35,26 +35,36 @@ self.addEventListener('activate', (event) => {
     
     event.waitUntil(
         caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME && (cacheName.startsWith('mighty-note-') || cacheName.startsWith('mighty-ops-'))) {
-                        console.log('[SW] Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        }).then(() => {
-            // Take control of all clients immediately
-            return self.clients.claim();
-        }).then(() => {
-            // Notify all clients to logout and refresh (version change = force re-login)
-            return self.clients.matchAll().then(clients => {
-                clients.forEach(client => {
-                    client.postMessage({
-                        type: 'FORCE_LOGOUT',
-                        version: CACHE_VERSION
+            let hasOldCache = false;
+            const deletePromises = cacheNames.map((cacheName) => {
+                if (cacheName !== CACHE_NAME && (cacheName.startsWith('mighty-note-') || cacheName.startsWith('mighty-ops-'))) {
+                    console.log('[SW] Deleting old cache:', cacheName);
+                    hasOldCache = true;
+                    return caches.delete(cacheName);
+                }
+            });
+            
+            return Promise.all(deletePromises).then(() => {
+                // Only force logout if we found and deleted an old cache (version change detected)
+                if (hasOldCache) {
+                    console.log('[SW] Version change detected, forcing logout');
+                    // Take control of all clients immediately
+                    return self.clients.claim().then(() => {
+                        // Notify all clients to logout and refresh (version change = force re-login)
+                        return self.clients.matchAll().then(clients => {
+                            clients.forEach(client => {
+                                client.postMessage({
+                                    type: 'FORCE_LOGOUT',
+                                    version: CACHE_VERSION
+                                });
+                            });
+                        });
                     });
-                });
+                } else {
+                    // No version change, just take control without logging out
+                    console.log('[SW] No version change, skipping logout');
+                    return self.clients.claim();
+                }
             });
         })
     );
