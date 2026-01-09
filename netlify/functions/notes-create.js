@@ -37,9 +37,12 @@ exports.handler = async (event, context) => {
             };
         }
 
+        // Convert location to string (handles both numeric sites and text like "Spotless")
+        const locationStr = typeof location === 'number' ? location.toString() : location;
+        
         const result = await sql`
             INSERT INTO notes (location, department, note_type, other_description, additional_notes, image_pdf, submitted_by, user_id)
-            VALUES (${parseInt(location)}, ${department}, ${note_type}, ${other_description || null}, ${additional_notes || null}, ${image_pdf || null}, ${submitted_by || null}, ${user_id || null})
+            VALUES (${locationStr}, ${department}, ${note_type}, ${other_description || null}, ${additional_notes || null}, ${image_pdf || null}, ${submitted_by || null}, ${user_id || null})
             RETURNING id, location, department, note_type, other_description, additional_notes, submitted_by, created_at
         `;
 

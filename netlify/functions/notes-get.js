@@ -25,12 +25,15 @@ exports.handler = async (event, context) => {
         let query;
         
         // Select all fields except full image data, but include whether image exists
+        // Handle both numeric locations and text locations like "Spotless"
+        const locationParam = location && !isNaN(parseInt(location)) ? parseInt(location).toString() : location;
+        
         if (location && department) {
             query = sql`
                 SELECT id, location, department, note_type, other_description, additional_notes, submitted_by, created_at,
                        CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
                 FROM notes 
-                WHERE location = ${parseInt(location)} 
+                WHERE location = ${locationParam} 
                 AND department = ${department}
                 ORDER BY id DESC
             `;
@@ -39,7 +42,7 @@ exports.handler = async (event, context) => {
                 SELECT id, location, department, note_type, other_description, additional_notes, submitted_by, created_at,
                        CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
                 FROM notes 
-                WHERE location = ${parseInt(location)}
+                WHERE location = ${locationParam}
                 ORDER BY id DESC
             `;
         } else if (department) {

@@ -48,15 +48,15 @@ let reportSelectMode = false;
 
 // ===== Configuration =====
 const CONFIG = {
-    locations: Array.from({ length: 31 }, (_, i) => i + 1),
+    // Locations: Sites 1-31, then Spotless at the end
+    locations: [...Array.from({ length: 31 }, (_, i) => i + 1), 'Spotless'],
     
-    departments: ['Operations', 'Safety', 'Accounting'],
+    departments: ['Operations', 'Safety', 'Accounting', 'Human Resources', 'IT'],
     
     noteTypes: {
         Accounting: [
             'Cash Count/GSR Violation',
             'KPI Sheet Violation',
-            'Payroll/Onboarding Violation',
             'Company Card Violation',
             'Expense Report Violation',
             'Other'
@@ -74,6 +74,18 @@ const CONFIG = {
             'Training Violation',
             'Safety Protocol Violation',
             'Other'
+        ],
+        'Human Resources': [
+            'Payroll Violation',
+            'Onboarding Violation',
+            'Timepunch Errors Violation',
+            'Other'
+        ],
+        IT: [
+            'Improper/Lack of Ticket Submission Violation',
+            'Misuse of Equipment Violation',
+            'Compliance Violation',
+            'Other'
         ]
     }
 };
@@ -82,7 +94,9 @@ const CONFIG = {
 const ALL_NOTE_TYPES = [
     ...CONFIG.noteTypes.Accounting,
     ...CONFIG.noteTypes.Operations,
-    ...CONFIG.noteTypes.Safety
+    ...CONFIG.noteTypes.Safety,
+    ...CONFIG.noteTypes['Human Resources'],
+    ...CONFIG.noteTypes.IT
 ].filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates (like "Other")
 
 // ===== API Configuration =====
@@ -195,6 +209,14 @@ async function deleteNotes(ids) {
 }
 
 // ===== Helper Functions =====
+function formatLocation(location) {
+    // Handle both numeric sites and text locations like "Spotless"
+    if (typeof location === 'string' && isNaN(parseInt(location))) {
+        return location;
+    }
+    return `Site ${location}`;
+}
+
 function getPhotoUrl(noteId) {
     return `${window.location.origin}/.netlify/functions/notes-view-image?id=${noteId}`;
 }
@@ -206,7 +228,7 @@ function populateLocationFilter() {
     CONFIG.locations.forEach(loc => {
         const option = document.createElement('option');
         option.value = loc;
-        option.textContent = `Site ${loc}`;
+        option.textContent = formatLocation(loc);
         filterLocationSelect.appendChild(option);
     });
 }
@@ -222,10 +244,24 @@ function sortNotes(notes, sortOrder) {
             sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
             break;
         case 'site-asc':
-            sorted.sort((a, b) => a.location - b.location);
+            sorted.sort((a, b) => {
+                // Handle both numeric and text locations
+                const aNum = typeof a.location === 'string' && !isNaN(parseInt(a.location)) ? parseInt(a.location) : (typeof a.location === 'number' ? a.location : 999);
+                const bNum = typeof b.location === 'string' && !isNaN(parseInt(b.location)) ? parseInt(b.location) : (typeof b.location === 'number' ? b.location : 999);
+                if (aNum !== 999 && bNum !== 999) return aNum - bNum;
+                if (aNum === 999 && bNum === 999) return String(a.location).localeCompare(String(b.location));
+                return aNum === 999 ? 1 : -1; // Text locations go to end
+            });
             break;
         case 'site-desc':
-            sorted.sort((a, b) => b.location - a.location);
+            sorted.sort((a, b) => {
+                // Handle both numeric and text locations
+                const aNum = typeof a.location === 'string' && !isNaN(parseInt(a.location)) ? parseInt(a.location) : (typeof a.location === 'number' ? a.location : 999);
+                const bNum = typeof b.location === 'string' && !isNaN(parseInt(b.location)) ? parseInt(b.location) : (typeof b.location === 'number' ? b.location : 999);
+                if (aNum !== 999 && bNum !== 999) return bNum - aNum;
+                if (aNum === 999 && bNum === 999) return String(b.location).localeCompare(String(a.location));
+                return aNum === 999 ? -1 : 1; // Text locations go to end
+            });
             break;
         case 'dept':
             sorted.sort((a, b) => a.department.localeCompare(b.department));
@@ -277,7 +313,7 @@ function renderRecords(notes) {
                     <span class="record-timestamp">${formatDate(note.created_at)}</span>
                 </div>
                 <div class="record-meta">
-                    <span class="record-badge">Site ${note.location}</span>
+                    <span class="record-badge">${formatLocation(note.location)}</span>
                     <span class="record-badge ${deptClass}">${note.department}</span>
                     ${imageBadge}
                 </div>
@@ -428,7 +464,7 @@ function exportSelectedToExcel(notes) {
     
     const data = notes.map(note => ({
         'Date/Time': formatDate(note.created_at),
-        'Site': `Site ${note.location}`,
+        'Site': formatLocation(note.location),
         'Department': note.department,
         'Note Type': note.note_type,
         'Other Description': note.other_description || '',
@@ -474,7 +510,7 @@ function exportSelectedToPDF(notes) {
     
     const tableData = notes.map(note => [
         formatDate(note.created_at),
-        `Site ${note.location}`,
+        formatLocation(note.location),
         note.department,
         note.note_type === 'Other' && note.other_description 
             ? `Other: ${note.other_description}` 
@@ -733,6 +769,8 @@ async function updateStats() {
     document.getElementById('operationsCount').textContent = notes.filter(n => n.department === 'Operations').length;
     document.getElementById('safetyCount').textContent = notes.filter(n => n.department === 'Safety').length;
     document.getElementById('accountingCount').textContent = notes.filter(n => n.department === 'Accounting').length;
+    document.getElementById('hrCount').textContent = notes.filter(n => n.department === 'Human Resources').length;
+    document.getElementById('itCount').textContent = notes.filter(n => n.department === 'IT').length;
 }
 
 function populateFilterCheckboxes() {
@@ -741,10 +779,11 @@ function populateFilterCheckboxes() {
     CONFIG.locations.forEach(loc => {
         const label = document.createElement('label');
         label.className = 'checkbox-item';
+        const displayText = typeof loc === 'number' ? `Site ${loc}` : loc;
         label.innerHTML = `
             <input type="checkbox" value="${loc}" checked class="location-checkbox">
             <span class="checkmark"></span>
-            Site ${loc}
+            ${displayText}
         `;
         locationContainer.appendChild(label);
     });
@@ -779,7 +818,12 @@ function populateFilterCheckboxes() {
 
 function getSelectedFilters() {
     const locations = Array.from(document.querySelectorAll('.location-checkbox:checked'))
-        .map(cb => parseInt(cb.value));
+        .map(cb => {
+            const val = cb.value;
+            // Try to parse as integer, but keep as string if it's not a number (like "Spotless")
+            const numVal = parseInt(val);
+            return isNaN(numVal) ? val : numVal;
+        });
     
     const departments = Array.from(document.querySelectorAll('.dept-checkbox:checked'))
         .map(cb => cb.value);
@@ -875,7 +919,7 @@ function renderReportNotes(notes) {
                     <span class="record-timestamp">${formatDate(note.created_at)}</span>
                 </div>
                 <div class="record-meta">
-                    <span class="record-badge">Site ${note.location}</span>
+                    <span class="record-badge">${formatLocation(note.location)}</span>
                     <span class="record-badge ${deptClass}">${note.department}</span>
                     ${submitterBadge}
                     ${imageBadge}
@@ -1012,7 +1056,7 @@ function renderReportTable(notes) {
         return `
             <tr>
                 <td class="cell-timestamp">${formatDate(note.created_at)}</td>
-                <td class="cell-location">Site ${note.location}</td>
+                <td class="cell-location">${formatLocation(note.location)}</td>
                 <td><span class="cell-department ${deptClass}">${note.department}</span></td>
                 <td>${displayType}</td>
                 <td class="cell-details" title="${details}">${details}</td>
@@ -1060,7 +1104,7 @@ async function exportReportToExcel() {
     // All records sheet with photo links
     const allData = notes.map(note => ({
         'Date/Time': formatDate(note.created_at),
-        'Site': `Site ${note.location}`,
+        'Site': formatLocation(note.location),
         'Department': note.department,
         'Note Type': note.note_type,
         'Other Description': note.other_description || '',
@@ -1100,7 +1144,7 @@ async function exportReportToExcel() {
         if (deptNotes.length > 0) {
             const data = deptNotes.map(note => ({
                 'Date/Time': formatDate(note.created_at),
-                'Site': `Site ${note.location}`,
+                'Site': formatLocation(note.location),
                 'Note Type': note.note_type,
                 'Other Description': note.other_description || '',
                 'Additional Notes': note.additional_notes || '',
@@ -1138,7 +1182,12 @@ async function exportReportToExcel() {
     const sitesWithData = [...new Set(notes.map(n => n.location))].sort((a, b) => a - b);
     
     sitesWithData.forEach(loc => {
-        const locNotes = notes.filter(n => n.location === loc);
+        // Handle both numeric and string locations for filtering
+        const locNotes = notes.filter(n => {
+            const nLoc = typeof n.location === 'number' ? n.location.toString() : n.location;
+            const filterLoc = typeof loc === 'number' ? loc.toString() : loc;
+            return nLoc === filterLoc;
+        });
         
         const data = locNotes.map(note => ({
             'Date/Time': formatDate(note.created_at),
@@ -1210,8 +1259,10 @@ async function exportReportToPDF() {
     const operationsCount = notes.filter(n => n.department === 'Operations').length;
     const safetyCount = notes.filter(n => n.department === 'Safety').length;
     const accountingCount = notes.filter(n => n.department === 'Accounting').length;
+    const hrCount = notes.filter(n => n.department === 'Human Resources').length;
+    const itCount = notes.filter(n => n.department === 'IT').length;
     
-    doc.text(`Total: ${notes.length}  |  Operations: ${operationsCount}  |  Safety: ${safetyCount}  |  Accounting: ${accountingCount}`, 14, 36);
+    doc.text(`Total: ${notes.length}  |  Ops: ${operationsCount}  |  Safety: ${safetyCount}  |  Acct: ${accountingCount}  |  HR: ${hrCount}  |  IT: ${itCount}`, 14, 36);
     
     // Filters applied
     const sitesText = filters.locations.length === CONFIG.locations.length ? 'All Sites' : `Sites: ${filters.locations.slice(0, 10).join(', ')}${filters.locations.length > 10 ? '...' : ''}`;
@@ -1221,7 +1272,7 @@ async function exportReportToPDF() {
     // Table data with photo column
     const tableData = notes.map(note => [
         formatDate(note.created_at),
-        `Site ${note.location}`,
+        formatLocation(note.location),
         note.department,
         note.note_type === 'Other' && note.other_description 
             ? `Other: ${note.other_description.substring(0, 25)}${note.other_description.length > 25 ? '...' : ''}` 

@@ -42,7 +42,15 @@ exports.handler = async (event, context) => {
 
         // Apply filters in JavaScript
         if (locations && locations.length > 0) {
-            notes = notes.filter(n => locations.includes(n.location));
+            // Normalize locations for comparison (handle both numeric and string locations)
+            const normalizedLocations = locations.map(loc => {
+                if (typeof loc === 'number') return loc.toString();
+                return loc;
+            });
+            notes = notes.filter(n => {
+                const nLoc = typeof n.location === 'number' ? n.location.toString() : n.location;
+                return normalizedLocations.includes(nLoc);
+            });
         }
 
         if (departments && departments.length > 0) {

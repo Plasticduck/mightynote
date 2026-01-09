@@ -41,15 +41,15 @@ let currentPhotoData = null;
 
 // ===== Configuration =====
 const CONFIG = {
-    locations: Array.from({ length: 31 }, (_, i) => i + 1),
+    // Locations: Sites 1-31, then Spotless at the end
+    locations: [...Array.from({ length: 31 }, (_, i) => i + 1), 'Spotless'],
     
-    departments: ['Operations', 'Safety', 'Accounting'],
+    departments: ['Operations', 'Safety', 'Accounting', 'Human Resources', 'IT'],
     
     noteTypes: {
         Accounting: [
             'Cash Count/GSR Violation',
             'KPI Sheet Violation',
-            'Payroll/Onboarding Violation',
             'Company Card Violation',
             'Expense Report Violation',
             'Other'
@@ -66,6 +66,18 @@ const CONFIG = {
             'Preventable Accident Violation',
             'Training Violation',
             'Safety Protocol Violation',
+            'Other'
+        ],
+        'Human Resources': [
+            'Payroll Violation',
+            'Onboarding Violation',
+            'Timepunch Errors Violation',
+            'Other'
+        ],
+        IT: [
+            'Improper/Lack of Ticket Submission Violation',
+            'Misuse of Equipment Violation',
+            'Compliance Violation',
             'Other'
         ]
     }
@@ -100,7 +112,7 @@ async function insertNote(location, department, noteType, otherDesc, additionalN
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                location: parseInt(location),
+                location: typeof location === 'number' ? location : location.toString(),
                 department,
                 note_type: noteType,
                 other_description: otherDesc || null,
@@ -131,7 +143,7 @@ function populateLocationDropdown() {
     CONFIG.locations.forEach(loc => {
         const option = document.createElement('option');
         option.value = loc;
-        option.textContent = `Site ${loc}`;
+        option.textContent = typeof loc === 'number' ? `Site ${loc}` : loc;
         locationSelect.appendChild(option);
     });
 }

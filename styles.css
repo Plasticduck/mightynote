@@ -27,6 +27,8 @@
     --accent-yellow-dim: rgba(255, 214, 10, 0.15);
     --accent-green: #30d158;
     --accent-green-dim: rgba(48, 209, 88, 0.15);
+    --accent-purple: #bf5af2;
+    --accent-purple-dim: rgba(191, 90, 242, 0.15);
     
     /* Text */
     --text-primary: var(--white-90);
@@ -1281,6 +1283,8 @@ textarea {
 .stat-operations .stat-value { color: var(--accent-yellow); }
 .stat-safety .stat-value { color: var(--accent-blue); }
 .stat-accounting .stat-value { color: var(--accent-red); }
+.stat-hr .stat-value { color: var(--accent-purple); }
+.stat-it .stat-value { color: var(--accent-green); }
 
 /* Subtle indicator line */
 .stat-card::before {
@@ -1297,6 +1301,8 @@ textarea {
 .stat-operations::before { background: var(--accent-yellow); }
 .stat-safety::before { background: var(--accent-blue); }
 .stat-accounting::before { background: var(--accent-red); }
+.stat-hr::before { background: var(--accent-purple); }
+.stat-it::before { background: var(--accent-green); }
 
 /* ===== Report Filters ===== */
 .report-filters {
