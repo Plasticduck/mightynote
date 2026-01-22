@@ -102,6 +102,103 @@
             color: var(--accent-green);
             text-align: right;
         }
+        
+        /* Date Input Styling */
+        #filterDate {
+            width: 100%;
+            padding: 14px 16px;
+            font-family: var(--font-primary);
+            font-size: 1rem;
+            color: var(--white);
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-base);
+            cursor: pointer;
+        }
+        
+        #filterDate:hover {
+            background: var(--bg-hover);
+            border-color: var(--white-15);
+        }
+        
+        #filterDate:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--accent-blue-dim);
+        }
+        
+        #filterDate::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        
+        #filterDate::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+        
+        /* Export Excel Button Styling */
+        #exportExcelBtn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            padding: 12px 20px;
+            font-family: var(--font-primary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--white);
+            background: var(--accent-green);
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            box-shadow: 0 2px 8px rgba(48, 209, 88, 0.2);
+        }
+        
+        #exportExcelBtn:hover {
+            background: #28c048;
+            box-shadow: 0 4px 12px rgba(48, 209, 88, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        #exportExcelBtn:active {
+            transform: translateY(0);
+        }
+        
+        #exportExcelBtn svg {
+            flex-shrink: 0;
+        }
+        
+        #exportExcelBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Clear Button Styling */
+        #clearFiltersBtn {
+            padding: 12px 20px;
+            font-family: var(--font-primary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--white);
+            background: var(--white-10);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        
+        #clearFiltersBtn:hover {
+            background: var(--white-15);
+            border-color: var(--white-15);
+        }
+        
+        #clearFiltersBtn:active {
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body>
@@ -164,10 +261,10 @@
                         </div>
                         <div class="form-group" style="flex: 1; min-width: 200px;">
                             <label for="filterDate">Date</label>
-                            <input type="date" id="filterDate" class="form-input">
+                            <input type="date" id="filterDate">
                         </div>
                         <div class="form-group">
-                            <button type="button" class="btn-secondary" id="clearFiltersBtn">Clear</button>
+                            <button type="button" id="clearFiltersBtn">Clear</button>
                         </div>
                     </div>
                 </div>
@@ -177,7 +274,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
                         <h3 style="color: var(--white); margin: 0;">Inventory Counts</h3>
                         <div style="display: flex; gap: var(--space-sm);">
-                            <button type="button" class="btn-secondary" id="exportExcelBtn">
+                            <button type="button" id="exportExcelBtn">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                     <polyline points="14 2 14 8 20 8"/>
