@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MightyOps">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="mwico.ico">
+    <link rel="icon" type="image/x-icon" href="mwico.ico">
+    <title>Site Audit Dashboard - MightyOps</title>
+    <link rel="stylesheet" href="styles.css?v=22">
+    <style>
+        .dashboard-content {
+            padding: var(--space-lg);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: var(--space-xs);
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .filters-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+        
+        .filters-row {
+            display: flex;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        
+        .audit-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+        
+        .audit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-md);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .audit-meta {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+        
+        .audit-location {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--white);
+        }
+        
+        .audit-timestamp {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .audit-submitter {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .section-display {
+            margin-bottom: var(--space-lg);
+        }
+        
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-md);
+        }
+        
+        .item-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-sm) 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .item-display:last-child {
+            border-bottom: none;
+        }
+        
+        .item-name-display {
+            font-size: 0.9rem;
+            color: var(--white);
+        }
+        
+        .rating-badge {
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .rating-badge.pass {
+            background: var(--accent-green-dim);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+        }
+        
+        .rating-badge.needs-work {
+            background: var(--accent-yellow-dim);
+            color: var(--accent-yellow);
+            border: 1px solid var(--accent-yellow);
+        }
+        
+        .rating-badge.fail {
+            background: var(--accent-red-dim);
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+        }
+        
+        .comments-display {
+            margin-top: var(--space-md);
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        .explanation-display {
+            margin-top: var(--space-lg);
+            padding: var(--space-lg);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+        
+        .explanation-display label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-sm);
+            display: block;
+        }
+        
+        .explanation-display p {
+            color: var(--white);
+            line-height: 1.6;
+        }
+        
+        #filterDate {
+            width: 100%;
+            padding: 14px 16px;
+            font-family: var(--font-primary);
+            font-size: 1rem;
+            color: var(--white);
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-base);
+            cursor: pointer;
+        }
+        
+        #filterDate:hover {
+            background: var(--bg-hover);
+            border-color: var(--white-15);
+        }
+        
+        #filterDate:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--accent-blue-dim);
+        }
+        
+        #filterDate::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        
+        #filterDate::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+        
+        #exportExcelBtn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            padding: 12px 20px;
+            font-family: var(--font-primary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--white);
+            background: var(--accent-green);
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            box-shadow: 0 2px 8px rgba(48, 209, 88, 0.2);
+        }
+        
+        #exportExcelBtn:hover {
+            background: #28c048;
+            box-shadow: 0 4px 12px rgba(48, 209, 88, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        #exportExcelBtn:active {
+            transform: translateY(0);
+        }
+        
+        #exportExcelBtn svg {
+            flex-shrink: 0;
+        }
+        
+        #clearFiltersBtn {
+            padding: 12px 20px;
+            font-family: var(--font-primary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--white);
+            background: var(--white-10);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        
+        #clearFiltersBtn:hover {
+            background: var(--white-15);
+            border-color: var(--white-15);
+        }
+        
+        #clearFiltersBtn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="bg-decoration"></div>
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <img src="MW Logo.png" alt="MW Logo" class="logo-img">
+                <span class="logo-text">Site Audit Dashboard</span>
+            </div>
+            <div class="header-actions">
+                <a href="site-audit.html" class="btn-icon" title="New Audit">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                </a>
+                <a href="home.html" class="btn-icon" title="Back to Apps">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </a>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="main-content">
+            <div class="dashboard-content">
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalAudits">0</div>
+                        <div class="stat-label">Total Audits</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalSites">0</div>
+                        <div class="stat-label">Sites Audited</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="lastUpdate">-</div>
+                        <div class="stat-label">Last Update</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters-section">
+                    <h3 style="margin-bottom: var(--space-md); color: var(--white);">Filters</h3>
+                    <div class="filters-row">
+                        <div class="form-group" style="flex: 1; min-width: 200px;">
+                            <label for="filterLocation">Site</label>
+                            <div class="select-wrapper">
+                                <select id="filterLocation">
+                                    <option value="">All Sites</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 200px;">
+                            <label for="filterDate">Date</label>
+                            <input type="date" id="filterDate">
+                        </div>
+                        <div class="form-group">
+                            <button type="button" id="clearFiltersBtn">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Section -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                    <h3 style="color: var(--white); margin: 0;">Site Audits</h3>
+                    <button type="button" id="exportExcelBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                        Export Excel
+                    </button>
+                </div>
+
+                <!-- Audits List -->
+                <div id="auditsContainer">
+                    <p style="text-align: center; padding: var(--space-xl); color: var(--text-muted);">
+                        Loading audits...
+                    </p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Toast Notification -->
+        <div class="toast hidden" id="toast">
+            <span class="toast-icon">✓</span>
+            <span class="toast-message">Export successful!</span>
+        </div>
+    </div>
+
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="site-audit-dashboard.js?v=22"></script>
+</body>
+</html>

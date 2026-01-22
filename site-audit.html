@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MightyOps">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="mwico.ico">
+    <link rel="icon" type="image/x-icon" href="mwico.ico">
+    <title>Site Audit - MightyOps</title>
+    <link rel="stylesheet" href="styles.css?v=22">
+    <style>
+        .audit-form {
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xl);
+        }
+        
+        .audit-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+        }
+        
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-md);
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .section-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-top: var(--space-xs);
+        }
+        
+        .audit-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: var(--space-md);
+            padding: var(--space-md) 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .audit-item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-info {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+        
+        .item-name {
+            font-weight: 600;
+            color: var(--white);
+            font-size: 0.95rem;
+        }
+        
+        .item-criteria {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        
+        .rating-buttons {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+        }
+        
+        .rating-btn {
+            width: 44px;
+            height: 44px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            position: relative;
+        }
+        
+        .rating-btn.pass {
+            background: var(--bg-input);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        
+        .rating-btn.pass.selected {
+            background: var(--accent-green);
+            color: var(--white);
+            box-shadow: 0 0 0 3px var(--accent-green-dim);
+        }
+        
+        .rating-btn.needs-work {
+            background: var(--bg-input);
+            border-color: var(--accent-yellow);
+            color: var(--accent-yellow);
+        }
+        
+        .rating-btn.needs-work.selected {
+            background: var(--accent-yellow);
+            color: var(--white);
+            box-shadow: 0 0 0 3px var(--accent-yellow-dim);
+        }
+        
+        .rating-btn.fail {
+            background: var(--bg-input);
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+        
+        .rating-btn.fail.selected {
+            background: var(--accent-red);
+            color: var(--white);
+            box-shadow: 0 0 0 3px var(--accent-red-dim);
+        }
+        
+        .rating-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .section-comments {
+            margin-top: var(--space-lg);
+            padding-top: var(--space-lg);
+            border-top: 1px solid var(--border-subtle);
+        }
+        
+        .section-comments label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: var(--space-sm);
+            display: block;
+        }
+        
+        .explanation-section {
+            background: var(--bg-elevated);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-top: var(--space-lg);
+        }
+        
+        .explanation-section label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: var(--space-md);
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="bg-decoration"></div>
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <img src="MW Logo.png" alt="MW Logo" class="logo-img">
+                <span class="logo-text">Site Audit</span>
+            </div>
+            <div class="header-actions">
+                <a href="site-audit-dashboard.html" class="btn-icon" title="View Audits">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
+                    </svg>
+                </a>
+                <a href="home.html" class="btn-icon" title="Back to Apps">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Form Screen -->
+        <main class="main-content">
+            <div class="form-card">
+                <div class="form-header">
+                    <h2>Site Audit</h2>
+                    <p class="form-subtitle">Submitting as: <strong id="submitterName">Loading...</strong></p>
+                </div>
+
+                <form id="auditForm" class="audit-form">
+                    <!-- Site Selection -->
+                    <div class="form-group">
+                        <label for="location">Site Location</label>
+                        <div class="select-wrapper">
+                            <select id="location" required>
+                                <option value="">Select a site...</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Initial Observations -->
+                    <div class="audit-section">
+                        <div class="section-header">
+                            Initial Observations
+                            <div class="section-subtitle">(Curb Appeal)</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="initialObservations">Paint, Signage, Trash, Team Appearance/Hustle</label>
+                            <textarea id="initialObservations" rows="4" placeholder="Enter observations..."></textarea>
+                        </div>
+                        <div class="section-comments">
+                            <label for="initialComments">Comments (Optional)</label>
+                            <textarea id="initialComments" rows="2" placeholder="Additional comments..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Primary Section -->
+                    <div class="audit-section">
+                        <div class="section-header">
+                            Primary
+                            <div class="section-subtitle">(Washing your Car)</div>
+                        </div>
+                        <div id="primaryItems">
+                            <!-- Items will be populated by JS -->
+                        </div>
+                        <div class="section-comments">
+                            <label for="primaryComments">Comments (Optional)</label>
+                            <textarea id="primaryComments" rows="2" placeholder="Additional comments..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Section -->
+                    <div class="audit-section">
+                        <div class="section-header">
+                            Secondary
+                            <div class="section-subtitle">(Behind the Scenes)</div>
+                        </div>
+                        <div id="secondaryItems">
+                            <!-- Items will be populated by JS -->
+                        </div>
+                        <div class="section-comments">
+                            <label for="secondaryComments">Comments (Optional)</label>
+                            <textarea id="secondaryComments" rows="2" placeholder="Additional comments..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Priority Section -->
+                    <div class="audit-section">
+                        <div class="section-header">
+                            Priority
+                            <div class="section-subtitle">(Safety)</div>
+                        </div>
+                        <div id="priorityItems">
+                            <!-- Items will be populated by JS -->
+                        </div>
+                        <div class="section-comments">
+                            <label for="priorityComments">Comments (Optional)</label>
+                            <textarea id="priorityComments" rows="2" placeholder="Additional comments..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Final Thoughts -->
+                    <div class="audit-section">
+                        <div class="section-header">
+                            Final Thoughts
+                            <div class="section-subtitle">(Customer Takeaways)</div>
+                        </div>
+                        <div id="finalThoughtsItems">
+                            <!-- Items will be populated by JS -->
+                        </div>
+                        <div class="section-comments">
+                            <label for="finalThoughtsComments">Comments (Optional)</label>
+                            <textarea id="finalThoughtsComments" rows="2" placeholder="Additional comments..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Explanation -->
+                    <div class="explanation-section">
+                        <label for="explanation">Explanation</label>
+                        <textarea id="explanation" rows="4" placeholder="Enter overall explanation and summary..."></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-submit">
+                        <span class="btn-text">Submit Audit</span>
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- Toast Notification -->
+        <div class="toast hidden" id="toast">
+            <span class="toast-icon">✓</span>
+            <span class="toast-message">Audit submitted successfully!</span>
+        </div>
+    </div>
+
+    <script src="site-audit.js?v=22"></script>
+</body>
+</html>
