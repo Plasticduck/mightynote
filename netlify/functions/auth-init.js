@@ -22,9 +22,31 @@ exports.handler = async (event, context) => {
                 full_name TEXT NOT NULL,
                 email TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
+                can_use_inventory_app BOOLEAN DEFAULT FALSE,
+                mightycount_only BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         `;
+
+        // Add can_use_inventory_app column if table exists but column doesn't
+        try {
+            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS can_use_inventory_app BOOLEAN DEFAULT FALSE`;
+        } catch (error) {
+            // Column might already exist, ignore error
+            if (!error.message.includes('already exists')) {
+                console.error('Error adding column:', error);
+            }
+        }
+
+        // Add mightycount_only column if table exists but column doesn't
+        try {
+            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS mightycount_only BOOLEAN DEFAULT FALSE`;
+        } catch (error) {
+            // Column might already exist, ignore error
+            if (!error.message.includes('already exists')) {
+                console.error('Error adding column:', error);
+            }
+        }
 
         return {
             statusCode: 200,

@@ -41,7 +41,7 @@ exports.handler = async (event, context) => {
 
         // Find user by email
         const users = await sql`
-            SELECT id, full_name, email, password_hash, created_at 
+            SELECT id, full_name, email, password_hash, can_use_inventory_app, mightycount_only, created_at 
             FROM users 
             WHERE email = ${email.toLowerCase()}
         `;
@@ -66,6 +66,15 @@ exports.handler = async (event, context) => {
             };
         }
 
+        // Block MightyCount-only users from accessing MightyOps
+        if (user.mightycount_only === true) {
+            return {
+                statusCode: 403,
+                headers,
+                body: JSON.stringify({ success: false, error: 'This account is only authorized for MightyCount. Please use the MightyCount app to sign in.' })
+            };
+        }
+
         // Return user info (without password hash)
         return {
             statusCode: 200,
@@ -76,6 +85,7 @@ exports.handler = async (event, context) => {
                     id: user.id,
                     full_name: user.full_name,
                     email: user.email,
+                    can_use_inventory_app: user.can_use_inventory_app,
                     created_at: user.created_at
                 }
             })

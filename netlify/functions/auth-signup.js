@@ -58,11 +58,13 @@ exports.handler = async (event, context) => {
         }
 
         // Hash password and create user
+        // MightyOps users can also use MightyCount, so set can_use_inventory_app = TRUE
+        // mightycount_only defaults to FALSE, so they can access both apps
         const password_hash = hashPassword(password);
         const result = await sql`
-            INSERT INTO users (full_name, email, password_hash)
-            VALUES (${full_name}, ${email.toLowerCase()}, ${password_hash})
-            RETURNING id, full_name, email, created_at
+            INSERT INTO users (full_name, email, password_hash, can_use_inventory_app, mightycount_only)
+            VALUES (${full_name}, ${email.toLowerCase()}, ${password_hash}, TRUE, FALSE)
+            RETURNING id, full_name, email, can_use_inventory_app, created_at
         `;
 
         return {
