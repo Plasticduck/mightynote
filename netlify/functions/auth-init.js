@@ -13,7 +13,11 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        const sql = neon(process.env.NETLIFY_DATABASE_URL);
+        const databaseUrl = process.env.NETLIFY_DATABASE_URL;
+        if (!databaseUrl) {
+            throw new Error('NETLIFY_DATABASE_URL environment variable is not set');
+        }
+        const sql = neon(databaseUrl);
 
         // Create the users table if it doesn't exist
         await sql`
@@ -30,22 +34,32 @@ exports.handler = async (event, context) => {
 
         // Add can_use_inventory_app column if table exists but column doesn't
         try {
-            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS can_use_inventory_app BOOLEAN DEFAULT FALSE`;
-        } catch (error) {
-            // Column might already exist, ignore error
-            if (!error.message.includes('already exists')) {
-                console.error('Error adding column:', error);
+            const columnCheck = await sql`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'users' AND column_name = 'can_use_inventory_app'
+            `;
+            if (columnCheck.length === 0) {
+                await sql`ALTER TABLE users ADD COLUMN can_use_inventory_app BOOLEAN DEFAULT FALSE`;
+                console.log('Added can_use_inventory_app column');
             }
+        } catch (error) {
+            console.error('Error adding can_use_inventory_app column:', error);
         }
 
         // Add mightycount_only column if table exists but column doesn't
         try {
-            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS mightycount_only BOOLEAN DEFAULT FALSE`;
-        } catch (error) {
-            // Column might already exist, ignore error
-            if (!error.message.includes('already exists')) {
-                console.error('Error adding column:', error);
+            const columnCheck = await sql`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'users' AND column_name = 'mightycount_only'
+            `;
+            if (columnCheck.length === 0) {
+                await sql`ALTER TABLE users ADD COLUMN mightycount_only BOOLEAN DEFAULT FALSE`;
+                console.log('Added mightycount_only column');
             }
+        } catch (error) {
+            console.error('Error adding mightycount_only column:', error);
         }
 
         return {
