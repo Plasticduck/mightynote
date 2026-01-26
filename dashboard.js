@@ -47,7 +47,9 @@ function checkAuth() {
 }
 
 function isAdmin() {
-    return currentUser && currentUser.is_admin === true;
+    if (!currentUser) return false;
+    // Handle both boolean true and string "true" cases
+    return currentUser.is_admin === true || currentUser.is_admin === 'true' || currentUser.is_admin === 1;
 }
 
 // ===== Selection State =====
@@ -685,7 +687,8 @@ function updateReportSelectionUI() {
     
     // Only enable delete button for admin users
     if (deleteBtn) {
-        if (isAdmin()) {
+        const adminStatus = isAdmin();
+        if (adminStatus) {
             deleteBtn.disabled = count === 0;
             deleteBtn.style.display = 'flex';
         } else {
@@ -1650,12 +1653,27 @@ async function init() {
     // Check authentication first
     if (!checkAuth()) return;
     
+    // Set delete button visibility based on admin status
+    updateDeleteButtonVisibility();
+    
     await initDatabase();
     await updateStats();
     populateFilterCheckboxes();
     setupEventListeners();
     setupReportListeners();
     initServiceWorkerUpdates();
+}
+
+// ===== Admin Permission UI Updates =====
+function updateDeleteButtonVisibility() {
+    const deleteBtn = document.getElementById('reportDeleteSelectedBtn');
+    if (deleteBtn) {
+        if (isAdmin()) {
+            deleteBtn.style.display = 'flex';
+        } else {
+            deleteBtn.style.display = 'none';
+        }
+    }
 }
 
 // ===== Report Selection Event Listeners =====
@@ -1685,10 +1703,8 @@ function setupReportListeners() {
     }
     
     if (reportDeleteSelectedBtn) {
-        // Only show delete button for admin users
-        if (!isAdmin()) {
-            reportDeleteSelectedBtn.style.display = 'none';
-        }
+        // Set visibility based on admin status
+        updateDeleteButtonVisibility();
         reportDeleteSelectedBtn.addEventListener('click', deleteReportSelectedNotes);
     }
     

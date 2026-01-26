@@ -82,6 +82,23 @@ exports.handler = async (event, context) => {
             END $$;
         `;
 
+        // Create indexes for better query performance
+        await sql`
+            CREATE INDEX IF NOT EXISTS idx_notes_location ON notes(location)
+        `;
+        
+        await sql`
+            CREATE INDEX IF NOT EXISTS idx_notes_department ON notes(department)
+        `;
+        
+        await sql`
+            CREATE INDEX IF NOT EXISTS idx_notes_created_at ON notes(created_at DESC)
+        `;
+        
+        await sql`
+            CREATE INDEX IF NOT EXISTS idx_notes_location_department ON notes(location, department)
+        `;
+
         return {
             statusCode: 200,
             headers,
