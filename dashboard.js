@@ -39,10 +39,15 @@ function checkAuth() {
         return false;
     }
     currentUser = JSON.parse(userStr);
-    // Ensure is_admin is a boolean
-    if (currentUser.is_admin === undefined) {
+    // Ensure is_admin is a boolean (handle undefined, null, string "true"/"false")
+    if (currentUser.is_admin === undefined || currentUser.is_admin === null) {
         currentUser.is_admin = false;
+    } else if (typeof currentUser.is_admin === 'string') {
+        currentUser.is_admin = currentUser.is_admin.toLowerCase() === 'true';
+    } else if (typeof currentUser.is_admin === 'number') {
+        currentUser.is_admin = currentUser.is_admin === 1;
     }
+    console.log('[Auth] User loaded:', currentUser.email, 'is_admin:', currentUser.is_admin, 'type:', typeof currentUser.is_admin);
     return true;
 }
 
