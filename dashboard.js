@@ -612,6 +612,9 @@ function toggleReportSelectMode() {
             </svg>
             Cancel
         `;
+        // Update delete button visibility when entering select mode
+        updateDeleteButtonVisibility();
+        updateReportSelectionUI();
     } else {
         resultsSection.classList.remove('select-mode');
         selectionBar.classList.add('hidden');
