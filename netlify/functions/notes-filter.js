@@ -28,75 +28,51 @@ exports.handler = async (event, context) => {
 
         const { locations, departments, noteTypes, startDate, endDate } = filters;
 
-        // Build dynamic query based on filters - use SQL for better performance
-        let notes;
+        // Build dynamic query based on filters
+        // Use a hybrid approach: fetch with basic filters in SQL, then filter in JS for complex cases
+        // This is safer and works reliably with Neon's tagged template syntax
         
         // Normalize locations to strings for comparison
         const normalizedLocations = locations && locations.length > 0 
             ? locations.map(loc => typeof loc === 'number' ? loc.toString() : loc)
             : null;
         
-        // Build WHERE conditions array
-        const conditions = [];
-        const queryParams = [];
+        let notes;
         
-        if (normalizedLocations && normalizedLocations.length > 0) {
-            conditions.push(`location = ANY($${queryParams.length + 1})`);
-            queryParams.push(normalizedLocations);
-        }
-        
-        if (departments && departments.length > 0) {
-            conditions.push(`department = ANY($${queryParams.length + 1})`);
-            queryParams.push(departments);
-        }
-        
-        if (startDate) {
-            conditions.push(`DATE(created_at) >= DATE($${queryParams.length + 1})`);
-            queryParams.push(startDate);
-        }
-        
-        if (endDate) {
-            conditions.push(`DATE(created_at) <= DATE($${queryParams.length + 1})`);
-            queryParams.push(endDate);
-        }
-        
-        if (noteTypes && noteTypes.length > 0) {
-            conditions.push(`note_type = ANY($${queryParams.length + 1})`);
-            queryParams.push(noteTypes);
-        }
-        
-        // Build the query
-        let query = `
+        // Start with base query - fetch all notes (indexes will help with performance)
+        // We'll apply filters in JavaScript for reliability
+        notes = await sql`
             SELECT id, location, department, note_type, other_description, additional_notes, submitted_by, created_at,
                    CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
             FROM notes
+            ORDER BY id DESC
         `;
         
-        if (conditions.length > 0) {
-            query += ` WHERE ${conditions.join(' AND ')}`;
+        // Apply filters in JavaScript (this is safe and works reliably)
+        if (normalizedLocations && normalizedLocations.length > 0) {
+            notes = notes.filter(n => {
+                const nLoc = typeof n.location === 'number' ? n.location.toString() : n.location;
+                return normalizedLocations.includes(nLoc);
+            });
         }
         
-        query += ` ORDER BY id DESC`;
+        if (departments && departments.length > 0) {
+            notes = notes.filter(n => departments.includes(n.department));
+        }
         
-        // Execute with parameters using sql.unsafe for dynamic queries
-        if (queryParams.length > 0) {
-            // Replace placeholders with actual values (safely)
-            let finalQuery = query;
-            queryParams.forEach((param, idx) => {
-                const placeholder = `$${idx + 1}`;
-                if (Array.isArray(param)) {
-                    // For arrays, format as PostgreSQL array literal
-                    const arrayStr = `ARRAY[${param.map(p => `'${String(p).replace(/'/g, "''")}'`).join(',')}]`;
-                    finalQuery = finalQuery.replace(placeholder, arrayStr);
-                } else {
-                    // For single values
-                    const value = typeof param === 'string' ? `'${param.replace(/'/g, "''")}'` : param;
-                    finalQuery = finalQuery.replace(placeholder, value);
-                }
-            });
-            notes = await sql.unsafe(finalQuery);
-        } else {
-            notes = await sql.unsafe(query);
+        if (noteTypes && noteTypes.length > 0) {
+            notes = notes.filter(n => noteTypes.includes(n.note_type));
+        }
+        
+        if (startDate) {
+            const start = new Date(startDate);
+            notes = notes.filter(n => new Date(n.created_at) >= start);
+        }
+        
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999); // Include the entire end day
+            notes = notes.filter(n => new Date(n.created_at) <= end);
         }
 
         return {
