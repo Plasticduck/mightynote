@@ -47,9 +47,14 @@ function checkAuth() {
 }
 
 function isAdmin() {
-    if (!currentUser) return false;
+    if (!currentUser) {
+        console.log('[Admin Check] No current user');
+        return false;
+    }
     // Handle both boolean true and string "true" cases
-    return currentUser.is_admin === true || currentUser.is_admin === 'true' || currentUser.is_admin === 1;
+    const adminStatus = currentUser.is_admin === true || currentUser.is_admin === 'true' || currentUser.is_admin === 1;
+    console.log('[Admin Check] User:', currentUser.email, 'is_admin:', currentUser.is_admin, 'Result:', adminStatus);
+    return adminStatus;
 }
 
 // ===== Selection State =====
@@ -1671,11 +1676,17 @@ async function init() {
 function updateDeleteButtonVisibility() {
     const deleteBtn = document.getElementById('reportDeleteSelectedBtn');
     if (deleteBtn) {
-        if (isAdmin()) {
+        const adminStatus = isAdmin();
+        console.log('[Delete Button] Setting visibility, admin:', adminStatus);
+        if (adminStatus) {
             deleteBtn.style.display = 'flex';
+            deleteBtn.style.visibility = 'visible';
         } else {
             deleteBtn.style.display = 'none';
+            deleteBtn.style.visibility = 'hidden';
         }
+    } else {
+        console.log('[Delete Button] Button not found');
     }
 }
 
