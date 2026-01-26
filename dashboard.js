@@ -39,7 +39,15 @@ function checkAuth() {
         return false;
     }
     currentUser = JSON.parse(userStr);
+    // Ensure is_admin is a boolean
+    if (currentUser.is_admin === undefined) {
+        currentUser.is_admin = false;
+    }
     return true;
+}
+
+function isAdmin() {
+    return currentUser && currentUser.is_admin === true;
 }
 
 // ===== Selection State =====
@@ -674,10 +682,26 @@ function updateReportSelectionUI() {
     }
     
     if (exportBtn) exportBtn.disabled = count === 0;
-    if (deleteBtn) deleteBtn.disabled = count === 0;
+    
+    // Only enable delete button for admin users
+    if (deleteBtn) {
+        if (isAdmin()) {
+            deleteBtn.disabled = count === 0;
+            deleteBtn.style.display = 'flex';
+        } else {
+            deleteBtn.disabled = true;
+            deleteBtn.style.display = 'none';
+        }
+    }
 }
 
 async function deleteReportSelectedNotes() {
+    // Check admin permission
+    if (!isAdmin()) {
+        showToast('You do not have permission to delete violations. Only administrators can delete.', true);
+        return;
+    }
+    
     if (reportSelectedNotes.size === 0) {
         showToast('No notes selected', true);
         return;
@@ -1661,6 +1685,10 @@ function setupReportListeners() {
     }
     
     if (reportDeleteSelectedBtn) {
+        // Only show delete button for admin users
+        if (!isAdmin()) {
+            reportDeleteSelectedBtn.style.display = 'none';
+        }
         reportDeleteSelectedBtn.addEventListener('click', deleteReportSelectedNotes);
     }
     

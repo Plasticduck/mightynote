@@ -28,6 +28,7 @@ exports.handler = async (event, context) => {
                 password_hash TEXT NOT NULL,
                 can_use_inventory_app BOOLEAN DEFAULT FALSE,
                 mightycount_only BOOLEAN DEFAULT FALSE,
+                is_admin BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         `;
@@ -60,6 +61,21 @@ exports.handler = async (event, context) => {
             }
         } catch (error) {
             console.error('Error adding mightycount_only column:', error);
+        }
+
+        // Add is_admin column if table exists but column doesn't
+        try {
+            const columnCheck = await sql`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'users' AND column_name = 'is_admin'
+            `;
+            if (columnCheck.length === 0) {
+                await sql`ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE`;
+                console.log('Added is_admin column');
+            }
+        } catch (error) {
+            console.error('Error adding is_admin column:', error);
         }
 
         return {
