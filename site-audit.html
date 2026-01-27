@@ -166,74 +166,75 @@
         
         /* Photo Upload Styles */
         .photo-upload-container {
-            margin-top: var(--space-sm);
+            margin-top: var(--space-xs);
             display: flex;
-            flex-direction: column;
-            gap: var(--space-xs);
+            align-items: center;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
         }
         
         .photo-upload-btn {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: var(--space-xs);
-            padding: 8px 12px;
-            font-size: 0.8rem;
+            justify-content: center;
+            gap: 4px;
+            padding: 6px 10px;
+            font-size: 0.75rem;
             font-weight: 500;
             color: var(--text-secondary);
-            background: var(--bg-input);
+            background: transparent;
             border: 1px solid var(--border-color);
             border-radius: var(--radius-sm);
             cursor: pointer;
             transition: all var(--transition-base);
-            width: fit-content;
+            min-width: auto;
         }
         
         .photo-upload-btn:hover {
-            background: var(--bg-hover);
+            background: var(--white-05);
             border-color: var(--accent-blue);
             color: var(--accent-blue);
         }
         
         .photo-upload-btn svg {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
+            opacity: 0.7;
         }
         
-        .photo-preview-container {
-            position: relative;
-            display: inline-block;
-            margin-top: var(--space-xs);
+        .photo-upload-btn:hover svg {
+            opacity: 1;
         }
         
-        .photo-preview {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border-color);
+        .photo-filename {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .photo-remove-btn {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 24px;
-            height: 24px;
-            background: var(--accent-red);
-            border: none;
-            border-radius: 50%;
-            color: var(--white);
-            cursor: pointer;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            background: transparent;
+            border: none;
+            color: var(--accent-red);
+            cursor: pointer;
+            font-size: 1rem;
             font-weight: bold;
             transition: all var(--transition-base);
+            opacity: 0.7;
         }
         
         .photo-remove-btn:hover {
-            background: #ff2d20;
+            opacity: 1;
             transform: scale(1.1);
         }
         

@@ -218,27 +218,21 @@ function renderAuditItems(items, containerId) {
         photoInput.dataset.itemId = itemId;
         photoInput.style.display = 'none';
         
-        const photoPreviewContainer = document.createElement('div');
-        photoPreviewContainer.className = 'photo-preview-container hidden';
-        photoPreviewContainer.dataset.itemId = itemId;
-        
-        const photoPreview = document.createElement('img');
-        photoPreview.className = 'photo-preview';
-        photoPreview.src = '';
-        photoPreview.alt = 'Photo preview';
+        const photoFilename = document.createElement('span');
+        photoFilename.className = 'photo-filename hidden';
+        photoFilename.dataset.itemId = itemId;
         
         const photoRemoveBtn = document.createElement('button');
         photoRemoveBtn.type = 'button';
-        photoRemoveBtn.className = 'photo-remove-btn';
+        photoRemoveBtn.className = 'photo-remove-btn hidden';
         photoRemoveBtn.dataset.itemId = itemId;
         photoRemoveBtn.textContent = '×';
-        
-        photoPreviewContainer.appendChild(photoPreview);
-        photoPreviewContainer.appendChild(photoRemoveBtn);
+        photoRemoveBtn.title = 'Remove photo';
         
         photoContainer.appendChild(photoBtn);
         photoContainer.appendChild(photoInput);
-        photoContainer.appendChild(photoPreviewContainer);
+        photoContainer.appendChild(photoFilename);
+        photoContainer.appendChild(photoRemoveBtn);
         
         // Set up photo handlers
         photoBtn.addEventListener('click', () => photoInput.click());
@@ -338,12 +332,19 @@ async function handlePhotoSelect(event, itemId) {
         const itemElement = document.getElementById(itemId);
         if (itemElement) {
             itemElement.dataset.photo = compressedImage;
+            itemElement.dataset.photoFilename = file.name;
             
-            const previewContainer = document.querySelector(`.photo-preview-container[data-item-id="${itemId}"]`);
-            const previewImg = previewContainer.querySelector('.photo-preview');
+            // Show filename and remove button
+            const filenameEl = document.querySelector(`.photo-filename[data-item-id="${itemId}"]`);
+            const removeBtn = document.querySelector(`.photo-remove-btn[data-item-id="${itemId}"]`);
             
-            previewImg.src = compressedImage;
-            previewContainer.classList.remove('hidden');
+            if (filenameEl) {
+                filenameEl.textContent = file.name;
+                filenameEl.classList.remove('hidden');
+            }
+            if (removeBtn) {
+                removeBtn.classList.remove('hidden');
+            }
         }
     } catch (error) {
         console.error('Error processing image:', error);
@@ -355,13 +356,19 @@ function removePhoto(itemId) {
     const itemElement = document.getElementById(itemId);
     if (itemElement) {
         itemElement.dataset.photo = '';
+        itemElement.dataset.photoFilename = '';
         
-        const previewContainer = document.querySelector(`.photo-preview-container[data-item-id="${itemId}"]`);
-        const previewImg = previewContainer.querySelector('.photo-preview');
+        const filenameEl = document.querySelector(`.photo-filename[data-item-id="${itemId}"]`);
+        const removeBtn = document.querySelector(`.photo-remove-btn[data-item-id="${itemId}"]`);
         const photoInput = document.querySelector(`.photo-input[data-item-id="${itemId}"]`);
         
-        previewImg.src = '';
-        previewContainer.classList.add('hidden');
+        if (filenameEl) {
+            filenameEl.textContent = '';
+            filenameEl.classList.add('hidden');
+        }
+        if (removeBtn) {
+            removeBtn.classList.add('hidden');
+        }
         if (photoInput) {
             photoInput.value = '';
         }
@@ -452,18 +459,25 @@ function setupEventListeners() {
             document.querySelectorAll('.audit-item').forEach(item => {
                 item.dataset.rating = '';
                 item.dataset.photo = '';
+                item.dataset.photoFilename = '';
                 item.querySelectorAll('.rating-btn').forEach(btn => {
                     btn.classList.remove('selected');
                 });
                 const itemId = item.id;
-                const previewContainer = document.querySelector(`.photo-preview-container[data-item-id="${itemId}"]`);
-                if (previewContainer) {
-                    previewContainer.classList.add('hidden');
-                    const previewImg = previewContainer.querySelector('.photo-preview');
-                    if (previewImg) previewImg.src = '';
-                }
+                const filenameEl = document.querySelector(`.photo-filename[data-item-id="${itemId}"]`);
+                const removeBtn = document.querySelector(`.photo-remove-btn[data-item-id="${itemId}"]`);
                 const photoInput = document.querySelector(`.photo-input[data-item-id="${itemId}"]`);
-                if (photoInput) photoInput.value = '';
+                
+                if (filenameEl) {
+                    filenameEl.textContent = '';
+                    filenameEl.classList.add('hidden');
+                }
+                if (removeBtn) {
+                    removeBtn.classList.add('hidden');
+                }
+                if (photoInput) {
+                    photoInput.value = '';
+                }
             });
             
         } catch (error) {
