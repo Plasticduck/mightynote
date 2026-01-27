@@ -24,8 +24,8 @@ exports.handler = async (event, context) => {
         if (location && date) {
             query = sql`
                 SELECT id, location, initial_observations, primary_section, secondary_section, 
-                       priority_section, final_thoughts, section_comments, explanation, 
-                       submitted_by, created_at
+                       priority_section, final_thoughts, photos, section_comments, explanation, 
+                       submitted_by, user_id, created_at
                 FROM site_audits
                 WHERE location = ${location} AND DATE(created_at) = ${date}
                 ORDER BY created_at DESC
@@ -33,8 +33,8 @@ exports.handler = async (event, context) => {
         } else if (location) {
             query = sql`
                 SELECT id, location, initial_observations, primary_section, secondary_section, 
-                       priority_section, final_thoughts, section_comments, explanation, 
-                       submitted_by, created_at
+                       priority_section, final_thoughts, photos, section_comments, explanation, 
+                       submitted_by, user_id, created_at
                 FROM site_audits
                 WHERE location = ${location}
                 ORDER BY created_at DESC
@@ -42,8 +42,8 @@ exports.handler = async (event, context) => {
         } else if (date) {
             query = sql`
                 SELECT id, location, initial_observations, primary_section, secondary_section, 
-                       priority_section, final_thoughts, section_comments, explanation, 
-                       submitted_by, created_at
+                       priority_section, final_thoughts, photos, section_comments, explanation, 
+                       submitted_by, user_id, created_at
                 FROM site_audits
                 WHERE DATE(created_at) = ${date}
                 ORDER BY created_at DESC
@@ -51,8 +51,8 @@ exports.handler = async (event, context) => {
         } else {
             query = sql`
                 SELECT id, location, initial_observations, primary_section, secondary_section, 
-                       priority_section, final_thoughts, section_comments, explanation, 
-                       submitted_by, created_at
+                       priority_section, final_thoughts, photos, section_comments, explanation, 
+                       submitted_by, user_id, created_at
                 FROM site_audits
                 ORDER BY created_at DESC
             `;

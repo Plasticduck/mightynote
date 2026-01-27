@@ -297,12 +297,23 @@ function populateLocationFilter() {
 }
 
 async function refreshAudits() {
-    const location = document.getElementById('filterLocation').value || null;
-    const date = document.getElementById('filterDate').value || null;
-    
-    audits = await getAudits(location, date);
-    renderAudits(audits);
-    updateStats(audits);
+    try {
+        const location = document.getElementById('filterLocation').value || null;
+        const date = document.getElementById('filterDate').value || null;
+        
+        audits = await getAudits(location, date);
+        renderAudits(audits);
+        updateStats(audits);
+    } catch (error) {
+        console.error('Error refreshing audits:', error);
+        showToast('Error loading audits. Please try again.', true);
+        const container = document.getElementById('auditsContainer');
+        container.innerHTML = `
+            <p style="text-align: center; padding: var(--space-xl); color: var(--text-muted);">
+                Error loading audits. Please refresh the page.
+            </p>
+        `;
+    }
 }
 
 function getPhotoLinkText(photoData) {
