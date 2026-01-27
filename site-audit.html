@@ -163,6 +163,87 @@
             margin-bottom: var(--space-md);
             display: block;
         }
+        
+        /* Photo Upload Styles */
+        .photo-upload-container {
+            margin-top: var(--space-sm);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+        
+        .photo-upload-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            width: fit-content;
+        }
+        
+        .photo-upload-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+        
+        .photo-upload-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .photo-preview-container {
+            position: relative;
+            display: inline-block;
+            margin-top: var(--space-xs);
+        }
+        
+        .photo-preview {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+        }
+        
+        .photo-remove-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            background: var(--accent-red);
+            border: none;
+            border-radius: 50%;
+            color: var(--white);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            transition: all var(--transition-base);
+        }
+        
+        .photo-remove-btn:hover {
+            background: #ff2d20;
+            transform: scale(1.1);
+        }
+        
+        .photo-input {
+            display: none;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>

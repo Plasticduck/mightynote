@@ -181,6 +181,7 @@ function renderAuditItems(items, containerId) {
         itemDiv.className = 'audit-item';
         itemDiv.id = itemId;
         itemDiv.dataset.rating = '';
+        itemDiv.dataset.photo = '';
         
         const infoDiv = document.createElement('div');
         infoDiv.className = 'item-info';
@@ -193,10 +194,62 @@ function renderAuditItems(items, containerId) {
         criteriaDiv.className = 'item-criteria';
         criteriaDiv.textContent = item.criteria || '';
         
+        // Photo upload container
+        const photoContainer = document.createElement('div');
+        photoContainer.className = 'photo-upload-container';
+        
+        const photoBtn = document.createElement('button');
+        photoBtn.type = 'button';
+        photoBtn.className = 'photo-upload-btn';
+        photoBtn.dataset.itemId = itemId;
+        photoBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+            </svg>
+            Add Photo
+        `;
+        
+        const photoInput = document.createElement('input');
+        photoInput.type = 'file';
+        photoInput.accept = 'image/*';
+        photoInput.capture = 'environment';
+        photoInput.className = 'photo-input';
+        photoInput.dataset.itemId = itemId;
+        photoInput.style.display = 'none';
+        
+        const photoPreviewContainer = document.createElement('div');
+        photoPreviewContainer.className = 'photo-preview-container hidden';
+        photoPreviewContainer.dataset.itemId = itemId;
+        
+        const photoPreview = document.createElement('img');
+        photoPreview.className = 'photo-preview';
+        photoPreview.src = '';
+        photoPreview.alt = 'Photo preview';
+        
+        const photoRemoveBtn = document.createElement('button');
+        photoRemoveBtn.type = 'button';
+        photoRemoveBtn.className = 'photo-remove-btn';
+        photoRemoveBtn.dataset.itemId = itemId;
+        photoRemoveBtn.textContent = '×';
+        
+        photoPreviewContainer.appendChild(photoPreview);
+        photoPreviewContainer.appendChild(photoRemoveBtn);
+        
+        photoContainer.appendChild(photoBtn);
+        photoContainer.appendChild(photoInput);
+        photoContainer.appendChild(photoPreviewContainer);
+        
+        // Set up photo handlers
+        photoBtn.addEventListener('click', () => photoInput.click());
+        photoInput.addEventListener('change', (e) => handlePhotoSelect(e, itemId));
+        photoRemoveBtn.addEventListener('click', () => removePhoto(itemId));
+        
         infoDiv.appendChild(nameDiv);
         if (item.criteria) {
             infoDiv.appendChild(criteriaDiv);
         }
+        infoDiv.appendChild(photoContainer);
         
         const ratingButtons = createRatingButtons(itemId);
         
@@ -219,6 +272,100 @@ function collectSectionRatings(containerId) {
     });
     
     return Object.keys(ratings).length > 0 ? ratings : null;
+}
+
+function collectSectionPhotos(containerId) {
+    const container = document.getElementById(containerId);
+    const items = container.querySelectorAll('.audit-item');
+    const photos = {};
+    
+    items.forEach((item, index) => {
+        const photo = item.dataset.photo || null;
+        if (photo && photo !== '') {
+            photos[index] = photo;
+        }
+    });
+    
+    return Object.keys(photos).length > 0 ? photos : null;
+}
+
+async function compressImage(file, maxWidth = 1200, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+                
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+async function handlePhotoSelect(event, itemId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', true);
+        return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+        showToast('Image must be less than 10MB', true);
+        return;
+    }
+    
+    try {
+        const compressedImage = await compressImage(file);
+        const itemElement = document.getElementById(itemId);
+        if (itemElement) {
+            itemElement.dataset.photo = compressedImage;
+            
+            const previewContainer = document.querySelector(`.photo-preview-container[data-item-id="${itemId}"]`);
+            const previewImg = previewContainer.querySelector('.photo-preview');
+            
+            previewImg.src = compressedImage;
+            previewContainer.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error processing image:', error);
+        showToast('Error processing image. Please try again.', true);
+    }
+}
+
+function removePhoto(itemId) {
+    const itemElement = document.getElementById(itemId);
+    if (itemElement) {
+        itemElement.dataset.photo = '';
+        
+        const previewContainer = document.querySelector(`.photo-preview-container[data-item-id="${itemId}"]`);
+        const previewImg = previewContainer.querySelector('.photo-preview');
+        const photoInput = document.querySelector(`.photo-input[data-item-id="${itemId}"]`);
+        
+        previewImg.src = '';
+        previewContainer.classList.add('hidden');
+        if (photoInput) {
+            photoInput.value = '';
+        }
+    }
 }
 
 function showToast(message, isError = false) {
@@ -259,6 +406,18 @@ function setupEventListeners() {
         const prioritySection = collectSectionRatings('priorityItems');
         const finalThoughts = collectSectionRatings('finalThoughtsItems');
         
+        // Collect photos
+        const primaryPhotos = collectSectionPhotos('primaryItems');
+        const secondaryPhotos = collectSectionPhotos('secondaryItems');
+        const priorityPhotos = collectSectionPhotos('priorityItems');
+        const finalThoughtsPhotos = collectSectionPhotos('finalThoughtsItems');
+        
+        const photos = {};
+        if (primaryPhotos) photos.primary = primaryPhotos;
+        if (secondaryPhotos) photos.secondary = secondaryPhotos;
+        if (priorityPhotos) photos.priority = priorityPhotos;
+        if (finalThoughtsPhotos) photos.final_thoughts = finalThoughtsPhotos;
+        
         const sectionComments = {
             initial: document.getElementById('initialComments').value || null,
             primary: document.getElementById('primaryComments').value || null,
@@ -277,6 +436,7 @@ function setupEventListeners() {
                 secondary_section: secondarySection,
                 priority_section: prioritySection,
                 final_thoughts: finalThoughts,
+                photos: Object.keys(photos).length > 0 ? photos : null,
                 section_comments: sectionComments,
                 explanation: explanation,
                 submitted_by: currentUser ? currentUser.full_name : null,
@@ -288,12 +448,22 @@ function setupEventListeners() {
             // Reset form
             auditForm.reset();
             
-            // Clear all ratings
+            // Clear all ratings and photos
             document.querySelectorAll('.audit-item').forEach(item => {
                 item.dataset.rating = '';
+                item.dataset.photo = '';
                 item.querySelectorAll('.rating-btn').forEach(btn => {
                     btn.classList.remove('selected');
                 });
+                const itemId = item.id;
+                const previewContainer = document.querySelector(`.photo-preview-container[data-item-id="${itemId}"]`);
+                if (previewContainer) {
+                    previewContainer.classList.add('hidden');
+                    const previewImg = previewContainer.querySelector('.photo-preview');
+                    if (previewImg) previewImg.src = '';
+                }
+                const photoInput = document.querySelector(`.photo-input[data-item-id="${itemId}"]`);
+                if (photoInput) photoInput.value = '';
             });
             
         } catch (error) {

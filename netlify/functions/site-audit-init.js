@@ -25,12 +25,26 @@ exports.handler = async (event, context) => {
                 secondary_section JSONB,
                 priority_section JSONB,
                 final_thoughts JSONB,
+                photos JSONB,
                 section_comments JSONB,
                 explanation TEXT,
                 submitted_by TEXT,
                 user_id INTEGER,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
+        `;
+        
+        // Add photos column if it doesn't exist
+        await sql`
+            DO $$ 
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'site_audits' AND column_name = 'photos'
+                ) THEN
+                    ALTER TABLE site_audits ADD COLUMN photos JSONB;
+                END IF;
+            END $$;
         `;
 
         // Create index for faster queries
