@@ -305,11 +305,11 @@ async function refreshAudits() {
     updateStats(audits);
 }
 
-function getPhotoLink(photoData, auditId, sectionKey, itemIndex) {
+function getPhotoLinkText(photoData) {
     if (!photoData) return '';
-    // Create a data URL that can be used in Excel/PDF
-    // For Excel, we'll use HYPERLINK formula
-    return `=HYPERLINK("${photoData}","View Photo")`;
+    // For Excel, we'll indicate photo is available
+    // Note: Excel doesn't support data URIs in hyperlinks, so we'll just indicate availability
+    return 'Photo Available';
 }
 
 function exportToExcel() {
@@ -350,7 +350,10 @@ function exportToExcel() {
                 const photoData = audit.photos && audit.photos.primary && audit.photos.primary[index] ? audit.photos.primary[index] : null;
                 row[`Primary: ${item}`] = rating;
                 if (photoData) {
-                    row[`Primary: ${item} Photo`] = getPhotoLink(photoData, audit.id, 'primary', index);
+                    // Store photo data in a separate column for reference
+                    // Users can view photos in the dashboard
+                    row[`Primary: ${item} Photo`] = getPhotoLinkText(photoData);
+                    row[`Primary: ${item} Photo Data`] = photoData; // Store full data for reference
                 }
             });
         }
@@ -362,7 +365,8 @@ function exportToExcel() {
                 const photoData = audit.photos && audit.photos.secondary && audit.photos.secondary[index] ? audit.photos.secondary[index] : null;
                 row[`Secondary: ${item}`] = rating;
                 if (photoData) {
-                    row[`Secondary: ${item} Photo`] = getPhotoLink(photoData, audit.id, 'secondary', index);
+                    row[`Secondary: ${item} Photo`] = getPhotoLinkText(photoData);
+                    row[`Secondary: ${item} Photo Data`] = photoData;
                 }
             });
         }
@@ -374,7 +378,8 @@ function exportToExcel() {
                 const photoData = audit.photos && audit.photos.priority && audit.photos.priority[index] ? audit.photos.priority[index] : null;
                 row[`Priority: ${item}`] = rating;
                 if (photoData) {
-                    row[`Priority: ${item} Photo`] = getPhotoLink(photoData, audit.id, 'priority', index);
+                    row[`Priority: ${item} Photo`] = getPhotoLinkText(photoData);
+                    row[`Priority: ${item} Photo Data`] = photoData;
                 }
             });
         }
@@ -386,7 +391,8 @@ function exportToExcel() {
                 const photoData = audit.photos && audit.photos.final_thoughts && audit.photos.final_thoughts[index] ? audit.photos.final_thoughts[index] : null;
                 row[`Final: ${item}`] = rating;
                 if (photoData) {
-                    row[`Final: ${item} Photo`] = getPhotoLink(photoData, audit.id, 'final_thoughts', index);
+                    row[`Final: ${item} Photo`] = getPhotoLinkText(photoData);
+                    row[`Final: ${item} Photo Data`] = photoData;
                 }
             });
         }
@@ -487,17 +493,18 @@ function exportToPDF() {
                     
                     const photoData = audit.photos && audit.photos[section.key] && audit.photos[section.key][index] ? audit.photos[section.key][index] : null;
                     let itemText = `${item}: ${rating}`;
+                    doc.text(itemText, margin, yPos);
+                    yPos += lineHeight;
+                    
                     if (photoData) {
-                        itemText += ' [Photo Available]';
-                        // Add clickable link (PDF viewers that support it)
+                        // Add photo link in PDF
                         doc.setTextColor(0, 0, 255);
-                        doc.textWithLink('[View Photo]', margin + doc.getTextWidth(itemText + ' '), yPos, {
+                        doc.textWithLink('[View Photo]', margin + 5, yPos, {
                             url: photoData
                         });
                         doc.setTextColor(0, 0, 0);
+                        yPos += lineHeight;
                     }
-                    doc.text(itemText, margin, yPos);
-                    yPos += lineHeight;
                 }
             });
             
