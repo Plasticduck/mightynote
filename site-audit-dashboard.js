@@ -493,6 +493,57 @@ async function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('portrait');
 
+    // Helper to render a colored rating chip similar to the dashboard badge
+    // Returns the width of the chip so callers can position following content.
+    function drawRatingChip(docInstance, rating, x, yBaseline) {
+        const labels = {
+            'pass': 'PASS',
+            'needs-work': 'NEEDS WORK',
+            'fail': 'FAIL'
+        };
+        const colors = {
+            'pass': [48, 209, 88],      // accent green
+            'needs-work': [255, 214, 10], // accent yellow
+            'fail': [255, 69, 58]       // accent red
+        };
+
+        const label = labels[rating] || (rating ? rating.toUpperCase() : '');
+        if (!label) return;
+
+        const color = colors[rating] || [255, 255, 255];
+
+        // Chip dimensions
+        const paddingX = 2;
+        const paddingY = 1.5;
+        const textWidth = docInstance.getTextWidth(label);
+        const chipHeight = 6; // approx line height
+        const chipWidth = textWidth + paddingX * 2 + 4 + 2; // include small square + gap
+
+        const yTop = yBaseline - chipHeight + 2;
+
+        // Draw chip border/background
+        docInstance.setDrawColor(color[0], color[1], color[2]);
+        docInstance.setFillColor(17, 17, 17); // dark background similar to card
+        docInstance.roundedRect(x, yTop, chipWidth, chipHeight, 1.5, 1.5, 'FD');
+
+        // Small colored square
+        docInstance.setFillColor(color[0], color[1], color[2]);
+        const squareSize = 3.5;
+        const squareX = x + paddingX;
+        const squareY = yTop + (chipHeight - squareSize) / 2;
+        docInstance.rect(squareX, squareY, squareSize, squareSize, 'F');
+
+        // Label text
+        docInstance.setTextColor(color[0], color[1], color[2]);
+        const textX = squareX + squareSize + 2;
+        docInstance.text(label, textX, yBaseline);
+
+        // Reset text color to white for subsequent lines
+        docInstance.setTextColor(255, 255, 255);
+
+        return chipWidth;
+    }
+
     const margin = 14;
     const lineHeight = 7;
     const pageHeight = doc.internal.pageSize.height;
@@ -563,8 +614,27 @@ async function exportToPDF() {
                     yPos = 20;
                 }
 
-                const line = `${item}: ${rating}`;
-                doc.text(line, margin, yPos);
+                // Item label
+                const itemLabel = `${item}:`;
+                doc.text(itemLabel, margin, yPos);
+
+                // Draw rating chip just to the right of the label
+                const labelWidth = doc.getTextWidth(itemLabel);
+                const chipX = margin + labelWidth + 4;
+                const chipWidth = drawRatingChip(doc, rating, chipX, yPos);
+
+                // If there's an associated photo, add a clickable link after the chip
+                const photoData = audit.photos && audit.photos[section.key] && audit.photos[section.key][index]
+                    ? audit.photos[section.key][index]
+                    : null;
+                if (photoData && typeof doc.textWithLink === 'function') {
+                    const linkX = chipX + chipWidth + 4;
+                    const url = decodeURIComponent(photoData);
+                    doc.setTextColor(0, 122, 255); // link blue
+                    doc.textWithLink('View Photo', linkX, yPos, { url });
+                    doc.setTextColor(255, 255, 255);
+                }
+
                 yPos += lineHeight;
             });
 
