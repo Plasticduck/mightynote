@@ -493,7 +493,8 @@ async function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('portrait');
 
-    // Helper to render a colored rating chip similar to the dashboard badge
+    // Helper to render a compact colored rating indicator (square + label),
+    // visually matching the dashboard badge but optimized for a white PDF.
     // Returns the width of the chip so callers can position following content.
     function drawRatingChip(docInstance, rating, x, yBaseline) {
         const labels = {
@@ -502,45 +503,31 @@ async function exportToPDF() {
             'fail': 'FAIL'
         };
         const colors = {
-            'pass': [48, 209, 88],      // accent green
+            'pass': [48, 209, 88],        // accent green
             'needs-work': [255, 214, 10], // accent yellow
-            'fail': [255, 69, 58]       // accent red
+            'fail': [255, 69, 58]         // accent red
         };
 
         const label = labels[rating] || (rating ? rating.toUpperCase() : '');
         if (!label) return;
 
-        const color = colors[rating] || [255, 255, 255];
-
-        // Chip dimensions
-        const paddingX = 2;
-        const paddingY = 1.5;
-        const textWidth = docInstance.getTextWidth(label);
-        const chipHeight = 6; // approx line height
-        const chipWidth = textWidth + paddingX * 2 + 4 + 2; // include small square + gap
-
-        const yTop = yBaseline - chipHeight + 2;
-
-        // Draw chip border/background
-        docInstance.setDrawColor(color[0], color[1], color[2]);
-        docInstance.setFillColor(17, 17, 17); // dark background similar to card
-        docInstance.roundedRect(x, yTop, chipWidth, chipHeight, 1.5, 1.5, 'FD');
+        const color = colors[rating] || [0, 0, 0];
 
         // Small colored square
-        docInstance.setFillColor(color[0], color[1], color[2]);
         const squareSize = 3.5;
-        const squareX = x + paddingX;
-        const squareY = yTop + (chipHeight - squareSize) / 2;
-        docInstance.rect(squareX, squareY, squareSize, squareSize, 'F');
+        const squareY = yBaseline - squareSize + 1.5;
+        docInstance.setFillColor(color[0], color[1], color[2]);
+        docInstance.rect(x, squareY, squareSize, squareSize, 'F');
 
-        // Label text
+        // Label text (same color as square)
+        const textX = x + squareSize + 2;
         docInstance.setTextColor(color[0], color[1], color[2]);
-        const textX = squareX + squareSize + 2;
         docInstance.text(label, textX, yBaseline);
 
-        // Reset text color to white for subsequent lines
-        docInstance.setTextColor(255, 255, 255);
+        // Reset text color back to black for normal body text
+        docInstance.setTextColor(0, 0, 0);
 
+        const chipWidth = (textX - x) + docInstance.getTextWidth(label);
         return chipWidth;
     }
 
@@ -562,8 +549,10 @@ async function exportToPDF() {
         doc.text(`Site Audit - ${formatLocation(audit.location)}`, margin, yPos);
         yPos += lineHeight + 2;
 
+        // Body text should be black on white
         doc.setFontSize(10);
         doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0);
         doc.text(`Date: ${formatDate(audit.created_at)}`, margin, yPos);
         yPos += lineHeight;
         doc.text(`Submitted by: ${audit.submitted_by || 'Unknown'}`, margin, yPos);
@@ -614,7 +603,8 @@ async function exportToPDF() {
                     yPos = 20;
                 }
 
-                // Item label
+                // Item label (black text)
+                doc.setTextColor(0, 0, 0);
                 const itemLabel = `${item}:`;
                 doc.text(itemLabel, margin, yPos);
 
@@ -632,7 +622,7 @@ async function exportToPDF() {
                     const url = decodeURIComponent(photoData);
                     doc.setTextColor(0, 122, 255); // link blue
                     doc.textWithLink('View Photo', linkX, yPos, { url });
-                    doc.setTextColor(255, 255, 255);
+                    doc.setTextColor(0, 0, 0);
                 }
 
                 yPos += lineHeight;
