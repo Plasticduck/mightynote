@@ -369,7 +369,6 @@ function exportToExcel() {
                     row[`Primary: ${item}`] = rating;
                     if (photoData) {
                         row[`Primary: ${item} Photo`] = getPhotoLinkText(photoData);
-                        row[`Primary: ${item} Photo Data`] = photoData;
                     }
                 });
             }
@@ -382,7 +381,6 @@ function exportToExcel() {
                     row[`Secondary: ${item}`] = rating;
                     if (photoData) {
                         row[`Secondary: ${item} Photo`] = getPhotoLinkText(photoData);
-                        row[`Secondary: ${item} Photo Data`] = photoData;
                     }
                 });
             }
@@ -395,7 +393,6 @@ function exportToExcel() {
                     row[`Priority: ${item}`] = rating;
                     if (photoData) {
                         row[`Priority: ${item} Photo`] = getPhotoLinkText(photoData);
-                        row[`Priority: ${item} Photo Data`] = photoData;
                     }
                 });
             }
@@ -408,12 +405,22 @@ function exportToExcel() {
                     row[`Final: ${item}`] = rating;
                     if (photoData) {
                         row[`Final: ${item} Photo`] = getPhotoLinkText(photoData);
-                        row[`Final: ${item} Photo Data`] = photoData;
                     }
                 });
             }
             
-            return row;
+            // Excel cells have a max length; trim very long text
+            const safeRow = {};
+            const MAX_CELL_LENGTH = 10000; // well under Excel's 32767 char limit
+            Object.entries(row).forEach(([key, value]) => {
+                if (typeof value === 'string' && value.length > MAX_CELL_LENGTH) {
+                    safeRow[key] = value.slice(0, MAX_CELL_LENGTH) + '...';
+                } else {
+                    safeRow[key] = value;
+                }
+            });
+
+            return safeRow;
         });
         
         const allWs = XLSX.utils.json_to_sheet(allData);
@@ -484,86 +491,101 @@ async function exportToPDF() {
     }
 
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('landscape');
+    const doc = new jsPDF('portrait');
 
-    // Group audits by site for summary similar to inventory report
-    const groupedBySite = {};
-    audits.forEach(audit => {
-        const siteName = formatLocation(audit.location);
-        if (!groupedBySite[siteName]) {
-            groupedBySite[siteName] = [];
-        }
-        groupedBySite[siteName].push(audit);
-    });
-
-    const totalSites = Object.keys(groupedBySite).length;
-
-    // Title
-    doc.setFontSize(18);
-    doc.setFont(undefined, 'bold');
-    doc.text('MightyOps - Site Audit Report', 14, 15);
-
-    // Header info
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    const infoY = 22;
-    doc.text(`Generated: ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true })}`, 14, infoY);
-    doc.text(`Total Audits: ${audits.length} | Sites Audited: ${totalSites}`, 14, infoY + 6);
-
-    let startY = 35;
     const margin = 14;
+    const lineHeight = 7;
+    const pageHeight = doc.internal.pageSize.height;
+    let yPos = 20;
 
-    // Summary table by site
-    const summaryData = [['Site', 'Audits']];
-    Object.keys(groupedBySite).sort().forEach(siteName => {
-        summaryData.push([siteName, groupedBySite[siteName].length.toString()]);
-    });
-
-    if (typeof doc.autoTable !== 'function') {
-        console.error('jsPDF autoTable plugin is not available on doc:', doc);
-        showToast('PDF table plugin failed to load. Check your internet connection and try again.', true);
-        return;
-    }
-
-    doc.autoTable({
-        startY,
-        head: [summaryData[0]],
-        body: summaryData.slice(1),
-        theme: 'striped',
-        headStyles: { fillColor: [10, 132, 255], textColor: 255, fontStyle: 'bold' },
-        styles: { fontSize: 9 },
-        margin: { left: margin, right: margin },
-        columnStyles: {
-            0: { cellWidth: 80 },
-            1: { cellWidth: 30, halign: 'center' }
+    // Fallback implementation that does NOT depend on autoTable
+    audits.forEach((audit, auditIndex) => {
+        if (auditIndex > 0) {
+            doc.addPage();
+            yPos = 20;
         }
-    });
 
-    startY = doc.lastAutoTable.finalY + 12;
+        // Header
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Site Audit - ${formatLocation(audit.location)}`, margin, yPos);
+        yPos += lineHeight + 2;
 
-    // Main audits table
-    const tableData = audits.map(audit => [
-        formatDate(audit.created_at),
-        formatLocation(audit.location),
-        audit.submitted_by || '-',
-        audit.initial_observations || '-',
-        audit.explanation || '-'
-    ]);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Date: ${formatDate(audit.created_at)}`, margin, yPos);
+        yPos += lineHeight;
+        doc.text(`Submitted by: ${audit.submitted_by || 'Unknown'}`, margin, yPos);
+        yPos += lineHeight + 3;
 
-    doc.autoTable({
-        startY,
-        head: [['Date/Time', 'Site', 'Submitted By', 'Initial Observations', 'Explanation']],
-        body: tableData,
-        theme: 'striped',
-        headStyles: { fillColor: [10, 132, 255], textColor: 255, fontStyle: 'bold' },
-        styles: { fontSize: 8 },
-        margin: { left: margin, right: margin },
-        columnStyles: {
-            0: { cellWidth: 40 },
-            1: { cellWidth: 30 },
-            2: { cellWidth: 35 },
-            3: { cellWidth: 80 },
-            4: { cellWidth: 80 }
+        // Initial Observations
+        if (audit.initial_observations) {
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('Initial Observations', margin, yPos);
+            yPos += lineHeight;
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            const initialLines = doc.splitTextToSize(audit.initial_observations, 180);
+            doc.text(initialLines, margin, yPos);
+            yPos += initialLines.length * lineHeight + 3;
+        }
+
+        const sections = [
+            { key: 'primary', title: 'Primary (Washing your Car)', data: audit.primary_section, items: CONFIG.primaryItems },
+            { key: 'secondary', title: 'Secondary (Behind the Scenes)', data: audit.secondary_section, items: CONFIG.secondaryItems },
+            { key: 'priority', title: 'Priority (Safety)', data: audit.priority_section, items: CONFIG.priorityItems },
+            { key: 'final_thoughts', title: 'Final Thoughts (Customer Takeaways)', data: audit.final_thoughts, items: CONFIG.finalThoughtsItems }
+        ];
+
+        sections.forEach(section => {
+            if (!section.data || Object.keys(section.data).length === 0) return;
+
+            if (yPos > pageHeight - 30) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text(section.title, margin, yPos);
+            yPos += lineHeight + 2;
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+
+            section.items.forEach((item, index) => {
+                const rating = section.data[index];
+                if (!rating) return;
+
+                if (yPos > pageHeight - 20) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                const line = `${item}: ${rating}`;
+                doc.text(line, margin, yPos);
+                yPos += lineHeight;
+            });
+
+            yPos += 3;
+        });
+
+        // Explanation
+        if (audit.explanation) {
+            if (yPos > pageHeight - 30) {
+                doc.addPage();
+                yPos = 20;
+            }
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('Explanation', margin, yPos);
+            yPos += lineHeight;
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            const explanationLines = doc.splitTextToSize(audit.explanation, 180);
+            doc.text(explanationLines, margin, yPos);
+            yPos += explanationLines.length * lineHeight + 5;
         }
     });
 
