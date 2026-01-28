@@ -614,12 +614,11 @@ async function exportToPDF() {
                 const chipWidth = drawRatingChip(doc, rating, chipX, yPos);
 
                 // If there's an associated photo, add a clickable link after the chip
-                const photoData = audit.photos && audit.photos[section.key] && audit.photos[section.key][index]
-                    ? audit.photos[section.key][index]
-                    : null;
-                if (photoData && typeof doc.textWithLink === 'function') {
+                const hasPhoto = audit.photos && audit.photos[section.key] && audit.photos[section.key][index];
+                if (hasPhoto && typeof doc.textWithLink === 'function') {
                     const linkX = chipX + chipWidth + 4;
-                    const url = decodeURIComponent(photoData);
+                    const origin = window.location && window.location.origin ? window.location.origin : '';
+                    const url = `${origin}/.netlify/functions/site-audit-photo?id=${audit.id}&section=${encodeURIComponent(section.key)}&index=${index}`;
                     doc.setTextColor(0, 122, 255); // link blue
                     doc.textWithLink('View Photo', linkX, yPos, { url });
                     doc.setTextColor(0, 0, 0);
