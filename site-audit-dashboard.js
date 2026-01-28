@@ -103,7 +103,7 @@ function formatDateOnly(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
         timeZone: 'America/Chicago',
-        year: 'numeric',
+        year: '2-digit',
         month: '2-digit',
         day: '2-digit'
     });
@@ -424,124 +424,158 @@ function exportToExcel() {
     showToast(`Exported ${audits.length} audits to Excel`);
 }
 
-function exportToPDF() {
+// Helper function to load image as base64 (for logo in PDFs)
+function loadImageAsBase64(imagePath) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            try {
+                const dataURL = canvas.toDataURL('image/png');
+                resolve(dataURL);
+            } catch (error) {
+                reject(error);
+            }
+        };
+        
+        img.onerror = function() {
+            // Try fetching as blob if direct image load fails
+            fetch(imagePath)
+                .then(response => response.blob())
+                .then(blob => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                })
+                .catch(reject);
+        };
+        
+        img.src = imagePath;
+    });
+}
+
+async function exportToPDF() {
     if (audits.length === 0) {
         showToast('No audits to export', true);
         return;
     }
     
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    let yPos = 20;
-    const pageHeight = doc.internal.pageSize.height;
-    const margin = 14;
-    const lineHeight = 7;
-    
-    audits.forEach((audit, auditIndex) => {
-        if (auditIndex > 0 || yPos > pageHeight - 40) {
-            doc.addPage();
-            yPos = 20;
+    const doc = new jsPDF('landscape');
+
+    // Group audits by site for summary similar to inventory report
+    const groupedBySite = {};
+    audits.forEach(audit => {
+        const siteName = formatLocation(audit.location);
+        if (!groupedBySite[siteName]) {
+            groupedBySite[siteName] = [];
         }
-        
-        // Header
-        doc.setFontSize(16);
-        doc.setFont(undefined, 'bold');
-        doc.text(`Site Audit - ${formatLocation(audit.location)}`, margin, yPos);
-        yPos += lineHeight + 2;
-        
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Date: ${formatDate(audit.created_at)}`, margin, yPos);
-        yPos += lineHeight;
-        doc.text(`Submitted by: ${audit.submitted_by || 'Unknown'}`, margin, yPos);
-        yPos += lineHeight + 3;
-        
-        // Initial Observations
-        if (audit.initial_observations) {
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('Initial Observations', margin, yPos);
-            yPos += lineHeight;
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
-            const initialLines = doc.splitTextToSize(audit.initial_observations, 180);
-            doc.text(initialLines, margin, yPos);
-            yPos += initialLines.length * lineHeight + 3;
-        }
-        
-        // Sections with photos
-        const sections = [
-            { key: 'primary', title: 'Primary (Washing your Car)', data: audit.primary_section, items: CONFIG.primaryItems },
-            { key: 'secondary', title: 'Secondary (Behind the Scenes)', data: audit.secondary_section, items: CONFIG.secondaryItems },
-            { key: 'priority', title: 'Priority (Safety)', data: audit.priority_section, items: CONFIG.priorityItems },
-            { key: 'final_thoughts', title: 'Final Thoughts (Customer Takeaways)', data: audit.final_thoughts, items: CONFIG.finalThoughtsItems }
-        ];
-        
-        sections.forEach(section => {
-            if (!section.data || Object.keys(section.data).length === 0) return;
-            
-            if (yPos > pageHeight - 30) {
-                doc.addPage();
-                yPos = 20;
-            }
-            
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text(section.title, margin, yPos);
-            yPos += lineHeight + 2;
-            
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
-            
-            section.items.forEach((item, index) => {
-                const rating = section.data[index];
-                if (rating) {
-                    if (yPos > pageHeight - 20) {
-                        doc.addPage();
-                        yPos = 20;
-                    }
-                    
-                    const photoData = audit.photos && audit.photos[section.key] && audit.photos[section.key][index] ? audit.photos[section.key][index] : null;
-                    let itemText = `${item}: ${rating}`;
-                    doc.text(itemText, margin, yPos);
-                    yPos += lineHeight;
-                    
-                    if (photoData) {
-                        // Add photo link in PDF
-                        doc.setTextColor(0, 0, 255);
-                        doc.textWithLink('[View Photo]', margin + 5, yPos, {
-                            url: photoData
-                        });
-                        doc.setTextColor(0, 0, 0);
-                        yPos += lineHeight;
-                    }
-                }
-            });
-            
-            yPos += 3;
-        });
-        
-        // Explanation
-        if (audit.explanation) {
-            if (yPos > pageHeight - 30) {
-                doc.addPage();
-                yPos = 20;
-            }
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('Explanation', margin, yPos);
-            yPos += lineHeight;
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
-            const explanationLines = doc.splitTextToSize(audit.explanation, 180);
-            doc.text(explanationLines, margin, yPos);
-            yPos += explanationLines.length * lineHeight + 5;
-        }
-        
-        yPos += 5;
+        groupedBySite[siteName].push(audit);
     });
-    
+
+    const totalSites = Object.keys(groupedBySite).length;
+
+    // Title
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text('MightyOps - Site Audit Report', 14, 15);
+
+    // Header info
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    const infoY = 22;
+    doc.text(`Generated: ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true })}`, 14, infoY);
+    doc.text(`Total Audits: ${audits.length} | Sites Audited: ${totalSites}`, 14, infoY + 6);
+
+    let startY = 35;
+    const margin = 14;
+
+    // Summary table by site
+    const summaryData = [['Site', 'Audits']];
+    Object.keys(groupedBySite).sort().forEach(siteName => {
+        summaryData.push([siteName, groupedBySite[siteName].length.toString()]);
+    });
+
+    doc.autoTable({
+        startY,
+        head: [summaryData[0]],
+        body: summaryData.slice(1),
+        theme: 'striped',
+        headStyles: { fillColor: [10, 132, 255], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9 },
+        margin: { left: margin, right: margin },
+        columnStyles: {
+            0: { cellWidth: 80 },
+            1: { cellWidth: 30, halign: 'center' }
+        }
+    });
+
+    startY = doc.lastAutoTable.finalY + 12;
+
+    // Main audits table
+    const tableData = audits.map(audit => [
+        formatDate(audit.created_at),
+        formatLocation(audit.location),
+        audit.submitted_by || '-',
+        audit.initial_observations || '-',
+        audit.explanation || '-'
+    ]);
+
+    doc.autoTable({
+        startY,
+        head: [['Date/Time', 'Site', 'Submitted By', 'Initial Observations', 'Explanation']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [10, 132, 255], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 8 },
+        margin: { left: margin, right: margin },
+        columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 30 },
+            2: { cellWidth: 35 },
+            3: { cellWidth: 80 },
+            4: { cellWidth: 80 }
+        }
+    });
+
+    // Add logo to all pages with proper aspect ratio (matching inventory PDF style)
+    const totalPages = doc.internal.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const logoY = 10;
+    const logoMargin = 14;
+
+    try {
+        const logoImg = await loadImageAsBase64('MW Logo.png');
+        if (logoImg) {
+            const img = new Image();
+            img.src = logoImg;
+            await new Promise((resolve) => {
+                img.onload = resolve;
+            });
+
+            const maxWidth = 17.5; // mm
+            const aspectRatio = img.width / img.height;
+            const logoWidth = maxWidth;
+            const logoHeight = maxWidth / aspectRatio;
+            const logoX = pageWidth - logoWidth - logoMargin;
+
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.addImage(logoImg, 'PNG', logoX, logoY, logoWidth, logoHeight);
+            }
+        }
+    } catch (error) {
+        console.warn('Could not load logo for PDF:', error);
+    }
+
     const timestamp = new Date().toISOString().slice(0, 10);
     doc.save(`Mighty_Ops_Site_Audits_${timestamp}.pdf`);
     showToast(`Exported ${audits.length} audits to PDF`);

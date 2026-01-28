@@ -131,29 +131,52 @@
         }
         
         .rating-badge {
-            padding: 4px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
             border-radius: var(--radius-sm);
             font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+        }
+
+        .rating-badge::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            background: var(--white-30);
         }
         
         .rating-badge.pass {
-            background: var(--accent-green-dim);
             color: var(--accent-green);
-            border: 1px solid var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .rating-badge.pass::before {
+            background: var(--accent-green);
         }
         
         .rating-badge.needs-work {
-            background: var(--accent-yellow-dim);
             color: var(--accent-yellow);
-            border: 1px solid var(--accent-yellow);
+            border-color: var(--accent-yellow);
+        }
+
+        .rating-badge.needs-work::before {
+            background: var(--accent-yellow);
         }
         
         .rating-badge.fail {
-            background: var(--accent-red-dim);
             color: var(--accent-red);
-            border: 1px solid var(--accent-red);
+            border-color: var(--accent-red);
+        }
+
+        .rating-badge.fail::before {
+            background: var(--accent-red);
         }
         
         .comments-display {
@@ -191,7 +214,8 @@
         
         #filterDate {
             width: 100%;
-            padding: 14px 16px;
+            max-width: 100%;
+            padding: 14px 40px 14px 16px; /* extra right padding for calendar icon */
             font-family: var(--font-primary);
             font-size: 1rem;
             color: var(--white);
@@ -200,6 +224,7 @@
             border-radius: var(--radius-md);
             transition: all var(--transition-base);
             cursor: pointer;
+            box-sizing: border-box;
         }
         
         #filterDate:hover {
@@ -370,6 +395,79 @@
             max-height: calc(90vh - 80px);
             overflow: auto;
         }
+
+        /* Mobile optimizations so dates fit in cards and filters */
+        @media (max-width: 768px) {
+            .dashboard-content {
+                padding: var(--space-sm);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: var(--space-xs);
+                margin-bottom: var(--space-md);
+            }
+
+            .stat-card {
+                padding: var(--space-xs) var(--space-sm);
+                min-width: 0;
+            }
+
+            .stat-value {
+                font-size: clamp(1rem, 4vw, 1.5rem);
+                margin-bottom: 2px;
+                line-height: 1.1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .stat-label {
+                font-size: clamp(0.6rem, 2.5vw, 0.75rem);
+                line-height: 1.2;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .filters-section {
+                padding: var(--space-sm);
+            }
+
+            .filters-row {
+                flex-direction: column;
+                gap: var(--space-xs);
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .filters-row .form-group {
+                width: 100%;
+                min-width: 0;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+
+            .filters-row select,
+            .filters-row input {
+                width: 100%;
+                min-height: 44px;
+                font-size: 16px;
+                padding: 12px;
+                box-sizing: border-box;
+                max-width: 100%;
+            }
+
+            #filterDate {
+                width: 100%;
+                max-width: 100%;
+                padding: 12px 38px 12px 12px;
+                overflow: hidden;
+                -webkit-appearance: none;
+                appearance: none;
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -499,6 +597,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
     <script src="site-audit-dashboard.js?v=22"></script>
     <script src="version-check.js"></script>
 </body>
