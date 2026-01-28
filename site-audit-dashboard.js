@@ -328,100 +328,109 @@ function exportToExcel() {
         showToast('No audits to export', true);
         return;
     }
-    
-    const wb = XLSX.utils.book_new();
-    
-    // Summary sheet
-    const summaryData = [
-        ['Mighty Ops - Site Audit Report'],
-        ['Generated:', new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true })],
-        [''],
-        ['Total Audits:', audits.length],
-        ['']
-    ];
-    
-    const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-    summaryWs['!cols'] = [{ wch: 25 }, { wch: 50 }];
-    XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
-    
-    // Detailed audits sheet
-    const allData = audits.map((audit, auditIndex) => {
-        const row = {
-            'Date/Time': formatDate(audit.created_at),
-            'Site': formatLocation(audit.location),
-            'Submitted By': audit.submitted_by || '',
-            'Initial Observations': audit.initial_observations || '',
-            'Explanation': audit.explanation || ''
-        };
+
+    if (typeof XLSX === 'undefined' || !XLSX.utils || !XLSX.writeFile) {
+        console.error('XLSX library is not available:', window.XLSX);
+        showToast('Export library failed to load. Check your internet connection and try again.', true);
+        return;
+    }
+
+    try {
+        const wb = XLSX.utils.book_new();
         
-        // Add primary section ratings and photo links
-        if (audit.primary_section) {
-            CONFIG.primaryItems.forEach((item, index) => {
-                const rating = audit.primary_section[index] || '';
-                const photoData = audit.photos && audit.photos.primary && audit.photos.primary[index] ? audit.photos.primary[index] : null;
-                row[`Primary: ${item}`] = rating;
-                if (photoData) {
-                    // Store photo data in a separate column for reference
-                    // Users can view photos in the dashboard
-                    row[`Primary: ${item} Photo`] = getPhotoLinkText(photoData);
-                    row[`Primary: ${item} Photo Data`] = photoData; // Store full data for reference
-                }
-            });
-        }
+        // Summary sheet
+        const summaryData = [
+            ['Mighty Ops - Site Audit Report'],
+            ['Generated:', new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true })],
+            [''],
+            ['Total Audits:', audits.length],
+            ['']
+        ];
         
-        // Add secondary section ratings and photo links
-        if (audit.secondary_section) {
-            CONFIG.secondaryItems.forEach((item, index) => {
-                const rating = audit.secondary_section[index] || '';
-                const photoData = audit.photos && audit.photos.secondary && audit.photos.secondary[index] ? audit.photos.secondary[index] : null;
-                row[`Secondary: ${item}`] = rating;
-                if (photoData) {
-                    row[`Secondary: ${item} Photo`] = getPhotoLinkText(photoData);
-                    row[`Secondary: ${item} Photo Data`] = photoData;
-                }
-            });
-        }
+        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+        summaryWs['!cols'] = [{ wch: 25 }, { wch: 50 }];
+        XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
         
-        // Add priority section ratings and photo links
-        if (audit.priority_section) {
-            CONFIG.priorityItems.forEach((item, index) => {
-                const rating = audit.priority_section[index] || '';
-                const photoData = audit.photos && audit.photos.priority && audit.photos.priority[index] ? audit.photos.priority[index] : null;
-                row[`Priority: ${item}`] = rating;
-                if (photoData) {
-                    row[`Priority: ${item} Photo`] = getPhotoLinkText(photoData);
-                    row[`Priority: ${item} Photo Data`] = photoData;
-                }
-            });
-        }
+        // Detailed audits sheet
+        const allData = audits.map((audit) => {
+            const row = {
+                'Date/Time': formatDate(audit.created_at),
+                'Site': formatLocation(audit.location),
+                'Submitted By': audit.submitted_by || '',
+                'Initial Observations': audit.initial_observations || '',
+                'Explanation': audit.explanation || ''
+            };
+            
+            // Add primary section ratings and photo links
+            if (audit.primary_section) {
+                CONFIG.primaryItems.forEach((item, index) => {
+                    const rating = audit.primary_section[index] || '';
+                    const photoData = audit.photos && audit.photos.primary && audit.photos.primary[index] ? audit.photos.primary[index] : null;
+                    row[`Primary: ${item}`] = rating;
+                    if (photoData) {
+                        row[`Primary: ${item} Photo`] = getPhotoLinkText(photoData);
+                        row[`Primary: ${item} Photo Data`] = photoData;
+                    }
+                });
+            }
+            
+            // Add secondary section ratings and photo links
+            if (audit.secondary_section) {
+                CONFIG.secondaryItems.forEach((item, index) => {
+                    const rating = audit.secondary_section[index] || '';
+                    const photoData = audit.photos && audit.photos.secondary && audit.photos.secondary[index] ? audit.photos.secondary[index] : null;
+                    row[`Secondary: ${item}`] = rating;
+                    if (photoData) {
+                        row[`Secondary: ${item} Photo`] = getPhotoLinkText(photoData);
+                        row[`Secondary: ${item} Photo Data`] = photoData;
+                    }
+                });
+            }
+            
+            // Add priority section ratings and photo links
+            if (audit.priority_section) {
+                CONFIG.priorityItems.forEach((item, index) => {
+                    const rating = audit.priority_section[index] || '';
+                    const photoData = audit.photos && audit.photos.priority && audit.photos.priority[index] ? audit.photos.priority[index] : null;
+                    row[`Priority: ${item}`] = rating;
+                    if (photoData) {
+                        row[`Priority: ${item} Photo`] = getPhotoLinkText(photoData);
+                        row[`Priority: ${item} Photo Data`] = photoData;
+                    }
+                });
+            }
+            
+            // Add final thoughts ratings and photo links
+            if (audit.final_thoughts) {
+                CONFIG.finalThoughtsItems.forEach((item, index) => {
+                    const rating = audit.final_thoughts[index] || '';
+                    const photoData = audit.photos && audit.photos.final_thoughts && audit.photos.final_thoughts[index] ? audit.photos.final_thoughts[index] : null;
+                    row[`Final: ${item}`] = rating;
+                    if (photoData) {
+                        row[`Final: ${item} Photo`] = getPhotoLinkText(photoData);
+                        row[`Final: ${item} Photo Data`] = photoData;
+                    }
+                });
+            }
+            
+            return row;
+        });
         
-        // Add final thoughts ratings and photo links
-        if (audit.final_thoughts) {
-            CONFIG.finalThoughtsItems.forEach((item, index) => {
-                const rating = audit.final_thoughts[index] || '';
-                const photoData = audit.photos && audit.photos.final_thoughts && audit.photos.final_thoughts[index] ? audit.photos.final_thoughts[index] : null;
-                row[`Final: ${item}`] = rating;
-                if (photoData) {
-                    row[`Final: ${item} Photo`] = getPhotoLinkText(photoData);
-                    row[`Final: ${item} Photo Data`] = photoData;
-                }
-            });
-        }
+        const allWs = XLSX.utils.json_to_sheet(allData);
+        allWs['!cols'] = Array.from({ length: 50 }, () => ({ wch: 15 }));
+        XLSX.utils.book_append_sheet(wb, allWs, 'All Audits');
         
-        return row;
-    });
-    
-    const allWs = XLSX.utils.json_to_sheet(allData);
-    allWs['!cols'] = Array.from({ length: 50 }, () => ({ wch: 15 }));
-    XLSX.utils.book_append_sheet(wb, allWs, 'All Audits');
-    
-    // Generate filename
-    const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `Mighty_Ops_Site_Audits_${timestamp}.xlsx`;
-    
-    // Download
-    XLSX.writeFile(wb, filename);
-    showToast(`Exported ${audits.length} audits to Excel`);
+        // Generate filename
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const filename = `Mighty_Ops_Site_Audits_${timestamp}.xlsx`;
+        
+        // Download
+        XLSX.writeFile(wb, filename);
+        showToast(`Exported ${audits.length} audits to Excel`);
+    } catch (error) {
+        console.error('Error exporting audits to Excel:', error);
+        showToast('Error exporting audits to Excel. See console for details.', true);
+    }
 }
 
 // Helper function to load image as base64 (for logo in PDFs)
@@ -468,6 +477,12 @@ async function exportToPDF() {
         return;
     }
     
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        console.error('jsPDF library is not available:', window.jspdf);
+        showToast('PDF library failed to load. Check your internet connection and try again.', true);
+        return;
+    }
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('landscape');
 
@@ -503,6 +518,12 @@ async function exportToPDF() {
     Object.keys(groupedBySite).sort().forEach(siteName => {
         summaryData.push([siteName, groupedBySite[siteName].length.toString()]);
     });
+
+    if (typeof doc.autoTable !== 'function') {
+        console.error('jsPDF autoTable plugin is not available on doc:', doc);
+        showToast('PDF table plugin failed to load. Check your internet connection and try again.', true);
+        return;
+    }
 
     doc.autoTable({
         startY,
