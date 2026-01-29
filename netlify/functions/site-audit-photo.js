@@ -65,9 +65,15 @@ exports.handler = async (event, context) => {
         let photoData = null;
 
         try {
-            const photos = audit.photos ? JSON.parse(audit.photos) : null;
-            if (photos && photos[section] && Object.prototype.hasOwnProperty.call(photos[section], index)) {
-                photoData = photos[section][index];
+            // Neon returns JSONB as an object; only parse if it's a string
+            let photos = null;
+            if (audit.photos != null) {
+                photos = typeof audit.photos === 'string' ? JSON.parse(audit.photos) : audit.photos;
+            }
+            if (photos && typeof photos === 'object' && photos[section]) {
+                const sectionPhotos = photos[section];
+                // index from URL is string; section may use numeric or string keys
+                photoData = sectionPhotos[index] ?? sectionPhotos[String(index)];
             }
         } catch (parseErr) {
             console.error('Error parsing photos JSON for site audit:', parseErr);
