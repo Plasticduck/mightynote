@@ -681,7 +681,27 @@ async function exportToPDF() {
     }
 
     const timestamp = new Date().toISOString().slice(0, 10);
-    doc.save(`Mighty_Ops_Site_Audits_${timestamp}.pdf`);
+    const filename = `Mighty_Ops_Site_Audits_${timestamp}.pdf`;
+
+    // Patch PDF so "View Photo" URI links include /NewWindow true (open in new tab)
+    try {
+        const dataUri = doc.output('datauristring');
+        const base64 = dataUri.split(',')[1];
+        if (base64) {
+            let binary = atob(base64);
+            binary = binary.replace(/(site-audit-photo[^)]*)\) >>/g, '$1) /NewWindow true >>');
+            const patchedBase64 = btoa(binary);
+            const patchedDataUri = 'data:application/pdf;base64,' + patchedBase64;
+            const link = document.createElement('a');
+            link.href = patchedDataUri;
+            link.download = filename;
+            link.click();
+        } else {
+            doc.save(filename);
+        }
+    } catch (e) {
+        doc.save(filename);
+    }
     showToast(`Exported ${audits.length} audits to PDF`);
 }
 

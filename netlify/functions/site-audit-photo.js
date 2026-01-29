@@ -169,6 +169,13 @@ exports.handler = async (event, context) => {
     .btn-primary:hover {
       background: #0077ed;
     }
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.2);
+    }
     main {
       flex: 1;
       display: flex;
@@ -194,6 +201,7 @@ exports.handler = async (event, context) => {
       <a href="${photoData}" download="site_audit_photo_${id}_${section}_${index}.jpg" class="btn btn-primary">
         Download
       </a>
+      <button type="button" class="btn btn-secondary" onclick="history.back();">Close</button>
     </div>
   </header>
   <main>
