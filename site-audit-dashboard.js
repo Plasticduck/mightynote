@@ -128,10 +128,12 @@ function getRatingBadge(rating) {
     return `<span class="rating-badge ${rating}">${labels[rating] || rating}</span>`;
 }
 
-function renderSection(sectionData, itemNames, sectionTitle, photos = null, sectionKey = '') {
+function renderSection(sectionData, itemNames, sectionTitle, photos = null, sectionKey = '', auditId = null) {
     if (!sectionData || Object.keys(sectionData).length === 0) {
         return '';
     }
+    
+    const origin = window.location && window.location.origin ? window.location.origin : '';
     
     let html = `
         <div class="section-display">
@@ -142,10 +144,10 @@ function renderSection(sectionData, itemNames, sectionTitle, photos = null, sect
         const rating = sectionData[index];
         if (rating) {
             let photoLink = '';
-            if (photos && photos[index]) {
-                const photoData = photos[index];
+            if (photos && photos[index] && auditId != null) {
+                const photoUrl = `${origin}/.netlify/functions/site-audit-photo?id=${auditId}&section=${encodeURIComponent(sectionKey)}&index=${index}`;
                 photoLink = `
-                    <a href="#" class="photo-link" data-photo="${encodeURIComponent(photoData)}" onclick="event.preventDefault(); viewPhoto('${encodeURIComponent(photoData)}'); return false;">
+                    <a href="${photoUrl}" class="photo-link" target="_blank" rel="noopener">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                             <circle cx="12" cy="13" r="4"/>
@@ -202,7 +204,7 @@ function renderAudit(audit) {
     // Primary Section
     if (audit.primary_section) {
         const primaryPhotos = audit.photos && audit.photos.primary ? audit.photos.primary : null;
-        html += renderSection(audit.primary_section, CONFIG.primaryItems, 'Primary (Washing your Car)', primaryPhotos, 'primary');
+        html += renderSection(audit.primary_section, CONFIG.primaryItems, 'Primary (Washing your Car)', primaryPhotos, 'primary', audit.id);
         if (audit.section_comments && audit.section_comments.primary) {
             html += `<div class="comments-display">Comments: ${audit.section_comments.primary}</div>`;
         }
@@ -211,7 +213,7 @@ function renderAudit(audit) {
     // Secondary Section
     if (audit.secondary_section) {
         const secondaryPhotos = audit.photos && audit.photos.secondary ? audit.photos.secondary : null;
-        html += renderSection(audit.secondary_section, CONFIG.secondaryItems, 'Secondary (Behind the Scenes)', secondaryPhotos, 'secondary');
+        html += renderSection(audit.secondary_section, CONFIG.secondaryItems, 'Secondary (Behind the Scenes)', secondaryPhotos, 'secondary', audit.id);
         if (audit.section_comments && audit.section_comments.secondary) {
             html += `<div class="comments-display">Comments: ${audit.section_comments.secondary}</div>`;
         }
@@ -220,7 +222,7 @@ function renderAudit(audit) {
     // Priority Section
     if (audit.priority_section) {
         const priorityPhotos = audit.photos && audit.photos.priority ? audit.photos.priority : null;
-        html += renderSection(audit.priority_section, CONFIG.priorityItems, 'Priority (Safety)', priorityPhotos, 'priority');
+        html += renderSection(audit.priority_section, CONFIG.priorityItems, 'Priority (Safety)', priorityPhotos, 'priority', audit.id);
         if (audit.section_comments && audit.section_comments.priority) {
             html += `<div class="comments-display">Comments: ${audit.section_comments.priority}</div>`;
         }
@@ -229,7 +231,7 @@ function renderAudit(audit) {
     // Final Thoughts
     if (audit.final_thoughts) {
         const finalPhotos = audit.photos && audit.photos.final_thoughts ? audit.photos.final_thoughts : null;
-        html += renderSection(audit.final_thoughts, CONFIG.finalThoughtsItems, 'Final Thoughts (Customer Takeaways)', finalPhotos, 'final_thoughts');
+        html += renderSection(audit.final_thoughts, CONFIG.finalThoughtsItems, 'Final Thoughts (Customer Takeaways)', finalPhotos, 'final_thoughts', audit.id);
         if (audit.section_comments && audit.section_comments.finalThoughts) {
             html += `<div class="comments-display">Comments: ${audit.section_comments.finalThoughts}</div>`;
         }
