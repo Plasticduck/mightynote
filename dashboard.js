@@ -850,12 +850,30 @@ function getAllowedLocationsForUser() {
 }
 
 function populateFilterCheckboxes() {
-    // Populate location checkboxes by region (Corporate first, then each region with its sites)
+    // Populate location checkboxes: Select All, then each region as header with nested site checkboxes
     const locationContainer = document.getElementById('locationCheckboxes');
     locationContainer.innerHTML = '';
     const allowed = getAllowedLocationsForUser();
     const allowedSet = allowed ? new Set(allowed.map(String)) : null;
+
+    const selectAllLabel = document.createElement('label');
+    selectAllLabel.className = 'checkbox-item';
+    selectAllLabel.innerHTML = `
+        <input type="checkbox" id="selectAllLocations" checked class="select-all-locations">
+        <span class="checkmark"></span>
+        Select All
+    `;
+    locationContainer.appendChild(selectAllLabel);
+
     CONFIG.regions.forEach(region => {
+        const group = document.createElement('div');
+        group.className = 'region-group';
+        const header = document.createElement('div');
+        header.className = 'region-header';
+        header.textContent = region.name;
+        group.appendChild(header);
+        const sitesWrap = document.createElement('div');
+        sitesWrap.className = 'region-sites';
         region.sites.forEach(loc => {
             if (allowedSet && !allowedSet.has(String(loc))) return;
             const label = document.createElement('label');
@@ -866,8 +884,10 @@ function populateFilterCheckboxes() {
                 <span class="checkmark"></span>
                 ${displayText}
             `;
-            locationContainer.appendChild(label);
+            sitesWrap.appendChild(label);
         });
+        group.appendChild(sitesWrap);
+        locationContainer.appendChild(group);
     });
     
     // Populate note type checkboxes
@@ -883,9 +903,9 @@ function populateFilterCheckboxes() {
         noteTypeContainer.appendChild(label);
     });
     
-    // Setup "Select All" functionality for locations
+    // Setup "Select All" functionality for locations (only real site checkboxes, not the Select All control)
     document.getElementById('selectAllLocations').addEventListener('change', (e) => {
-        document.querySelectorAll('.location-checkbox').forEach(cb => {
+        document.querySelectorAll('.region-sites .location-checkbox').forEach(cb => {
             cb.checked = e.target.checked;
         });
     });
