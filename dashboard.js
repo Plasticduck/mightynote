@@ -73,10 +73,23 @@ let reportNotes = [];
 let reportSelectMode = false;
 
 // ===== Configuration =====
+// Regions for Site Violations (Corporate first, then by region)
+const REGIONS = [
+    { name: 'Corporate', sites: ['Corporate'] },
+    { name: 'Lubbock Region', sites: [1, 5, 7, 9, 10, 11, 14] },
+    { name: 'Permian Basin Region (A)', sites: [2, 4, 6, 8, 13, 15, 22, 24, 25] },
+    { name: 'Permian Basin Region (B)', sites: [3, 12, 31] },
+    { name: 'New Mexico Region', sites: [16, 17, 18, 19, 20, 21, 23, 26] },
+    { name: 'Central Region', sites: [27, 28, 29, 30, 'Spotless'] }
+];
+// Flat list: Corporate first, then all sites in region order (for filters and compatibility)
+const ALL_LOCATIONS = REGIONS.flatMap(r => r.sites);
+
 const CONFIG = {
-    // Locations: Sites 1-31, then Spotless at the end
-    locations: [...Array.from({ length: 31 }, (_, i) => i + 1), 'Spotless'],
-    
+    regions: REGIONS,
+    // Locations: Corporate first, then sites by region (same as ALL_LOCATIONS)
+    locations: ALL_LOCATIONS,
+
     departments: ['Operations', 'Safety', 'Accounting', 'Human Resources', 'IT'],
     
     noteTypes: {
@@ -164,12 +177,14 @@ async function getAllNotes() {
 
 async function getFilteredNotes(filters) {
     try {
+        const payload = { ...filters };
+        if (currentUser && currentUser.id) payload.user_id = currentUser.id;
         const response = await fetch(`${API_BASE}/notes-filter`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(filters)
+            body: JSON.stringify(payload)
         });
         
         const result = await response.json();
@@ -819,19 +834,40 @@ async function updateStats() {
     document.getElementById('itCount').textContent = notes.filter(n => n.department === 'IT').length;
 }
 
+function getAllowedLocationsForUser() {
+    // Regional Managers only see their region's sites; admins/corporate see all
+    if (!currentUser || currentUser.is_admin) return null;
+    const region = (currentUser.region || '').toLowerCase();
+    if (!region || region === 'corporate') return null;
+    const map = {
+        lubbock: [1, 5, 7, 9, 10, 11, 14],
+        permian_a: [2, 4, 6, 8, 13, 15, 22, 24, 25],
+        permian_b: [3, 12, 31],
+        new_mexico: [16, 17, 18, 19, 20, 21, 23, 26],
+        central: [27, 28, 29, 30, 'Spotless']
+    };
+    return map[region] || null;
+}
+
 function populateFilterCheckboxes() {
-    // Populate location checkboxes
+    // Populate location checkboxes by region (Corporate first, then each region with its sites)
     const locationContainer = document.getElementById('locationCheckboxes');
-    CONFIG.locations.forEach(loc => {
-        const label = document.createElement('label');
-        label.className = 'checkbox-item';
-        const displayText = typeof loc === 'number' ? `Site ${loc}` : loc;
-        label.innerHTML = `
-            <input type="checkbox" value="${loc}" checked class="location-checkbox">
-            <span class="checkmark"></span>
-            ${displayText}
-        `;
-        locationContainer.appendChild(label);
+    locationContainer.innerHTML = '';
+    const allowed = getAllowedLocationsForUser();
+    const allowedSet = allowed ? new Set(allowed.map(String)) : null;
+    CONFIG.regions.forEach(region => {
+        region.sites.forEach(loc => {
+            if (allowedSet && !allowedSet.has(String(loc))) return;
+            const label = document.createElement('label');
+            label.className = 'checkbox-item';
+            const displayText = typeof loc === 'number' ? `Site ${loc}` : loc;
+            label.innerHTML = `
+                <input type="checkbox" value="${loc}" checked class="location-checkbox">
+                <span class="checkmark"></span>
+                ${displayText}
+            `;
+            locationContainer.appendChild(label);
+        });
     });
     
     // Populate note type checkboxes
@@ -1138,7 +1174,7 @@ async function exportReportToExcel() {
         ['Accounting:', notes.filter(n => n.department === 'Accounting').length],
         [''],
         ['Filters Applied:'],
-        ['Sites:', filters.locations.length === CONFIG.locations.length ? 'All' : filters.locations.join(', ')],
+        ['Sites:', filters.locations.length === (getAllowedLocationsForUser() || CONFIG.locations).length ? 'All' : filters.locations.join(', ')],
         ['Departments:', filters.departments.join(', ') || 'All'],
         ['Date Range:', filters.startDate && filters.endDate ? `${filters.startDate} to ${filters.endDate}` : 'All dates']
     ];
@@ -1311,11 +1347,18 @@ async function exportReportToPDF() {
     doc.text(`Total: ${notes.length}  |  Ops: ${operationsCount}  |  Safety: ${safetyCount}  |  Acct: ${accountingCount}  |  HR: ${hrCount}  |  IT: ${itCount}`, 14, 36);
     
     // Filters applied
-    const sitesText = filters.locations.length === CONFIG.locations.length ? 'All Sites' : `Sites: ${filters.locations.slice(0, 10).join(', ')}${filters.locations.length > 10 ? '...' : ''}`;
+    const maxSites = getAllowedLocationsForUser() || CONFIG.locations;
+    const sitesText = filters.locations.length === maxSites.length ? 'All Sites' : `Sites: ${filters.locations.slice(0, 10).join(', ')}${filters.locations.length > 10 ? '...' : ''}`;
     const dateText = filters.startDate && filters.endDate ? `${filters.startDate} to ${filters.endDate}` : 'All dates';
     doc.text(`${sitesText}  |  Date Range: ${dateText}`, 14, 42);
     
-    // Table data with photo column
+    // Comments snippet (first 60 chars of additional_notes)
+    const commentSnippet = (note) => {
+        const text = note.additional_notes || '';
+        return text.length > 60 ? text.substring(0, 60) + '...' : text || '-';
+    };
+
+    // Table data with comments and photo column
     const tableData = notes.map(note => [
         formatDate(note.created_at),
         formatLocation(note.location),
@@ -1324,6 +1367,7 @@ async function exportReportToPDF() {
             ? `Other: ${note.other_description.substring(0, 25)}${note.other_description.length > 25 ? '...' : ''}` 
             : note.note_type,
         note.submitted_by || '-',
+        commentSnippet(note),
         note.has_image ? 'View Photo' : '-'
     ]);
     
@@ -1333,7 +1377,7 @@ async function exportReportToPDF() {
     // Create table
     doc.autoTable({
         startY: 50,
-        head: [['Date/Time', 'Site', 'Department', 'Note Type', 'Submitted By', 'Photo']],
+        head: [['Date/Time', 'Site', 'Department', 'Note Type', 'Submitted By', 'Comments', 'Photo']],
         body: tableData,
         styles: {
             fontSize: 8,
@@ -1348,16 +1392,17 @@ async function exportReportToPDF() {
             fillColor: [245, 245, 245],
         },
         columnStyles: {
-            0: { cellWidth: 38 },
-            1: { cellWidth: 22 },
-            2: { cellWidth: 25 },
-            3: { cellWidth: 'auto' },
-            4: { cellWidth: 35 },
-            5: { cellWidth: 22, halign: 'center' },
+            0: { cellWidth: 34 },
+            1: { cellWidth: 18 },
+            2: { cellWidth: 22 },
+            3: { cellWidth: 38 },
+            4: { cellWidth: 28 },
+            5: { cellWidth: 42 },
+            6: { cellWidth: 20, halign: 'center' },
         },
         didDrawCell: (data) => {
-            // Track photo cells for adding links
-            if (data.section === 'body' && data.column.index === 5) {
+            // Track photo cells for adding links (column index is now 6)
+            if (data.section === 'body' && data.column.index === 6) {
                 const note = notes[data.row.index];
                 if (note && note.has_image) {
                     photoLinks.push({
@@ -1371,8 +1416,8 @@ async function exportReportToPDF() {
             }
         },
         didParseCell: (data) => {
-            // Style photo links as blue
-            if (data.section === 'body' && data.column.index === 5) {
+            // Style photo links as blue (column index 6)
+            if (data.section === 'body' && data.column.index === 6) {
                 const note = notes[data.row.index];
                 if (note && note.has_image) {
                     data.cell.styles.textColor = [10, 132, 255];

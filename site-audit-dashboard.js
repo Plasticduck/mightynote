@@ -683,6 +683,14 @@ async function exportToPDF() {
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = `Mighty_Ops_Site_Audits_${timestamp}.pdf`;
 
+    // On mobile, skip base64 patch (atob/btoa on large strings can fail and prevent download)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+        doc.save(filename);
+        showToast(`Exported ${audits.length} audits to PDF`);
+        return;
+    }
+
     // Patch PDF so "View Photo" URI links include /NewWindow true (open in new tab)
     try {
         const dataUri = doc.output('datauristring');

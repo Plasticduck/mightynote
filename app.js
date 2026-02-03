@@ -46,10 +46,20 @@ function checkAuth() {
 let currentPhotoData = null;
 
 // ===== Configuration =====
+// Match dashboard: Corporate first, then sites by region
+const REGIONS = [
+    { name: 'Corporate', sites: ['Corporate'] },
+    { name: 'Lubbock Region', sites: [1, 5, 7, 9, 10, 11, 14] },
+    { name: 'Permian Basin Region (A)', sites: [2, 4, 6, 8, 13, 15, 22, 24, 25] },
+    { name: 'Permian Basin Region (B)', sites: [3, 12, 31] },
+    { name: 'New Mexico Region', sites: [16, 17, 18, 19, 20, 21, 23, 26] },
+    { name: 'Central Region', sites: [27, 28, 29, 30, 'Spotless'] }
+];
+const ALL_LOCATIONS = REGIONS.flatMap(r => r.sites);
+
 const CONFIG = {
-    // Locations: Sites 1-31, then Spotless at the end
-    locations: [...Array.from({ length: 31 }, (_, i) => i + 1), 'Spotless'],
-    
+    locations: ALL_LOCATIONS,
+
     departments: ['Operations', 'Safety', 'Accounting', 'Human Resources', 'IT'],
     
     noteTypes: {

@@ -1,5 +1,15 @@
 const { neon } = require('@neondatabase/serverless');
 
+// Regional Manager reporting: only these sites per region (null/corporate = all sites)
+const REGION_SITES = {
+    lubbock: ['1', '5', '7', '9', '10', '11', '14'],
+    permian_a: ['2', '4', '6', '8', '13', '15', '22', '24', '25'],
+    permian_b: ['3', '12', '31'],
+    new_mexico: ['16', '17', '18', '19', '20', '21', '23', '26'],
+    central: ['27', '28', '29', '30', 'Spotless'],
+    corporate: null  // all sites
+};
+
 exports.handler = async (event, context) => {
     // CORS headers
     const headers = {
@@ -26,12 +36,23 @@ exports.handler = async (event, context) => {
         const sql = neon(process.env.NETLIFY_DATABASE_URL);
         const filters = JSON.parse(event.body);
 
-        const { locations, departments, noteTypes, startDate, endDate } = filters;
+        let { locations, departments, noteTypes, startDate, endDate, user_id } = filters;
 
-        // Build dynamic query based on filters
-        // Use a hybrid approach: fetch with basic filters in SQL, then filter in JS for complex cases
-        // This is safer and works reliably with Neon's tagged template syntax
-        
+        // Regional Manager restriction: if user has a region, only allow their sites
+        if (user_id) {
+            const userRows = await sql`SELECT region FROM users WHERE id = ${user_id}`;
+            const region = userRows[0]?.region;
+            if (region && REGION_SITES[region]) {
+                const allowed = REGION_SITES[region];
+                if (allowed) {
+                    const allowedSet = new Set(allowed.map(s => String(s)));
+                    locations = locations && locations.length > 0
+                        ? locations.filter(loc => allowedSet.has(String(loc)))
+                        : allowed;
+                }
+            }
+        }
+
         // Normalize locations to strings for comparison
         const normalizedLocations = locations && locations.length > 0 
             ? locations.map(loc => typeof loc === 'number' ? loc.toString() : loc)

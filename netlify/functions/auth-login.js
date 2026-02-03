@@ -39,9 +39,9 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Find user by email
+        // Find user by email (region used for Site Violations reporting permissions)
         const users = await sql`
-            SELECT id, full_name, email, password_hash, can_use_inventory_app, mightycount_only, is_admin, created_at 
+            SELECT id, full_name, email, password_hash, can_use_inventory_app, mightycount_only, is_admin, region, created_at 
             FROM users 
             WHERE email = ${email.toLowerCase()}
         `;
@@ -87,6 +87,7 @@ exports.handler = async (event, context) => {
                     email: user.email,
                     can_use_inventory_app: user.can_use_inventory_app,
                     is_admin: user.is_admin || false,
+                    region: user.region || null,
                     created_at: user.created_at
                 }
             })
