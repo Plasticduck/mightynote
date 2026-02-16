@@ -97,9 +97,9 @@
                         <textarea id="notes" rows="4" placeholder="Enter any additional details..."></textarea>
                     </div>
 
-                    <!-- Photo Upload -->
+                    <!-- Photo / PDF Upload -->
                     <div class="form-group">
-                        <label>Add Photo (Optional)</label>
+                        <label>Add Photo or PDF (Optional)</label>
                         <div class="photo-upload-container">
                             <div class="photo-buttons">
                                 <button type="button" class="btn-photo" id="takePhotoBtn">
@@ -115,12 +115,12 @@
                                         <polyline points="17 8 12 3 7 8"/>
                                         <line x1="12" y1="3" x2="12" y2="15"/>
                                     </svg>
-                                    Upload Photo
+                                    Upload Photo/PDF
                                 </button>
                             </div>
                             <!-- Hidden file inputs -->
                             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
-                            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                            <input type="file" id="fileInput" accept="image/*,application/pdf" style="display: none;">
                             <!-- Photo preview -->
                             <div class="photo-preview hidden" id="photoPreview">
                                 <img id="previewImage" alt="Photo preview">
@@ -130,7 +130,7 @@
                                         <line x1="6" y1="6" x2="18" y2="18"/>
                                     </svg>
                                 </button>
-                                <span class="photo-status">Photo attached</span>
+                                <span class="photo-status">Attachment added</span>
                             </div>
                         </div>
                     </div>

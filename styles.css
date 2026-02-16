@@ -1362,12 +1362,25 @@ textarea {
 .region-header {
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--accent-blue);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: var(--space-xs) 0 var(--space-xs) var(--space-sm);
+    padding: var(--space-sm);
     border-bottom: 1px solid var(--border-subtle);
     margin-bottom: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+.region-header .region-name {
+    color: var(--accent-blue);
+}
+.region-header:hover {
+    background: var(--white-05);
+    border-radius: var(--radius-sm);
+}
+.region-header input.region-checkbox {
+    flex-shrink: 0;
 }
 .region-sites {
     display: flex;

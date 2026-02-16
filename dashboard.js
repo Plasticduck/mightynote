@@ -339,7 +339,7 @@ function renderRecords(notes) {
                     <circle cx="8.5" cy="8.5" r="1.5"/>
                     <polyline points="21 15 16 10 5 21"/>
                 </svg>
-                View Photo
+                View Attachment
             </a>
         ` : '';
         
@@ -511,7 +511,7 @@ function exportSelectedToExcel(notes) {
         'Other Description': note.other_description || '',
         'Additional Notes': note.additional_notes || '',
         'Submitted By': note.submitted_by || '',
-        'Photo': note.has_image ? getPhotoUrl(note.id) : ''
+        'Attachment': note.has_image ? getPhotoUrl(note.id) : ''
     }));
     
     const ws = XLSX.utils.json_to_sheet(data);
@@ -564,7 +564,7 @@ function exportSelectedToPDF(notes) {
     
     doc.autoTable({
         startY: 42,
-        head: [['Date/Time', 'Site', 'Dept', 'Note Type', 'Submitted By', 'Photo']],
+        head: [['Date/Time', 'Site', 'Dept', 'Note Type', 'Submitted By', 'Attachment']],
         body: tableData,
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
@@ -580,7 +580,7 @@ function exportSelectedToPDF(notes) {
         didDrawCell: (data) => {
             if (data.section === 'body' && data.column.index === 5) {
                 const note = notes[data.row.index];
-                if (note && note.has_image) {
+        if (note && note.has_image) {
                     photoLinks.push({
                         x: data.cell.x, y: data.cell.y,
                         width: data.cell.width, height: data.cell.height,
@@ -868,9 +868,13 @@ function populateFilterCheckboxes() {
     CONFIG.regions.forEach(region => {
         const group = document.createElement('div');
         group.className = 'region-group';
-        const header = document.createElement('div');
-        header.className = 'region-header';
-        header.textContent = region.name;
+        const header = document.createElement('label');
+        header.className = 'region-header checkbox-item';
+        header.innerHTML = `
+            <input type="checkbox" class="region-checkbox" checked>
+            <span class="checkmark"></span>
+            <span class="region-name">${region.name}</span>
+        `;
         group.appendChild(header);
         const sitesWrap = document.createElement('div');
         sitesWrap.className = 'region-sites';
@@ -888,6 +892,48 @@ function populateFilterCheckboxes() {
         });
         group.appendChild(sitesWrap);
         locationContainer.appendChild(group);
+
+        // Region checkbox: select/deselect all sites in this region
+        const regionCb = header.querySelector('.region-checkbox');
+        regionCb.addEventListener('change', function () {
+            sitesWrap.querySelectorAll('.location-checkbox').forEach(cb => {
+                cb.checked = regionCb.checked;
+            });
+        });
+        // When a site checkbox changes, sync region checkbox (checked if all sites in region selected)
+        sitesWrap.querySelectorAll('.location-checkbox').forEach(cb => {
+            cb.addEventListener('change', function () {
+                const all = sitesWrap.querySelectorAll('.location-checkbox');
+                const checked = sitesWrap.querySelectorAll('.location-checkbox:checked');
+                regionCb.checked = all.length === checked.length;
+            });
+        });
+    });
+    
+    // Sync "Select All" when any region or site changes (optional: keep Select All in sync)
+    const syncSelectAll = () => {
+        const allSites = document.querySelectorAll('.region-sites .location-checkbox');
+        const checked = document.querySelectorAll('.region-sites .location-checkbox:checked');
+        const selectAll = document.getElementById('selectAllLocations');
+        if (selectAll) selectAll.checked = allSites.length > 0 && allSites.length === checked.length;
+    };
+    document.getElementById('selectAllLocations').addEventListener('change', function (e) {
+        document.querySelectorAll('.region-sites .location-checkbox').forEach(cb => {
+            cb.checked = e.target.checked;
+        });
+        document.querySelectorAll('.region-checkbox').forEach(cb => {
+            cb.checked = e.target.checked;
+        });
+    });
+    document.querySelectorAll('.region-group').forEach(group => {
+        const sitesWrap = group.querySelector('.region-sites');
+        const regionCb = group.querySelector('.region-checkbox');
+        if (sitesWrap && regionCb) {
+            sitesWrap.querySelectorAll('.location-checkbox').forEach(cb => {
+                cb.addEventListener('change', syncSelectAll);
+            });
+            regionCb.addEventListener('change', syncSelectAll);
+        }
     });
     
     // Populate note type checkboxes
@@ -1212,7 +1258,7 @@ async function exportReportToExcel() {
         'Other Description': note.other_description || '',
         'Additional Notes': note.additional_notes || '',
         'Submitted By': note.submitted_by || '',
-        'Photo': note.has_image ? getPhotoUrl(note.id) : ''
+        'Attachment': note.has_image ? getPhotoUrl(note.id) : ''
     }));
     
     const allWs = XLSX.utils.json_to_sheet(allData);
@@ -1220,9 +1266,9 @@ async function exportReportToExcel() {
     // Add hyperlinks for photos
     notes.forEach((note, index) => {
         if (note.has_image) {
-            const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 7 }); // Photo column (H)
+            const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 7 }); // Attachment column (H)
             if (allWs[cellRef]) {
-                allWs[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
+                allWs[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Attachment' };
             }
         }
     });
@@ -1251,7 +1297,7 @@ async function exportReportToExcel() {
                 'Other Description': note.other_description || '',
                 'Additional Notes': note.additional_notes || '',
                 'Submitted By': note.submitted_by || '',
-                'Photo': note.has_image ? getPhotoUrl(note.id) : ''
+                'Attachment': note.has_image ? getPhotoUrl(note.id) : ''
             }));
             
             const ws = XLSX.utils.json_to_sheet(data);
@@ -1259,9 +1305,9 @@ async function exportReportToExcel() {
             // Add hyperlinks for photos
             deptNotes.forEach((note, index) => {
                 if (note.has_image) {
-                    const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 }); // Photo column (G)
+                    const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 }); // Attachment column (G)
                     if (ws[cellRef]) {
-                        ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
+                        ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Attachment' };
                     }
                 }
             });
@@ -1285,7 +1331,7 @@ async function exportReportToExcel() {
     
     sitesWithData.forEach(loc => {
         // Handle both numeric and string locations for filtering
-        const locNotes = notes.filter(n => {
+            const locNotes = notes.filter(n => {
             const nLoc = typeof n.location === 'number' ? n.location.toString() : n.location;
             const filterLoc = typeof loc === 'number' ? loc.toString() : loc;
             return nLoc === filterLoc;
@@ -1298,7 +1344,7 @@ async function exportReportToExcel() {
             'Other Description': note.other_description || '',
             'Additional Notes': note.additional_notes || '',
             'Submitted By': note.submitted_by || '',
-            'Photo': note.has_image ? getPhotoUrl(note.id) : ''
+                'Attachment': note.has_image ? getPhotoUrl(note.id) : ''
         }));
         
         const ws = XLSX.utils.json_to_sheet(data);
@@ -1306,9 +1352,9 @@ async function exportReportToExcel() {
         // Add hyperlinks for photos
         locNotes.forEach((note, index) => {
             if (note.has_image) {
-                const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 }); // Photo column (G)
+                const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 }); // Attachment column (G)
                 if (ws[cellRef]) {
-                    ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
+                    ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Attachment' };
                 }
             }
         });
@@ -1372,13 +1418,7 @@ async function exportReportToPDF() {
     const dateText = filters.startDate && filters.endDate ? `${filters.startDate} to ${filters.endDate}` : 'All dates';
     doc.text(`${sitesText}  |  Date Range: ${dateText}`, 14, 42);
     
-    // Comments snippet (first 60 chars of additional_notes)
-    const commentSnippet = (note) => {
-        const text = note.additional_notes || '';
-        return text.length > 60 ? text.substring(0, 60) + '...' : text || '-';
-    };
-
-    // Table data with comments and photo column
+    // Table data with full comments and photo column (autoTable wraps long text in cell)
     const tableData = notes.map(note => [
         formatDate(note.created_at),
         formatLocation(note.location),
@@ -1387,8 +1427,8 @@ async function exportReportToPDF() {
             ? `Other: ${note.other_description.substring(0, 25)}${note.other_description.length > 25 ? '...' : ''}` 
             : note.note_type,
         note.submitted_by || '-',
-        commentSnippet(note),
-        note.has_image ? 'View Photo' : '-'
+        note.additional_notes || '-',
+        note.has_image ? 'View Attachment' : '-'
     ]);
     
     // Store row positions for adding links later
@@ -1421,11 +1461,13 @@ async function exportReportToPDF() {
             6: { cellWidth: 20, halign: 'center' },
         },
         didDrawCell: (data) => {
-            // Track photo cells for adding links (column index is now 6)
+            // Track photo cells for adding links (column index is now 6); store page so links work on multi-page PDFs
             if (data.section === 'body' && data.column.index === 6) {
                 const note = notes[data.row.index];
                 if (note && note.has_image) {
+                    const pageNumber = data.pageNumber != null ? data.pageNumber : doc.internal.getNumberOfPages();
                     photoLinks.push({
+                        pageNumber: pageNumber,
                         x: data.cell.x,
                         y: data.cell.y,
                         width: data.cell.width,
@@ -1458,8 +1500,9 @@ async function exportReportToPDF() {
         }
     });
     
-    // Add clickable links for photos
+    // Add clickable links for photos (set correct page so links work when table spans multiple pages)
     photoLinks.forEach(link => {
+        doc.setPage(link.pageNumber);
         doc.link(link.x, link.y, link.width, link.height, { url: link.url });
     });
     

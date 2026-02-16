@@ -42,7 +42,7 @@ function checkAuth() {
     return true;
 }
 
-// ===== Photo Upload State =====
+// ===== Attachment Upload State (Photo/PDF) =====
 let currentPhotoData = null;
 
 // ===== Configuration =====
@@ -232,26 +232,40 @@ async function handlePhotoSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    if (!file.type.startsWith('image/')) {
-        showToast('Please select an image file', true);
-        return;
-    }
-    
-    if (file.size > 10 * 1024 * 1024) {
-        showToast('Image must be less than 10MB', true);
-        return;
-    }
-    
     try {
-        showToast('Processing image...');
-        
-        const compressedBase64 = await compressImage(file);
-        const pdfBase64 = await convertImageToPDF(compressedBase64, file.name);
-        
-        currentPhotoData = pdfBase64;
-        showPhotoPreview(compressedBase64);
-        
-        showToast('Photo attached successfully');
+        const maxSize = 10 * 1024 * 1024; // 10MB
+
+        if (file.size > maxSize) {
+            showToast('File must be less than 10MB', true);
+            return;
+        }
+
+        // Allow direct PDF uploads
+        const isPdf =
+            file.type === 'application/pdf' ||
+            file.name.toLowerCase().endsWith('.pdf');
+
+        if (isPdf) {
+            showToast('Processing PDF...');
+
+            const pdfBase64 = await readFileAsDataUrl(file);
+            currentPhotoData = pdfBase64;
+            showPhotoPreview(null, true, file.name);
+
+            showToast('PDF attached successfully');
+        } else if (file.type.startsWith('image/')) {
+            showToast('Processing image...');
+
+            const compressedBase64 = await compressImage(file);
+            const pdfBase64 = await convertImageToPDF(compressedBase64, file.name);
+
+            currentPhotoData = pdfBase64;
+            showPhotoPreview(compressedBase64, false, file.name);
+
+            showToast('Photo attached successfully');
+        } else {
+            showToast('Please select an image or PDF file', true);
+        }
     } catch (error) {
         console.error('Error processing photo:', error);
         showToast('Error processing photo', true);
@@ -306,6 +320,19 @@ function compressImage(file) {
     });
 }
 
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            resolve(e.target.result);
+        };
+
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
 async function convertImageToPDF(imageBase64, filename) {
     const { jsPDF } = window.jspdf;
     
@@ -355,11 +382,28 @@ async function convertImageToPDF(imageBase64, filename) {
     });
 }
 
-function showPhotoPreview(imageBase64) {
+function showPhotoPreview(imageBase64, isPdf = false, filename = '') {
     const preview = document.getElementById('photoPreview');
     const previewImage = document.getElementById('previewImage');
+    const statusEl = preview.querySelector('.photo-status');
     
-    previewImage.src = imageBase64;
+    if (isPdf) {
+        // Hide image element for PDFs and show a friendly message
+        previewImage.src = '';
+        previewImage.style.display = 'none';
+        if (statusEl) {
+            statusEl.textContent = filename
+                ? `PDF attached: ${filename}`
+                : 'PDF attached';
+        }
+    } else {
+        previewImage.src = imageBase64;
+        previewImage.style.display = 'block';
+        if (statusEl) {
+            statusEl.textContent = 'Photo attached';
+        }
+    }
+
     preview.classList.remove('hidden');
 }
 
@@ -367,8 +411,13 @@ function clearPhoto() {
     currentPhotoData = null;
     const preview = document.getElementById('photoPreview');
     const previewImage = document.getElementById('previewImage');
+    const statusEl = preview.querySelector('.photo-status');
     
     previewImage.src = '';
+    previewImage.style.display = 'none';
+    if (statusEl) {
+        statusEl.textContent = 'No attachment';
+    }
     preview.classList.add('hidden');
 }
 
