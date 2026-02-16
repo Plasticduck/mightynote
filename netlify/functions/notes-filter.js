@@ -63,8 +63,17 @@ exports.handler = async (event, context) => {
         // Start with base query - fetch all notes (indexes will help with performance)
         // We'll apply filters in JavaScript for reliability
         notes = await sql`
-            SELECT id, location, department, note_type, other_description, additional_notes, submitted_by, created_at,
-                   CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END as has_image
+            SELECT id,
+                   location,
+                   department,
+                   note_type,
+                   other_description,
+                   additional_notes,
+                   submitted_by,
+                   created_at,
+                   CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END AS has_photo,
+                   CASE WHEN pdf_attachment IS NOT NULL THEN true ELSE false END AS has_pdf,
+                   CASE WHEN image_pdf IS NOT NULL OR pdf_attachment IS NOT NULL THEN true ELSE false END AS has_image
             FROM notes
             ORDER BY id DESC
         `;

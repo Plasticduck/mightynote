@@ -24,7 +24,9 @@ exports.handler = async (event, context) => {
 
     try {
         const sql = neon(process.env.NETLIFY_DATABASE_URL);
-        const noteId = event.queryStringParameters?.id;
+        const params = event.queryStringParameters || {};
+        const noteId = params.id;
+        const kind = (params.kind || 'photo').toLowerCase(); // 'photo' (image_pdf) or 'pdf' (pdf_attachment)
 
         if (!noteId) {
             return {
@@ -35,8 +37,15 @@ exports.handler = async (event, context) => {
         }
 
         const result = await sql`
-            SELECT id, location, department, note_type, image_pdf, created_at 
-            FROM notes WHERE id = ${parseInt(noteId)}
+            SELECT id,
+                   location,
+                   department,
+                   note_type,
+                   image_pdf,
+                   pdf_attachment,
+                   created_at 
+            FROM notes
+            WHERE id = ${parseInt(noteId)}
         `;
 
         if (result.length === 0) {
@@ -49,16 +58,23 @@ exports.handler = async (event, context) => {
 
         const note = result[0];
 
-        if (!note.image_pdf) {
+        // Decide which column to use based on kind
+        const rawDataUri =
+            kind === 'pdf'
+                ? note.pdf_attachment || null
+                : note.image_pdf || null;
+
+        if (!rawDataUri) {
+            const label = kind === 'pdf' ? 'PDF' : 'photo';
             return {
                 statusCode: 404,
                 headers: { 'Content-Type': 'text/html' },
-                body: '<html><body><h1>No Image</h1><p>This note does not have an attached image</p></body></html>'
+                body: `<html><body><h1>No ${label}</h1><p>This note does not have an attached ${label}.</p></body></html>`
             };
         }
 
-        // The image_pdf is stored as a data URI, extract the base64 part
-        const base64Match = note.image_pdf.match(/^data:application\/pdf;[^,]+,(.+)$/);
+        // The attachment is stored as a data URI, extract the base64 part
+        const base64Match = rawDataUri.match(/^data:application\/pdf;[^,]+,(.+)$/);
         
         if (base64Match) {
             // Return as PDF
@@ -68,7 +84,7 @@ exports.handler = async (event, context) => {
                 statusCode: 200,
                 headers: {
                     'Content-Type': 'application/pdf',
-                    'Content-Disposition': `inline; filename="photo_note_${noteId}.pdf"`,
+                    'Content-Disposition': `inline; filename="${kind}_note_${noteId}.pdf"`,
                     'Cache-Control': 'public, max-age=31536000'
                 },
                 body: pdfBuffer.toString('base64'),
@@ -127,13 +143,13 @@ exports.handler = async (event, context) => {
 <body>
     <header>
         <div>
-            <h1>Photo Evidence - Note #${noteId}</h1>
+            <h1>${kind === 'pdf' ? 'PDF Attachment' : 'Photo Evidence'} - Note #${noteId}</h1>
             <p class="meta">Site ${note.location} | ${note.department} | ${timestamp}</p>
         </div>
-        <a href="${note.image_pdf}" download="photo_note_${noteId}.pdf" class="download-btn">Download PDF</a>
+        <a href="${rawDataUri}" download="${kind}_note_${noteId}.pdf" class="download-btn">Download PDF</a>
     </header>
     <main>
-        <iframe src="${note.image_pdf}"></iframe>
+        <iframe src="${rawDataUri}"></iframe>
     </main>
 </body>
 </html>
