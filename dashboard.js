@@ -1462,7 +1462,7 @@ async function exportReportToPDF() {
     const dateText = filters.startDate && filters.endDate ? `${filters.startDate} to ${filters.endDate}` : 'All dates';
     doc.text(`${sitesText}  |  Date Range: ${dateText}`, 14, 42);
     
-    // Table data with full comments and photo column (autoTable wraps long text in cell)
+    // Table data with full comments and generic attachment label (Photo/PDF)
     const tableData = notes.map(note => [
         formatDate(note.created_at),
         formatLocation(note.location),
@@ -1481,7 +1481,7 @@ async function exportReportToPDF() {
     // Create table
     doc.autoTable({
         startY: 50,
-        head: [['Date/Time', 'Site', 'Department', 'Note Type', 'Submitted By', 'Comments', 'Photo']],
+        head: [['Date/Time', 'Site', 'Department', 'Note Type', 'Submitted By', 'Comments', 'Attachment']],
         body: tableData,
         styles: {
             fontSize: 8,
@@ -1500,9 +1500,9 @@ async function exportReportToPDF() {
             1: { cellWidth: 18 },
             2: { cellWidth: 22 },
             3: { cellWidth: 38 },
-            4: { cellWidth: 28 },
-            5: { cellWidth: 42 },
-            6: { cellWidth: 20, halign: 'center' },
+            4: { cellWidth: 30 },
+            5: { cellWidth: 55 },
+            6: { cellWidth: 28, halign: 'center' },
         },
         didDrawCell: (data) => {
             // Track photo cells for adding links (column index is now 6); store page so links work on multi-page PDFs
