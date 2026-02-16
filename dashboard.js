@@ -528,24 +528,33 @@ async function exportSelectedNotes(format) {
 function exportSelectedToExcel(notes) {
     const wb = XLSX.utils.book_new();
     
-    const data = notes.map(note => ({
-        'Date/Time': formatDate(note.created_at),
-        'Site': formatLocation(note.location),
-        'Department': note.department,
-        'Note Type': note.note_type,
-        'Other Description': note.other_description || '',
-        'Additional Notes': note.additional_notes || '',
-        'Submitted By': note.submitted_by || '',
-        'Attachment': note.has_image ? getPhotoUrl(note.id) : ''
-    }));
+    const data = notes.map(note => {
+        // Prefer photo URL, otherwise PDF URL
+        const attachmentUrl = note.has_photo
+            ? getPhotoUrl(note.id)
+            : (note.has_pdf ? getPdfUrl(note.id) : '');
+
+        return {
+            'Date/Time': formatDate(note.created_at),
+            'Site': formatLocation(note.location),
+            'Department': note.department,
+            'Note Type': note.note_type,
+            'Other Description': note.other_description || '',
+            'Additional Notes': note.additional_notes || '',
+            'Submitted By': note.submitted_by || '',
+            'Attachment': attachmentUrl
+        };
+    });
     
     const ws = XLSX.utils.json_to_sheet(data);
     
     notes.forEach((note, index) => {
-        if (note.has_image) {
+        if (note.has_photo || note.has_pdf) {
             const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 7 });
             if (ws[cellRef]) {
-                ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Photo' };
+                const url = note.has_photo ? getPhotoUrl(note.id) : getPdfUrl(note.id);
+                const tooltip = note.has_photo ? 'Show Photo' : 'Open PDF';
+                ws[cellRef].l = { Target: url, Tooltip: tooltip };
             }
         }
     });
@@ -574,16 +583,22 @@ function exportSelectedToPDF(notes) {
     doc.text(`Generated: ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true })}`, 14, 28);
     doc.text(`Total Records: ${notes.length}`, 14, 34);
     
-    const tableData = notes.map(note => [
-        formatDate(note.created_at),
-        formatLocation(note.location),
-        note.department,
-        note.note_type === 'Other' && note.other_description 
-            ? `Other: ${note.other_description}` 
-            : note.note_type,
-        note.submitted_by || '-',
-        note.has_image ? 'View Photo' : '-'
-    ]);
+    const tableData = notes.map(note => {
+        let attachmentLabel = '-';
+        if (note.has_photo) attachmentLabel = 'Show Photo';
+        else if (note.has_pdf) attachmentLabel = 'Open PDF';
+
+        return [
+            formatDate(note.created_at),
+            formatLocation(note.location),
+            note.department,
+            note.note_type === 'Other' && note.other_description 
+                ? `Other: ${note.other_description}` 
+                : note.note_type,
+            note.submitted_by || '-',
+            attachmentLabel
+        ];
+    });
     
     const photoLinks = [];
     
@@ -605,11 +620,12 @@ function exportSelectedToPDF(notes) {
         didDrawCell: (data) => {
             if (data.section === 'body' && data.column.index === 5) {
                 const note = notes[data.row.index];
-        if (note && note.has_image) {
+                if (note && (note.has_photo || note.has_pdf)) {
+                    const url = note.has_photo ? getPhotoUrl(note.id) : getPdfUrl(note.id);
                     photoLinks.push({
                         x: data.cell.x, y: data.cell.y,
                         width: data.cell.width, height: data.cell.height,
-                        url: getPhotoUrl(note.id)
+                        url
                     });
                 }
             }
@@ -617,7 +633,7 @@ function exportSelectedToPDF(notes) {
         didParseCell: (data) => {
             if (data.section === 'body' && data.column.index === 5) {
                 const note = notes[data.row.index];
-                if (note && note.has_image) {
+                if (note && (note.has_photo || note.has_pdf)) {
                     data.cell.styles.textColor = [10, 132, 255];
                     data.cell.styles.fontStyle = 'bold';
                 }
@@ -1063,18 +1079,37 @@ function renderReportNotes(notes) {
             ? `Other: ${note.other_description}` 
             : note.note_type;
         const isSelected = reportSelectedNotes.has(note.id);
-        
-        const imageBadge = note.has_image ? `
+
+        // Attachment badges for report cards: photo vs PDF
+        const hasPhoto = !!note.has_photo;
+        const hasPdf = !!note.has_pdf;
+
+        let attachmentBadges = '';
+        if (hasPhoto) {
+            attachmentBadges += `
             <a href="${getPhotoUrl(note.id)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                     <circle cx="8.5" cy="8.5" r="1.5"/>
                     <polyline points="21 15 16 10 5 21"/>
                 </svg>
-                View Photo
+                Show Photo
             </a>
-        ` : '';
-        
+        `;
+        }
+        if (hasPdf) {
+            attachmentBadges += `
+            <a href="${getPdfUrl(note.id)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <polyline points="9 8 9 16 15 16"/>
+                    <path d="M9 12h3"/>
+                </svg>
+                Open PDF
+            </a>
+        `;
+        }
+
         const submitterBadge = note.submitted_by ? `
             <span class="record-badge" style="background: var(--accent-green-dim); color: var(--accent-green); border-color: rgba(48, 209, 88, 0.2);">
                 By: ${note.submitted_by}
@@ -1095,7 +1130,7 @@ function renderReportNotes(notes) {
                     <span class="record-badge">${formatLocation(note.location)}</span>
                     <span class="record-badge ${deptClass}">${note.department}</span>
                     ${submitterBadge}
-                    ${imageBadge}
+                    ${attachmentBadges}
                 </div>
                 ${note.additional_notes ? `<p class="record-notes">${note.additional_notes}</p>` : ''}
             </div>
@@ -1236,10 +1271,6 @@ function renderReportTable(notes) {
             </tr>
         `;
     }).join('');
-}
-
-function getPhotoUrl(noteId) {
-    return `${window.location.origin}/.netlify/functions/notes-view-image?id=${noteId}`;
 }
 
 async function exportReportToExcel() {
