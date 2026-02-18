@@ -10,7 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="mwico.ico">
     <link rel="icon" type="image/x-icon" href="mwico.ico">
-    <title>Site Evaluations Dashboard - MightyOps</title>
+    <title>Monthly Site Review Dashboard - MightyOps</title>
     <link rel="stylesheet" href="styles.css?v=23">
     <style>
         .review-card {
@@ -196,7 +196,7 @@
         <header class="app-header">
             <div class="logo">
                 <img src="MW Logo.png" alt="MW Logo" class="logo-img">
-                <span class="logo-text">Site Evaluations</span>
+                <span class="logo-text">Monthly Site Review</span>
             </div>
             <div class="header-actions">
                 <a href="site-evaluations.html" class="btn-icon btn-add-note" title="New Review">
@@ -222,25 +222,25 @@
                     <div class="stat-card stat-total">
                         <div class="stat-content">
                             <span class="stat-value" id="totalReviews">0</span>
-                            <span class="stat-label">Total Evaluations</span>
+                            <span class="stat-label">Total Reviews</span>
                         </div>
                     </div>
                     <div class="stat-card stat-operations">
                         <div class="stat-content">
                             <span class="stat-value" id="excellentCount">0</span>
-                            <span class="stat-label">Excellent</span>
+                            <span class="stat-label">All Pass</span>
                         </div>
                     </div>
                     <div class="stat-card stat-safety">
                         <div class="stat-content">
                             <span class="stat-value" id="goodCount">0</span>
-                            <span class="stat-label">Good</span>
+                            <span class="stat-label">Has Fail</span>
                         </div>
                     </div>
                     <div class="stat-card stat-accounting">
                         <div class="stat-content">
                             <span class="stat-value" id="followUpCount">0</span>
-                            <span class="stat-label">Need Follow-up</span>
+                            <span class="stat-label">With Photo</span>
                         </div>
                     </div>
                 </div>
@@ -261,66 +261,24 @@
                             </div>
                         </div>
 
-                        <!-- Overall Rating Filter -->
+                        <!-- Result filter (Monthly Site Review: All Pass / Has Fail) -->
                         <div class="filter-section">
-                            <label>Overall Rating</label>
-                            <div class="checkbox-group" id="ratingCheckboxes">
+                            <label>Result</label>
+                            <div class="checkbox-group" id="resultCheckboxes">
                                 <label class="checkbox-item">
-                                    <input type="checkbox" id="selectAllRatings" checked>
+                                    <input type="checkbox" id="selectAllResults" checked>
                                     <span class="checkmark"></span>
                                     Select All
                                 </label>
                                 <label class="checkbox-item">
-                                    <input type="checkbox" value="Excellent" checked class="rating-checkbox">
+                                    <input type="checkbox" value="all_pass" checked class="result-checkbox">
                                     <span class="checkmark"></span>
-                                    Excellent
+                                    All Pass
                                 </label>
                                 <label class="checkbox-item">
-                                    <input type="checkbox" value="Good" checked class="rating-checkbox">
+                                    <input type="checkbox" value="has_fail" checked class="result-checkbox">
                                     <span class="checkmark"></span>
-                                    Good
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" value="Fair" checked class="rating-checkbox">
-                                    <span class="checkmark"></span>
-                                    Fair
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" value="Poor" checked class="rating-checkbox">
-                                    <span class="checkmark"></span>
-                                    Poor
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Follow-up Filter -->
-                        <div class="filter-section">
-                            <label>Follow-up Status</label>
-                            <div class="checkbox-group" id="followupCheckboxes">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" id="selectAllFollowups" checked>
-                                    <span class="checkmark"></span>
-                                    Select All
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" value="No" checked class="followup-checkbox">
-                                    <span class="checkmark"></span>
-                                    No Follow-up
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" value="Yes (minor follow-up)" checked class="followup-checkbox">
-                                    <span class="checkmark"></span>
-                                    Minor Follow-up
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" value="Yes (moderate follow-up)" checked class="followup-checkbox">
-                                    <span class="checkmark"></span>
-                                    Moderate Follow-up
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" value="Yes (urgent follow-up required)" checked class="followup-checkbox">
-                                    <span class="checkmark"></span>
-                                    Urgent Follow-up
+                                    Has Fail
                                 </label>
                             </div>
                         </div>
@@ -433,7 +391,7 @@
                                 <option value="newest">Newest First</option>
                                 <option value="oldest">Oldest First</option>
                                 <option value="location">Location A-Z</option>
-                                <option value="rating">Rating (Best First)</option>
+                                <option value="result">Result (Pass first)</option>
                             </select>
                         </div>
                     </div>

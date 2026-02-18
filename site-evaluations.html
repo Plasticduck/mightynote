@@ -10,73 +10,80 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="mwico.ico">
     <link rel="icon" type="image/x-icon" href="mwico.ico">
-    <title>Site Evaluations - MightyOps</title>
+    <title>Monthly Site Review - MightyOps</title>
     <link rel="stylesheet" href="styles.css?v=23">
     <style>
-        .evaluation-form {
-            padding: var(--space-lg);
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-lg);
+        .evaluation-form { padding: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-lg); }
+        .form-card { max-width: 720px; }
+        .form-header h2 { font-size: 1.25rem; }
+        .review-header-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
         }
-        
-        .question-group {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-sm);
-            padding-bottom: var(--space-lg);
-            border-bottom: 1px solid var(--border-subtle);
+        .review-header-grid .form-group { margin-bottom: 0; }
+        @media (max-width: 480px) { .review-header-grid { grid-template-columns: 1fr; } }
+        .section-block {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-bottom: var(--space-md);
         }
-        
-        .question-group:last-of-type {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-        
-        .question-number {
-            font-size: 0.7rem;
+        .section-block h3 {
+            font-size: 0.9rem;
             font-weight: 600;
             color: var(--accent-blue);
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 1px solid var(--border-subtle);
         }
-        
-        .question-text {
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--white);
-            line-height: 1.4;
+        .review-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto 1fr;
+            gap: var(--space-sm);
+            align-items: start;
+            padding: var(--space-xs) 0;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.9rem;
         }
-        
-        .optional-section {
-            margin-top: var(--space-md);
-            padding-top: var(--space-lg);
-            border-top: 2px solid var(--border-color);
+        .review-row:last-child { border-bottom: none; }
+        .review-row .label { color: var(--white); line-height: 1.4; padding-top: 6px; }
+        .review-row .pf {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            white-space: nowrap;
         }
-        
-        .optional-section h3 {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: var(--space-lg);
+        .review-row .pf label { display: flex; align-items: center; gap: 4px; cursor: pointer; color: var(--text-secondary); font-weight: normal; }
+        .review-row .pf input[type="radio"] { margin: 0; accent-color: var(--accent-blue); }
+        .review-row .pf label.pass-selected { color: var(--accent-green); }
+        .review-row .pf label.fail-selected { color: var(--accent-red); }
+        .review-row .comments input { width: 100%; min-width: 0; padding: 4px 8px; font-size: 0.85rem; }
+        @media (max-width: 600px) {
+            .review-row {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            .review-row .pf { grid-column: 1; }
+            .review-row .comments { grid-column: 1; }
         }
-        
-        .form-card {
-            max-width: 640px;
-        }
+        .optional-section { margin-top: var(--space-lg); padding-top: var(--space-lg); border-top: 2px solid var(--border-color); }
+        .optional-section h3 { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: var(--space-md); }
+        .signature-row { display: flex; gap: var(--space-lg); flex-wrap: wrap; }
+        .signature-row .form-group { flex: 1; min-width: 140px; }
     </style>
 </head>
 <body>
     <div class="app-container">
         <div class="bg-decoration"></div>
 
-        <!-- Header -->
         <header class="app-header">
             <div class="logo">
                 <img src="MW Logo.png" alt="MW Logo" class="logo-img">
-                <span class="logo-text">Site Evaluations</span>
+                <span class="logo-text">Monthly Site Review</span>
             </div>
             <div class="header-actions">
                 <a href="site-evaluations-dashboard.html" class="btn-icon" title="View Reviews & Reports">
@@ -93,386 +100,160 @@
             </div>
         </header>
 
-        <!-- Main Form Screen -->
         <main class="main-content" id="formScreen">
             <div class="form-card">
                 <div class="form-header">
-                    <h2>Site Evaluations</h2>
+                    <h2>Monthly Site Review</h2>
                     <p class="form-subtitle">Submitting as: <strong id="submitterName">Loading...</strong></p>
                 </div>
 
                 <form id="evaluationForm" class="evaluation-form">
-                    <!-- Site Selection -->
-                    <div class="form-group">
-                        <label for="location">Site Location</label>
-                        <div class="select-wrapper">
-                            <select id="location" required>
-                                <option value="">Select a site...</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 1 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 1</span>
-                        <span class="question-text">Was the General Manager present during your visit?</span>
-                        <div class="select-wrapper">
-                            <select id="q1" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Yes">Yes</option>
-                                <option value="No">No</option>
-                                <option value="Acting Manager Present">Acting Manager Present</option>
-                                <option value="No Manager Present">No Manager Present</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 2 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 2</span>
-                        <span class="question-text">How would you rate overall site leadership at the time of the visit?</span>
-                        <div class="select-wrapper">
-                            <select id="q2" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Excellent">Excellent</option>
-                                <option value="Good">Good</option>
-                                <option value="Fair">Fair</option>
-                                <option value="Poor">Poor</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 3 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 3</span>
-                        <span class="question-text">Staffing levels observed:</span>
-                        <div class="select-wrapper">
-                            <select id="q3" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Adequately staffed">Adequately staffed</option>
-                                <option value="Slightly understaffed">Slightly understaffed</option>
-                                <option value="Severely understaffed">Severely understaffed</option>
-                                <option value="Overstaffed">Overstaffed</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 4 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 4</span>
-                        <span class="question-text">Employee engagement during the visit:</span>
-                        <div class="select-wrapper">
-                            <select id="q4" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Very engaged">Very engaged</option>
-                                <option value="Moderately engaged">Moderately engaged</option>
-                                <option value="Minimally engaged">Minimally engaged</option>
-                                <option value="Disengaged">Disengaged</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 5 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 5</span>
-                        <span class="question-text">Was the site following the proper SOP flow?</span>
-                        <div class="select-wrapper">
-                            <select id="q5" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Fully compliant">Fully compliant</option>
-                                <option value="Mostly compliant">Mostly compliant</option>
-                                <option value="Partially compliant">Partially compliant</option>
-                                <option value="Non-compliant">Non-compliant</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 6 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 6</span>
-                        <span class="question-text">Cleanliness inside the site (office / lobby / waiting area):</span>
-                        <div class="select-wrapper">
-                            <select id="q6" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Excellent">Excellent</option>
-                                <option value="Good">Good</option>
-                                <option value="Needs improvement">Needs improvement</option>
-                                <option value="Poor">Poor</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 7 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 7</span>
-                        <span class="question-text">Cleanliness outside (lot / vacuums / entrance / signage):</span>
-                        <div class="select-wrapper">
-                            <select id="q7" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Excellent">Excellent</option>
-                                <option value="Good">Good</option>
-                                <option value="Needs improvement">Needs improvement</option>
-                                <option value="Poor">Poor</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 8 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 8</span>
-                        <span class="question-text">Equipment status at the time of inspection:</span>
-                        <div class="select-wrapper">
-                            <select id="q8" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Fully operational">Fully operational</option>
-                                <option value="Minor issues observed">Minor issues observed</option>
-                                <option value="Major issues observed">Major issues observed</option>
-                                <option value="Critical failures">Critical failures</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 9 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 9</span>
-                        <span class="question-text">Customer experience during your visit:</span>
-                        <div class="select-wrapper">
-                            <select id="q9" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Excellent">Excellent</option>
-                                <option value="Good">Good</option>
-                                <option value="Acceptable">Acceptable</option>
-                                <option value="Poor">Poor</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 10 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 10</span>
-                        <span class="question-text">Did you observe any safety concerns?</span>
-                        <div class="select-wrapper">
-                            <select id="q10" required>
-                                <option value="">Select an answer...</option>
-                                <option value="No issues observed">No issues observed</option>
-                                <option value="Minor safety concerns">Minor safety concerns</option>
-                                <option value="Moderate safety concerns">Moderate safety concerns</option>
-                                <option value="Serious safety hazard">Serious safety hazard</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 11 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 11</span>
-                        <span class="question-text">Accuracy of POS operations you observed:</span>
-                        <div class="select-wrapper">
-                            <select id="q11" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Fully accurate">Fully accurate</option>
-                                <option value="Mostly accurate">Mostly accurate</option>
-                                <option value="Inconsistent">Inconsistent</option>
-                                <option value="Not accurate">Not accurate</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 12 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 12</span>
-                        <span class="question-text">Uniform compliance:</span>
-                        <div class="select-wrapper">
-                            <select id="q12" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Fully compliant">Fully compliant</option>
-                                <option value="Mostly compliant">Mostly compliant</option>
-                                <option value="Partially compliant">Partially compliant</option>
-                                <option value="Not compliant">Not compliant</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 13 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 13</span>
-                        <span class="question-text">Professionalism of staff:</span>
-                        <div class="select-wrapper">
-                            <select id="q13" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Excellent">Excellent</option>
-                                <option value="Good">Good</option>
-                                <option value="Fair">Fair</option>
-                                <option value="Poor">Poor</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 14 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 14</span>
-                        <span class="question-text">Was the site operating according to the posted hours?</span>
-                        <div class="select-wrapper">
-                            <select id="q14" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Yes">Yes</option>
-                                <option value="No (Opened late)">No (Opened late)</option>
-                                <option value="No (Closed early)">No (Closed early)</option>
-                                <option value="No (Unapproved adjustment)">No (Unapproved adjustment)</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 15 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 15</span>
-                        <span class="question-text">Fleet and vendor processes observed:</span>
-                        <div class="select-wrapper">
-                            <select id="q15" required>
-                                <option value="">Select an answer...</option>
-                                <option value="No concerns">No concerns</option>
-                                <option value="Minor issues">Minor issues</option>
-                                <option value="Moderate issues">Moderate issues</option>
-                                <option value="Major issues">Major issues</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 16 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 16</span>
-                        <span class="question-text">Condition of chemical rooms / inventory areas:</span>
-                        <div class="select-wrapper">
-                            <select id="q16" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Excellent">Excellent</option>
-                                <option value="Organized but needs attention">Organized but needs attention</option>
-                                <option value="Disorganized">Disorganized</option>
-                                <option value="Serious issues">Serious issues</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 17 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 17</span>
-                        <span class="question-text">Did the GM provide an update on current initiatives?</span>
-                        <div class="select-wrapper">
-                            <select id="q17" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Yes, detailed update">Yes, detailed update</option>
-                                <option value="Brief update">Brief update</option>
-                                <option value="Minimal update">Minimal update</option>
-                                <option value="No update provided">No update provided</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 18 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 18</span>
-                        <span class="question-text">Overall assessment of site performance:</span>
-                        <div class="select-wrapper">
-                            <select id="q18" required>
-                                <option value="">Select an answer...</option>
-                                <option value="Excellent">Excellent</option>
-                                <option value="Good">Good</option>
-                                <option value="Fair">Fair</option>
-                                <option value="Poor">Poor</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Question 19 -->
-                    <div class="question-group">
-                        <span class="question-number">Question 19</span>
-                        <span class="question-text">Immediate follow-up required?</span>
-                        <div class="select-wrapper">
-                            <select id="q19" required>
-                                <option value="">Select an answer...</option>
-                                <option value="No">No</option>
-                                <option value="Yes (minor follow-up)">Yes (minor follow-up)</option>
-                                <option value="Yes (moderate follow-up)">Yes (moderate follow-up)</option>
-                                <option value="Yes (urgent follow-up required)">Yes (urgent follow-up required)</option>
-                            </select>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Optional Section -->
-                    <div class="optional-section">
-                        <h3>Optional Information</h3>
-                        
-                        <!-- Additional Notes -->
+                    <!-- Header: Site, Date, Weather, Time Arrived -->
+                    <div class="review-header-grid">
                         <div class="form-group">
-                            <label for="additionalNotes">Additional Notes</label>
+                            <label for="location">Site</label>
+                            <div class="select-wrapper">
+                                <select id="location" required>
+                                    <option value="">Select a site...</option>
+                                </select>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="reviewDate">Date</label>
+                            <input type="date" id="reviewDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="weather">Weather</label>
+                            <input type="text" id="weather" placeholder="e.g. Clear, Rain">
+                        </div>
+                        <div class="form-group">
+                            <label for="timeArrived">Time Arrived</label>
+                            <input type="time" id="timeArrived">
+                        </div>
+                    </div>
+
+                    <!-- Site Approach -->
+                    <div class="section-block" data-section="site_approach">
+                        <h3>Site Approach</h3>
+                        <div class="review-row"><span class="label">1. Trash and debris free</span><div class="pf"><label><input type="radio" name="site_approach_1" value="Pass"> Pass</label><label><input type="radio" name="site_approach_1" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="site_approach_1"></div></div>
+                        <div class="review-row"><span class="label">2. Signs present and in good condition</span><div class="pf"><label><input type="radio" name="site_approach_2" value="Pass"> Pass</label><label><input type="radio" name="site_approach_2" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="site_approach_2"></div></div>
+                        <div class="review-row"><span class="label">3. XPT present and in good condition</span><div class="pf"><label><input type="radio" name="site_approach_3" value="Pass"> Pass</label><label><input type="radio" name="site_approach_3" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="site_approach_3"></div></div>
+                        <div class="review-row"><span class="label">4. Building exterior presentable</span><div class="pf"><label><input type="radio" name="site_approach_4" value="Pass"> Pass</label><label><input type="radio" name="site_approach_4" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="site_approach_4"></div></div>
+                        <div class="review-row"><span class="label">5. Employees wearing safety vests</span><div class="pf"><label><input type="radio" name="site_approach_5" value="Pass"> Pass</label><label><input type="radio" name="site_approach_5" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="site_approach_5"></div></div>
+                        <div class="review-row"><span class="label">6. Dumpster area clean and organized</span><div class="pf"><label><input type="radio" name="site_approach_6" value="Pass"> Pass</label><label><input type="radio" name="site_approach_6" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="site_approach_6"></div></div>
+                    </div>
+
+                    <!-- Tunnel -->
+                    <div class="section-block" data-section="tunnel">
+                        <h3>Tunnel</h3>
+                        <div class="review-row"><span class="label">1. Tunnel cleanliness</span><div class="pf"><label><input type="radio" name="tunnel_1" value="Pass"> Pass</label><label><input type="radio" name="tunnel_1" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="tunnel_1"></div></div>
+                        <div class="review-row"><span class="label">2. Windows</span><div class="pf"><label><input type="radio" name="tunnel_2" value="Pass"> Pass</label><label><input type="radio" name="tunnel_2" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="tunnel_2"></div></div>
+                        <div class="review-row"><span class="label">3. Equipment</span><div class="pf"><label><input type="radio" name="tunnel_3" value="Pass"> Pass</label><label><input type="radio" name="tunnel_3" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="tunnel_3"></div></div>
+                        <div class="review-row"><span class="label">4. Chain</span><div class="pf"><label><input type="radio" name="tunnel_4" value="Pass"> Pass</label><label><input type="radio" name="tunnel_4" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="tunnel_4"></div></div>
+                        <div class="review-row"><span class="label">5. Tool room</span><div class="pf"><label><input type="radio" name="tunnel_5" value="Pass"> Pass</label><label><input type="radio" name="tunnel_5" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="tunnel_5"></div></div>
+                        <div class="review-row"><span class="label">6. Floor</span><div class="pf"><label><input type="radio" name="tunnel_6" value="Pass"> Pass</label><label><input type="radio" name="tunnel_6" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="tunnel_6"></div></div>
+                        <div class="review-row"><span class="label">7. Cameras</span><div class="pf"><label><input type="radio" name="tunnel_7" value="Pass"> Pass</label><label><input type="radio" name="tunnel_7" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="tunnel_7"></div></div>
+                    </div>
+
+                    <!-- Mighty Wash (comments only in PDF) -->
+                    <div class="section-block" data-section="mighty_wash">
+                        <h3>Mighty Wash</h3>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="mightyWashComments">Comments</label>
+                            <textarea id="mightyWashComments" rows="2" placeholder="Comments..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Procedures / Management -->
+                    <div class="section-block" data-section="procedures_management">
+                        <h3>Procedures / Management</h3>
+                        <div class="review-row"><span class="label">1. Prep</span><div class="pf"><label><input type="radio" name="procedures_1" value="Pass"> Pass</label><label><input type="radio" name="procedures_1" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="procedures_1"></div></div>
+                        <div class="review-row"><span class="label">2. Hand dry</span><div class="pf"><label><input type="radio" name="procedures_2" value="Pass"> Pass</label><label><input type="radio" name="procedures_2" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="procedures_2"></div></div>
+                        <div class="review-row"><span class="label">3. QC</span><div class="pf"><label><input type="radio" name="procedures_3" value="Pass"> Pass</label><label><input type="radio" name="procedures_3" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="procedures_3"></div></div>
+                        <div class="review-row"><span class="label">4. Interior</span><div class="pf"><label><input type="radio" name="procedures_4" value="Pass"> Pass</label><label><input type="radio" name="procedures_4" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="procedures_4"></div></div>
+                        <div class="review-row"><span class="label">5. Prep time</span><div class="pf"><label><input type="radio" name="procedures_5" value="Pass"> Pass</label><label><input type="radio" name="procedures_5" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="procedures_5"></div></div>
+                        <div class="review-row"><span class="label">6. Labor %</span><div class="pf"><label><input type="radio" name="procedures_6" value="Pass"> Pass</label><label><input type="radio" name="procedures_6" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="procedures_6"></div></div>
+                        <div class="review-row"><span class="label">7. Rewash %</span><div class="pf"><label><input type="radio" name="procedures_7" value="Pass"> Pass</label><label><input type="radio" name="procedures_7" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="procedures_7"></div></div>
+                        <div class="review-row"><span class="label">8. Damage claims</span><div class="pf"><label><input type="radio" name="procedures_8" value="Pass"> Pass</label><label><input type="radio" name="procedures_8" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="procedures_8"></div></div>
+                    </div>
+
+                    <!-- Vacuum Area -->
+                    <div class="section-block" data-section="vacuum_area">
+                        <h3>Vacuum Area</h3>
+                        <div class="review-row"><span class="label">1. Hoses</span><div class="pf"><label><input type="radio" name="vacuum_1" value="Pass"> Pass</label><label><input type="radio" name="vacuum_1" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="vacuum_1"></div></div>
+                        <div class="review-row"><span class="label">2. Suction</span><div class="pf"><label><input type="radio" name="vacuum_2" value="Pass"> Pass</label><label><input type="radio" name="vacuum_2" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="vacuum_2"></div></div>
+                        <div class="review-row"><span class="label">3. Trash</span><div class="pf"><label><input type="radio" name="vacuum_3" value="Pass"> Pass</label><label><input type="radio" name="vacuum_3" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="vacuum_3"></div></div>
+                        <div class="review-row"><span class="label">4. Vending / Mat washer</span><div class="pf"><label><input type="radio" name="vacuum_4" value="Pass"> Pass</label><label><input type="radio" name="vacuum_4" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="vacuum_4"></div></div>
+                    </div>
+
+                    <!-- Office and Breakroom -->
+                    <div class="section-block" data-section="office_breakroom">
+                        <h3>Office and Breakroom</h3>
+                        <div class="review-row"><span class="label">1. Windows</span><div class="pf"><label><input type="radio" name="office_1" value="Pass"> Pass</label><label><input type="radio" name="office_1" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="office_1"></div></div>
+                        <div class="review-row"><span class="label">2. Restrooms</span><div class="pf"><label><input type="radio" name="office_2" value="Pass"> Pass</label><label><input type="radio" name="office_2" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="office_2"></div></div>
+                        <div class="review-row"><span class="label">3. Office</span><div class="pf"><label><input type="radio" name="office_3" value="Pass"> Pass</label><label><input type="radio" name="office_3" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="office_3"></div></div>
+                        <div class="review-row"><span class="label">4. Countertops</span><div class="pf"><label><input type="radio" name="office_4" value="Pass"> Pass</label><label><input type="radio" name="office_4" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="office_4"></div></div>
+                        <div class="review-row"><span class="label">5. Lights</span><div class="pf"><label><input type="radio" name="office_5" value="Pass"> Pass</label><label><input type="radio" name="office_5" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="office_5"></div></div>
+                        <div class="review-row"><span class="label">6. Breakroom</span><div class="pf"><label><input type="radio" name="office_6" value="Pass"> Pass</label><label><input type="radio" name="office_6" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="office_6"></div></div>
+                        <div class="review-row"><span class="label">7. Water</span><div class="pf"><label><input type="radio" name="office_7" value="Pass"> Pass</label><label><input type="radio" name="office_7" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="office_7"></div></div>
+                    </div>
+
+                    <!-- Chemical Room -->
+                    <div class="section-block" data-section="chemical_room">
+                        <h3>Chemical Room</h3>
+                        <div class="review-row"><span class="label">1. Organized</span><div class="pf"><label><input type="radio" name="chemical_1" value="Pass"> Pass</label><label><input type="radio" name="chemical_1" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="chemical_1"></div></div>
+                        <div class="review-row"><span class="label">2. Chemicals</span><div class="pf"><label><input type="radio" name="chemical_2" value="Pass"> Pass</label><label><input type="radio" name="chemical_2" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="chemical_2"></div></div>
+                        <div class="review-row"><span class="label">3. Salt</span><div class="pf"><label><input type="radio" name="chemical_3" value="Pass"> Pass</label><label><input type="radio" name="chemical_3" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="chemical_3"></div></div>
+                        <div class="review-row"><span class="label">4. R.O.</span><div class="pf"><label><input type="radio" name="chemical_4" value="Pass"> Pass</label><label><input type="radio" name="chemical_4" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="chemical_4"></div></div>
+                        <div class="review-row"><span class="label">5. Compressors</span><div class="pf"><label><input type="radio" name="chemical_5" value="Pass"> Pass</label><label><input type="radio" name="chemical_5" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="chemical_5"></div></div>
+                        <div class="review-row"><span class="label">6. RTC / Breaker</span><div class="pf"><label><input type="radio" name="chemical_6" value="Pass"> Pass</label><label><input type="radio" name="chemical_6" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="chemical_6"></div></div>
+                        <div class="review-row"><span class="label">7. Marvel oil</span><div class="pf"><label><input type="radio" name="chemical_7" value="Pass"> Pass</label><label><input type="radio" name="chemical_7" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="chemical_7"></div></div>
+                    </div>
+
+                    <!-- Overall Notes & Signatures -->
+                    <div class="optional-section">
+                        <h3>Overall Notes / Signatures</h3>
+                        <div class="form-group">
+                            <label for="additionalNotes">Overall Notes / Comments</label>
                             <textarea id="additionalNotes" rows="4" placeholder="Enter any additional observations or comments..."></textarea>
                         </div>
-
-                        <!-- Photo Upload -->
+                        <div class="signature-row">
+                            <div class="form-group">
+                                <label for="reviewerSignature">Reviewer Signature</label>
+                                <input type="text" id="reviewerSignature" placeholder="Print name">
+                            </div>
+                            <div class="form-group">
+                                <label for="managerSignature">Manager Signature</label>
+                                <input type="text" id="managerSignature" placeholder="Print name">
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label>Photos / Attachments</label>
                             <div class="photo-upload-container">
                                 <div class="photo-buttons">
                                     <button type="button" class="btn-photo" id="takePhotoBtn">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                                            <circle cx="12" cy="13" r="4"/>
-                                        </svg>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                                         Take Photo
                                     </button>
                                     <button type="button" class="btn-photo" id="uploadPhotoBtn">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                            <polyline points="17 8 12 3 7 8"/>
-                                            <line x1="12" y1="3" x2="12" y2="15"/>
-                                        </svg>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                                         Upload Photo
                                     </button>
                                 </div>
-                                <!-- Hidden file inputs -->
                                 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
                                 <input type="file" id="fileInput" accept="image/*" style="display: none;">
-                                <!-- Photo preview -->
                                 <div class="photo-preview hidden" id="photoPreview">
                                     <img id="previewImage" alt="Photo preview">
                                     <button type="button" class="btn-remove-photo" id="removePhotoBtn">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <line x1="18" y1="6" x2="6" y2="18"/>
-                                            <line x1="6" y1="6" x2="18" y2="18"/>
-                                        </svg>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                                     </button>
                                     <span class="photo-status">Photo attached</span>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Follow-Up Instructions -->
-                        <div class="form-group">
-                            <label for="followUpInstructions">Follow-Up Instructions</label>
-                            <textarea id="followUpInstructions" rows="3" placeholder="Enter any follow-up instructions or action items..."></textarea>
-                        </div>
                     </div>
 
-                    <!-- Submit Button -->
                     <button type="submit" class="btn-submit">
                         <span class="btn-text">Submit Review</span>
                     </button>
@@ -480,18 +261,14 @@
             </div>
         </main>
 
-        <!-- Toast Notification -->
         <div class="toast hidden" id="toast">
             <span class="toast-icon">✓</span>
             <span class="toast-message">Review saved successfully!</span>
         </div>
     </div>
 
-    <!-- jsPDF for PDF conversion -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="site-evaluations.js?v=1"></script>
+    <script src="site-evaluations.js?v=2"></script>
     <script src="version-check.js"></script>
 </body>
 </html>
-
-

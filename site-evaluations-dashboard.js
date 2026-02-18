@@ -1,6 +1,5 @@
-// Site Evaluations Dashboard JavaScript
+// Monthly Site Review Dashboard JavaScript
 
-// Check authentication
 function checkAuth() {
     const userStr = localStorage.getItem('mightyops_user');
     if (!userStr) {
@@ -12,11 +11,21 @@ function checkAuth() {
 
 const user = checkAuth();
 
-// Site locations
 const locations = Array.from({ length: 31 }, (_, i) => `Site #${i + 1}`);
 
-// Question definitions for PDF
-const questions = [
+// Monthly Site Review section definitions for PDF export
+const MONTHLY_REVIEW_SECTIONS = [
+    { key: 'site_approach', title: 'Site Approach', items: ['Trash and debris free', 'Signs present and in good condition', 'XPT present and in good condition', 'Building exterior presentable', 'Employees wearing safety vests', 'Dumpster area clean and organized'] },
+    { key: 'tunnel', title: 'Tunnel', items: ['Tunnel cleanliness', 'Windows', 'Equipment', 'Chain', 'Tool room', 'Floor', 'Cameras'] },
+    { key: 'mighty_wash', title: 'Mighty Wash', commentsOnly: true, commentKey: 'mighty_wash_comments' },
+    { key: 'procedures_management', title: 'Procedures / Management', items: ['Prep', 'Hand dry', 'QC', 'Interior', 'Prep time', 'Labor %', 'Rewash %', 'Damage claims'] },
+    { key: 'vacuum_area', title: 'Vacuum Area', items: ['Hoses', 'Suction', 'Trash', 'Vending / Mat washer'] },
+    { key: 'office_breakroom', title: 'Office and Breakroom', items: ['Windows', 'Restrooms', 'Office', 'Countertops', 'Lights', 'Breakroom', 'Water'] },
+    { key: 'chemical_room', title: 'Chemical Room', items: ['Organized', 'Chemicals', 'Salt', 'R.O.', 'Compressors', 'RTC / Breaker', 'Marvel oil'] }
+];
+
+// Legacy question definitions for old-format PDF export
+const legacyQuestions = [
     { id: 'q1', text: 'Was the General Manager present during your visit?' },
     { id: 'q2', text: 'How would you rate overall site leadership at the time of the visit?' },
     { id: 'q3', text: 'Staffing levels observed:' },
@@ -37,6 +46,33 @@ const questions = [
     { id: 'q18', text: 'Overall assessment of site performance:' },
     { id: 'q19', text: 'Immediate follow-up required?' }
 ];
+
+function isNewFormat(review) {
+    const a = review.answers;
+    return a && Array.isArray(a.site_approach);
+}
+
+function getReviewResult(review) {
+    if (isNewFormat(review)) {
+        let pass = 0, fail = 0;
+        const sectionKeys = ['site_approach', 'tunnel', 'procedures_management', 'vacuum_area', 'office_breakroom', 'chemical_room'];
+        sectionKeys.forEach(key => {
+            const arr = review.answers[key];
+            if (Array.isArray(arr)) arr.forEach(item => {
+                if (item.pass_fail === 'Pass') pass++;
+                else if (item.pass_fail === 'Fail') fail++;
+            });
+        });
+        return { allPass: fail === 0 && pass > 0, hasFail: fail > 0, withPhoto: !!review.has_image };
+    }
+    const rating = review.answers?.q18;
+    const followUp = review.answers?.q19;
+    return {
+        allPass: rating === 'Excellent',
+        hasFail: rating === 'Fair' || rating === 'Poor' || (followUp && followUp.startsWith('Yes')),
+        withPhoto: !!review.has_image
+    };
+}
 
 // State
 let allReviews = [];
@@ -114,14 +150,16 @@ async function loadStats() {
 // Update stats display
 function updateStats(reviews) {
     document.getElementById('totalReviews').textContent = reviews.length;
-    
-    const excellent = reviews.filter(r => r.answers?.q18 === 'Excellent').length;
-    const good = reviews.filter(r => r.answers?.q18 === 'Good').length;
-    const followUp = reviews.filter(r => r.answers?.q19 && r.answers.q19.startsWith('Yes')).length;
-    
-    document.getElementById('excellentCount').textContent = excellent;
-    document.getElementById('goodCount').textContent = good;
-    document.getElementById('followUpCount').textContent = followUp;
+    let allPass = 0, hasFail = 0, withPhoto = 0;
+    reviews.forEach(r => {
+        const res = getReviewResult(r);
+        if (res.allPass) allPass++;
+        if (res.hasFail) hasFail++;
+        if (res.withPhoto) withPhoto++;
+    });
+    document.getElementById('excellentCount').textContent = allPass;
+    document.getElementById('goodCount').textContent = hasFail;
+    document.getElementById('followUpCount').textContent = withPhoto;
 }
 
 // Date range helpers
@@ -222,38 +260,26 @@ function formatDate(dateStr) {
 
 // Generate report
 function generateReport() {
-    // Get selected locations (exclude "Select All" checkbox)
     const selectedLocations = Array.from(document.querySelectorAll('#locationCheckboxes .location-checkbox:checked'))
         .map(cb => cb.value);
-    
-    // Get selected ratings (exclude "Select All" checkbox)
-    const selectedRatings = Array.from(document.querySelectorAll('#ratingCheckboxes .rating-checkbox:checked'))
+    const selectedResults = Array.from(document.querySelectorAll('#resultCheckboxes .result-checkbox:checked'))
         .map(cb => cb.value);
-    
-    // Get selected follow-up statuses (exclude "Select All" checkbox)
-    const selectedFollowups = Array.from(document.querySelectorAll('#followupCheckboxes .followup-checkbox:checked'))
-        .map(cb => cb.value);
-    
-    // Get date range
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    
-    // Filter reviews
+
     filteredReviews = allReviews.filter(review => {
-        // Location filter
         if (selectedLocations.length > 0 && !selectedLocations.includes(review.location)) return false;
-        
-        // Rating filter
-        const rating = review.answers?.q18;
-        if (selectedRatings.length > 0 && rating && !selectedRatings.includes(rating)) return false;
-        
-        // Follow-up filter
-        const followup = review.answers?.q19;
-        if (selectedFollowups.length > 0 && followup && !selectedFollowups.includes(followup)) return false;
-        
-        // Date filter
+
+        const res = getReviewResult(review);
+        if (selectedResults.length > 0) {
+            const matchAllPass = selectedResults.includes('all_pass') && res.allPass;
+            const matchHasFail = selectedResults.includes('has_fail') && res.hasFail;
+            if (!matchAllPass && !matchHasFail) return false;
+        }
+
         if (startDate || endDate) {
-            const reviewDate = new Date(review.submitted_at);
+            const reviewDateStr = isNewFormat(review) ? review.answers?.review_date : null;
+            const reviewDate = reviewDateStr ? new Date(reviewDateStr + 'T12:00:00') : new Date(review.submitted_at);
             if (startDate && reviewDate < new Date(startDate)) return false;
             if (endDate) {
                 const endDateTime = new Date(endDate);
@@ -261,17 +287,11 @@ function generateReport() {
                 if (reviewDate > endDateTime) return false;
             }
         }
-        
         return true;
     });
-    
-    // Sort and display
+
     sortResults();
-    
-    // Show results section
     document.getElementById('reportResults').classList.remove('hidden');
-    
-    // Update report stats
     updateReportStats();
 }
 
@@ -279,24 +299,24 @@ function generateReport() {
 function updateReportStats() {
     const statsContainer = document.getElementById('reportStats');
     const total = filteredReviews.length;
-    const excellent = filteredReviews.filter(r => r.answers?.q18 === 'Excellent').length;
-    const good = filteredReviews.filter(r => r.answers?.q18 === 'Good').length;
-    const fair = filteredReviews.filter(r => r.answers?.q18 === 'Fair').length;
-    const poor = filteredReviews.filter(r => r.answers?.q18 === 'Poor').length;
-    
+    let allPass = 0, hasFail = 0;
+    filteredReviews.forEach(r => {
+        const res = getReviewResult(r);
+        if (res.allPass) allPass++;
+        if (res.hasFail) hasFail++;
+    });
     statsContainer.innerHTML = `
         <span class="report-stat">${total} Total</span>
-        <span class="report-stat stat-ops">${excellent} Excellent</span>
-        <span class="report-stat stat-safety">${good} Good</span>
-        <span class="report-stat stat-acct">${fair + poor} Fair/Poor</span>
+        <span class="report-stat stat-ops">${allPass} All Pass</span>
+        <span class="report-stat stat-safety">${hasFail} Has Fail</span>
     `;
 }
 
 // Sort results
 function sortResults() {
     const sortBy = document.getElementById('sortSelect').value;
-    
-    switch(sortBy) {
+
+    switch (sortBy) {
         case 'newest':
             filteredReviews.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
             break;
@@ -306,35 +326,36 @@ function sortResults() {
         case 'location':
             filteredReviews.sort((a, b) => a.location.localeCompare(b.location));
             break;
-        case 'rating':
-            const ratingOrder = { 'Excellent': 0, 'Good': 1, 'Fair': 2, 'Poor': 3 };
+        case 'result':
             filteredReviews.sort((a, b) => {
-                const ratingA = ratingOrder[a.answers?.q18] ?? 4;
-                const ratingB = ratingOrder[b.answers?.q18] ?? 4;
-                return ratingA - ratingB;
+                const ra = getReviewResult(a), rb = getReviewResult(b);
+                if (ra.allPass && !rb.allPass) return -1;
+                if (!ra.allPass && rb.allPass) return 1;
+                return 0;
             });
             break;
     }
-    
     renderResults();
 }
 
 // Render results
 function renderResults() {
     const container = document.getElementById('resultsContainer');
-    
+
     if (filteredReviews.length === 0) {
         container.innerHTML = '<div class="no-records">No reviews match your filters</div>';
         return;
     }
-    
+
     container.innerHTML = filteredReviews.map(review => {
-        const rating = review.answers?.q18 || 'N/A';
-        const ratingClass = rating.toLowerCase();
-        const followup = review.answers?.q19 || 'No';
-        const needsFollowup = followup.startsWith('Yes');
+        const res = getReviewResult(review);
+        const resultLabel = res.allPass ? 'All Pass' : (res.hasFail ? 'Has Fail' : '—');
+        const resultClass = res.allPass ? 'excellent' : (res.hasFail ? 'poor' : '');
+        const reviewDate = isNewFormat(review) && review.answers?.review_date
+            ? new Date(review.answers.review_date + 'T12:00:00').toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: 'numeric' })
+            : formatDate(review.submitted_at);
         const isSelected = selectedIds.has(review.id);
-        
+
         return `
             <div class="review-card ${selectMode ? 'selectable' : ''} ${isSelected ? 'selected' : ''}" data-id="${review.id}">
                 <label class="review-checkbox" onclick="event.stopPropagation()">
@@ -343,11 +364,10 @@ function renderResults() {
                 </label>
                 <div class="review-header">
                     <span class="review-location">${review.location}</span>
-                    <span class="review-timestamp">${formatDate(review.submitted_at)}</span>
+                    <span class="review-timestamp">${reviewDate}</span>
                 </div>
                 <div class="review-meta">
-                    <span class="review-badge ${ratingClass}">${rating}</span>
-                    ${needsFollowup ? `<span class="review-badge followup">${followup}</span>` : ''}
+                    <span class="review-badge ${resultClass}">${resultLabel}</span>
                     ${review.has_image ? `<a href="/.netlify/functions/evaluations-view-image?id=${review.id}" target="_blank" class="btn-view-pdf" onclick="event.stopPropagation()">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -494,111 +514,176 @@ function exportSelectedToPDF() {
 function generatePDF(reviews) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    
-    // Title
-    doc.setFontSize(18);
-    doc.setFont(undefined, 'bold');
-    doc.text('Site Evaluation Report', 14, 20);
-    
-    // Generated date
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.text(`Generated: ${formatDate(new Date().toISOString())}`, 14, 28);
-    doc.text(`Total Reviews: ${reviews.length}`, 14, 34);
-    
-    let yPos = 45;
-    
-    reviews.forEach((review, index) => {
-        // Check if we need a new page
-        if (yPos > 250) {
-            doc.addPage();
-            yPos = 20;
-        }
-        
-        // Review header
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
-        doc.text(`Review ${index + 1}: ${review.location}`, 14, yPos);
-        yPos += 6;
-        
-        doc.setFontSize(9);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Date: ${formatDate(review.submitted_at)} | Submitted by: ${review.submitted_by || 'Unknown'}`, 14, yPos);
-        yPos += 8;
-        
-        // Overall rating and follow-up status
-        const rating = review.answers?.q18 || 'N/A';
-        const followup = review.answers?.q19 || 'No';
-        doc.text(`Overall Rating: ${rating} | Follow-up: ${followup}`, 14, yPos);
-        yPos += 8;
-        
-        // Questions table
-        const tableData = questions.map((q, i) => [
-            `${i + 1}`,
-            q.text,
-            review.answers?.[q.id] || 'N/A'
-        ]);
-        
-        doc.autoTable({
-            startY: yPos,
-            head: [['#', 'Question', 'Answer']],
-            body: tableData,
-            theme: 'striped',
-            headStyles: { fillColor: [10, 132, 255], fontSize: 8 },
-            bodyStyles: { fontSize: 7 },
-            columnStyles: {
-                0: { cellWidth: 10 },
-                1: { cellWidth: 100 },
-                2: { cellWidth: 60 }
-            },
-            margin: { left: 14, right: 14 }
+
+    const allNewFormat = reviews.length > 0 && reviews.every(r => isNewFormat(r));
+
+    if (allNewFormat) {
+        // Monthly Site Review format (like the PDF)
+        let yPos = 20;
+        reviews.forEach((review, index) => {
+            if (yPos > 30) {
+                doc.addPage();
+                yPos = 20;
+            }
+            const a = review.answers;
+
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text('Monthly Site Review', 14, yPos);
+            yPos += 8;
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            const reviewDate = a.review_date ? new Date(a.review_date + 'T12:00:00').toLocaleDateString('en-US') : formatDate(review.submitted_at);
+            doc.text(`Site: ${review.location}  |  Date: ${reviewDate}  |  Weather: ${a.weather || '—'}  |  Time Arrived: ${a.time_arrived || '—'}`, 14, yPos);
+            yPos += 8;
+
+            MONTHLY_REVIEW_SECTIONS.forEach(sec => {
+                if (yPos > 265) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'bold');
+                doc.text(sec.title, 14, yPos);
+                yPos += 6;
+
+                if (sec.commentsOnly) {
+                    const text = (sec.commentKey && a[sec.commentKey]) ? a[sec.commentKey] : (a[sec.key] || '—');
+                    doc.setFont(undefined, 'normal');
+                    const lines = doc.splitTextToSize(text, 180);
+                    doc.text(lines, 14, yPos);
+                    yPos += lines.length * 5 + 4;
+                    return;
+                }
+
+                const arr = a[sec.key];
+                if (!Array.isArray(arr) || arr.length === 0) { yPos += 4; return; }
+
+                const tableData = (sec.items || []).slice(0, arr.length).map((label, i) => {
+                    const item = arr[i] || {};
+                    return [label, item.pass_fail || '—', item.comments || '—'];
+                });
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Item', 'Pass/Fail', 'Comments']],
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [40, 40, 40], fontSize: 8 },
+                    bodyStyles: { fontSize: 7 },
+                    columnStyles: {
+                        0: { cellWidth: 70 },
+                        1: { cellWidth: 25 },
+                        2: { cellWidth: 85 }
+                    },
+                    margin: { left: 14, right: 14 }
+                });
+                yPos = doc.lastAutoTable.finalY + 6;
+            });
+
+            if (a.reviewer_signature || a.manager_signature) {
+                if (yPos > 268) { doc.addPage(); yPos = 20; }
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(9);
+                doc.text(`Reviewer: ${a.reviewer_signature || '—'}  |  Manager: ${a.manager_signature || '—'}`, 14, yPos);
+                yPos += 8;
+            }
+            if (review.additional_notes) {
+                if (yPos > 265) { doc.addPage(); yPos = 20; }
+                doc.setFont(undefined, 'bold');
+                doc.text('Overall Notes:', 14, yPos);
+                yPos += 5;
+                doc.setFont(undefined, 'normal');
+                const lines = doc.splitTextToSize(review.additional_notes, 180);
+                doc.text(lines, 14, yPos);
+                yPos += lines.length * 4 + 8;
+            }
+
+            yPos += 6;
+            if (index < reviews.length - 1) {
+                doc.setDrawColor(200);
+                doc.line(14, yPos, 196, yPos);
+                yPos += 12;
+            }
         });
-        
-        yPos = doc.lastAutoTable.finalY + 10;
-        
-        // Additional notes
-        if (review.additional_notes) {
+        const dateStr = new Date().toISOString().split('T')[0];
+        doc.save(`Monthly_Site_Review_${dateStr}.pdf`);
+    } else {
+        // Legacy format
+        doc.setFontSize(18);
+        doc.setFont(undefined, 'bold');
+        doc.text('Site Evaluation Report', 14, 20);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Generated: ${formatDate(new Date().toISOString())}`, 14, 28);
+        doc.text(`Total Reviews: ${reviews.length}`, 14, 34);
+        let yPos = 45;
+
+        reviews.forEach((review, index) => {
             if (yPos > 250) {
                 doc.addPage();
                 yPos = 20;
             }
-            doc.setFontSize(9);
+            doc.setFontSize(12);
             doc.setFont(undefined, 'bold');
-            doc.text('Additional Notes:', 14, yPos);
-            yPos += 5;
+            doc.text(`Review ${index + 1}: ${review.location}`, 14, yPos);
+            yPos += 6;
+            doc.setFontSize(9);
             doc.setFont(undefined, 'normal');
-            const splitNotes = doc.splitTextToSize(review.additional_notes, 180);
-            doc.text(splitNotes, 14, yPos);
-            yPos += splitNotes.length * 4 + 5;
-        }
-        
-        // Follow-up instructions
-        if (review.follow_up_instructions) {
-            if (yPos > 250) {
-                doc.addPage();
-                yPos = 20;
+            doc.text(`Date: ${formatDate(review.submitted_at)} | Submitted by: ${review.submitted_by || 'Unknown'}`, 14, yPos);
+            yPos += 8;
+            const rating = review.answers?.q18 || 'N/A';
+            const followup = review.answers?.q19 || 'No';
+            doc.text(`Overall Rating: ${rating} | Follow-up: ${followup}`, 14, yPos);
+            yPos += 8;
+
+            const tableData = legacyQuestions.map((q, i) => [
+                `${i + 1}`,
+                q.text,
+                review.answers?.[q.id] || 'N/A'
+            ]);
+            doc.autoTable({
+                startY: yPos,
+                head: [['#', 'Question', 'Answer']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { fillColor: [10, 132, 255], fontSize: 8 },
+                bodyStyles: { fontSize: 7 },
+                columnStyles: {
+                    0: { cellWidth: 10 },
+                    1: { cellWidth: 100 },
+                    2: { cellWidth: 60 }
+                },
+                margin: { left: 14, right: 14 }
+            });
+            yPos = doc.lastAutoTable.finalY + 10;
+            if (review.additional_notes) {
+                if (yPos > 250) { doc.addPage(); yPos = 20; }
+                doc.setFont(undefined, 'bold');
+                doc.text('Additional Notes:', 14, yPos);
+                yPos += 5;
+                doc.setFont(undefined, 'normal');
+                doc.text(doc.splitTextToSize(review.additional_notes, 180), 14, yPos);
+                yPos += doc.splitTextToSize(review.additional_notes, 180).length * 4 + 5;
             }
-            doc.setFontSize(9);
-            doc.setFont(undefined, 'bold');
-            doc.text('Follow-Up Instructions:', 14, yPos);
-            yPos += 5;
-            doc.setFont(undefined, 'normal');
-            const splitInstr = doc.splitTextToSize(review.follow_up_instructions, 180);
-            doc.text(splitInstr, 14, yPos);
-            yPos += splitInstr.length * 4 + 5;
-        }
-        
-        // Separator
-        yPos += 10;
-        if (index < reviews.length - 1) {
-            doc.setDrawColor(200);
-            doc.line(14, yPos - 5, 196, yPos - 5);
-        }
-    });
-    
-    // Save
-    const dateStr = new Date().toISOString().split('T')[0];
-    doc.save(`Site_Evaluation_Report_${dateStr}.pdf`);
+            if (review.follow_up_instructions) {
+                if (yPos > 250) { doc.addPage(); yPos = 20; }
+                doc.setFont(undefined, 'bold');
+                doc.text('Follow-Up Instructions:', 14, yPos);
+                yPos += 5;
+                doc.setFont(undefined, 'normal');
+                doc.text(doc.splitTextToSize(review.follow_up_instructions, 180), 14, yPos);
+                yPos += doc.splitTextToSize(review.follow_up_instructions, 180).length * 4 + 5;
+            }
+            yPos += 10;
+            if (index < reviews.length - 1) {
+                doc.setDrawColor(200);
+                doc.line(14, yPos - 5, 196, yPos - 5);
+            }
+        });
+        const dateStr = new Date().toISOString().split('T')[0];
+        doc.save(`Site_Evaluation_Report_${dateStr}.pdf`);
+    }
     showToast('PDF exported successfully');
 }
 
@@ -709,47 +794,23 @@ function setupEventListeners() {
         });
     }
     
-    // "Select All" for ratings
-    const selectAllRatings = document.getElementById('selectAllRatings');
-    if (selectAllRatings) {
-        selectAllRatings.addEventListener('change', (e) => {
-            document.querySelectorAll('.rating-checkbox').forEach(cb => {
+    // "Select All" for result filter
+    const selectAllResults = document.getElementById('selectAllResults');
+    if (selectAllResults) {
+        selectAllResults.addEventListener('change', (e) => {
+            document.querySelectorAll('.result-checkbox').forEach(cb => {
                 cb.checked = e.target.checked;
             });
             generateReport();
         });
     }
-    
-    // Update "Select All" ratings checkbox when individual checkboxes change
-    const ratingContainer = document.getElementById('ratingCheckboxes');
-    if (ratingContainer) {
-        ratingContainer.addEventListener('change', (e) => {
-            if (e.target.classList.contains('rating-checkbox')) {
-                const allChecked = document.querySelectorAll('.rating-checkbox:not(:checked)').length === 0;
-                if (selectAllRatings) selectAllRatings.checked = allChecked;
-                generateReport();
-            }
-        });
-    }
-    
-    // "Select All" for follow-ups
-    const selectAllFollowups = document.getElementById('selectAllFollowups');
-    if (selectAllFollowups) {
-        selectAllFollowups.addEventListener('change', (e) => {
-            document.querySelectorAll('.followup-checkbox').forEach(cb => {
-                cb.checked = e.target.checked;
-            });
-            generateReport();
-        });
-    }
-    
-    // Update "Select All" follow-ups checkbox when individual checkboxes change
-    const followupContainer = document.getElementById('followupCheckboxes');
-    if (followupContainer) {
-        followupContainer.addEventListener('change', (e) => {
-            if (e.target.classList.contains('followup-checkbox')) {
-                const allChecked = document.querySelectorAll('.followup-checkbox:not(:checked)').length === 0;
-                if (selectAllFollowups) selectAllFollowups.checked = allChecked;
+
+    const resultContainer = document.getElementById('resultCheckboxes');
+    if (resultContainer) {
+        resultContainer.addEventListener('change', (e) => {
+            if (e.target.classList.contains('result-checkbox')) {
+                const allChecked = document.querySelectorAll('.result-checkbox:not(:checked)').length === 0;
+                if (selectAllResults) selectAllResults.checked = allChecked;
                 generateReport();
             }
         });
