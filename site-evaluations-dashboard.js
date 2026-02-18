@@ -581,13 +581,11 @@ function generatePDF(reviews) {
                 yPos = doc.lastAutoTable.finalY + 6;
             });
 
-            if (a.reviewer_signature || a.manager_signature) {
-                if (yPos > 268) { doc.addPage(); yPos = 20; }
-                doc.setFont(undefined, 'normal');
-                doc.setFontSize(9);
-                doc.text(`Reviewer: ${a.reviewer_signature || '—'}  |  Manager: ${a.manager_signature || '—'}`, 14, yPos);
-                yPos += 8;
-            }
+            if (yPos > 268) { doc.addPage(); yPos = 20; }
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            doc.text(`Submitted by: ${review.submitted_by || '—'}`, 14, yPos);
+            yPos += 8;
             if (review.additional_notes) {
                 if (yPos > 265) { doc.addPage(); yPos = 20; }
                 doc.setFont(undefined, 'bold');

@@ -66,9 +66,7 @@ function collectFormAnswers() {
         procedures_management: collectSection('procedures', 8),
         vacuum_area: collectSection('vacuum', 4),
         office_breakroom: collectSection('office', 7),
-        chemical_room: collectSection('chemical', 7),
-        reviewer_signature: document.getElementById('reviewerSignature')?.value?.trim() || '',
-        manager_signature: document.getElementById('managerSignature')?.value?.trim() || ''
+        chemical_room: collectSection('chemical', 7)
     };
     return answers;
 }

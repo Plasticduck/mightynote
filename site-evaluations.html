@@ -72,8 +72,40 @@
         }
         .optional-section { margin-top: var(--space-lg); padding-top: var(--space-lg); border-top: 2px solid var(--border-color); }
         .optional-section h3 { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: var(--space-md); }
-        .signature-row { display: flex; gap: var(--space-lg); flex-wrap: wrap; }
-        .signature-row .form-group { flex: 1; min-width: 140px; }
+        /* Modern date/time inputs */
+        .review-header-grid input[type="date"],
+        .review-header-grid input[type="time"],
+        .review-header-grid input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            color: var(--white);
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .review-header-grid input:hover { border-color: var(--white-15); }
+        .review-header-grid input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
+        }
+        .review-header-grid input::placeholder { color: var(--text-muted); }
+        .review-header-grid input[type="date"]::-webkit-calendar-picker-indicator,
+        .review-header-grid input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; opacity: 0.8; }
+        .submitter-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            margin-top: 4px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            color: var(--accent-blue);
+        }
     </style>
 </head>
 <body>
@@ -104,7 +136,7 @@
             <div class="form-card">
                 <div class="form-header">
                     <h2>Monthly Site Review</h2>
-                    <p class="form-subtitle">Submitting as: <strong id="submitterName">Loading...</strong></p>
+                    <p class="form-subtitle">Submitted by <span class="submitter-badge" id="submitterName">Loading...</span></p>
                 </div>
 
                 <form id="evaluationForm" class="evaluation-form">
@@ -211,22 +243,12 @@
                         <div class="review-row"><span class="label">7. Marvel oil</span><div class="pf"><label><input type="radio" name="chemical_7" value="Pass"> Pass</label><label><input type="radio" name="chemical_7" value="Fail"> Fail</label></div><div class="comments"><input type="text" placeholder="Comments" data-comment="chemical_7"></div></div>
                     </div>
 
-                    <!-- Overall Notes & Signatures -->
+                    <!-- Overall Notes -->
                     <div class="optional-section">
-                        <h3>Overall Notes / Signatures</h3>
+                        <h3>Overall Notes</h3>
                         <div class="form-group">
                             <label for="additionalNotes">Overall Notes / Comments</label>
                             <textarea id="additionalNotes" rows="4" placeholder="Enter any additional observations or comments..."></textarea>
-                        </div>
-                        <div class="signature-row">
-                            <div class="form-group">
-                                <label for="reviewerSignature">Reviewer Signature</label>
-                                <input type="text" id="reviewerSignature" placeholder="Print name">
-                            </div>
-                            <div class="form-group">
-                                <label for="managerSignature">Manager Signature</label>
-                                <input type="text" id="managerSignature" placeholder="Print name">
-                            </div>
                         </div>
                         <div class="form-group">
                             <label>Photos / Attachments</label>
