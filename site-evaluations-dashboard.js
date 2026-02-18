@@ -514,18 +514,19 @@ function exportSelectedToPDF() {
 function generatePDF(reviews) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    let yPos = 20;
+    const hasNew = reviews.some(r => isNewFormat(r));
+    const hasLegacy = reviews.some(r => !isNewFormat(r));
 
-    const allNewFormat = reviews.length > 0 && reviews.every(r => isNewFormat(r));
+    reviews.forEach((review, index) => {
+        const a = review.answers || {};
 
-    if (allNewFormat) {
-        // Monthly Site Review format (like the PDF)
-        let yPos = 20;
-        reviews.forEach((review, index) => {
+        if (isNewFormat(review)) {
+            // Monthly Site Review format (matches the PDF layout)
             if (yPos > 30) {
                 doc.addPage();
                 yPos = 20;
             }
-            const a = review.answers;
 
             doc.setFontSize(16);
             doc.setFont(undefined, 'bold');
@@ -534,8 +535,14 @@ function generatePDF(reviews) {
 
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
-            const reviewDate = a.review_date ? new Date(a.review_date + 'T12:00:00').toLocaleDateString('en-US') : formatDate(review.submitted_at);
-            doc.text(`Site: ${review.location}  |  Date: ${reviewDate}  |  Weather: ${a.weather || '—'}  |  Time Arrived: ${a.time_arrived || '—'}`, 14, yPos);
+            const reviewDate = a.review_date
+                ? new Date(a.review_date + 'T12:00:00').toLocaleDateString('en-US')
+                : formatDate(review.submitted_at);
+            doc.text(
+                `Site: ${review.location}  |  Date: ${reviewDate}  |  Weather: ${a.weather || '—'}  |  Time Arrived: ${a.time_arrived || '—'}`,
+                14,
+                yPos
+            );
             yPos += 8;
 
             MONTHLY_REVIEW_SECTIONS.forEach(sec => {
@@ -596,40 +603,22 @@ function generatePDF(reviews) {
                 doc.text(lines, 14, yPos);
                 yPos += lines.length * 4 + 8;
             }
-
-            yPos += 6;
-            if (index < reviews.length - 1) {
-                doc.setDrawColor(200);
-                doc.line(14, yPos, 196, yPos);
-                yPos += 12;
-            }
-        });
-        const dateStr = new Date().toISOString().split('T')[0];
-        doc.save(`Monthly_Site_Review_${dateStr}.pdf`);
-    } else {
-        // Legacy format
-        doc.setFontSize(18);
-        doc.setFont(undefined, 'bold');
-        doc.text('Site Evaluation Report', 14, 20);
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Generated: ${formatDate(new Date().toISOString())}`, 14, 28);
-        doc.text(`Total Reviews: ${reviews.length}`, 14, 34);
-        let yPos = 45;
-
-        reviews.forEach((review, index) => {
-            if (yPos > 250) {
+        } else {
+            // Legacy evaluation format (older question set)
+            if (yPos > 30) {
                 doc.addPage();
                 yPos = 20;
             }
-            doc.setFontSize(12);
+            doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
-            doc.text(`Review ${index + 1}: ${review.location}`, 14, yPos);
+            doc.text('Legacy Site Evaluation', 14, yPos);
             yPos += 6;
+
             doc.setFontSize(9);
             doc.setFont(undefined, 'normal');
-            doc.text(`Date: ${formatDate(review.submitted_at)} | Submitted by: ${review.submitted_by || 'Unknown'}`, 14, yPos);
+            doc.text(`Site: ${review.location} | Date: ${formatDate(review.submitted_at)} | Submitted by: ${review.submitted_by || 'Unknown'}`, 14, yPos);
             yPos += 8;
+
             const rating = review.answers?.q18 || 'N/A';
             const followup = review.answers?.q19 || 'No';
             doc.text(`Overall Rating: ${rating} | Follow-up: ${followup}`, 14, yPos);
@@ -655,14 +644,16 @@ function generatePDF(reviews) {
                 margin: { left: 14, right: 14 }
             });
             yPos = doc.lastAutoTable.finalY + 10;
+
             if (review.additional_notes) {
                 if (yPos > 250) { doc.addPage(); yPos = 20; }
                 doc.setFont(undefined, 'bold');
                 doc.text('Additional Notes:', 14, yPos);
                 yPos += 5;
                 doc.setFont(undefined, 'normal');
-                doc.text(doc.splitTextToSize(review.additional_notes, 180), 14, yPos);
-                yPos += doc.splitTextToSize(review.additional_notes, 180).length * 4 + 5;
+                const legacyLines = doc.splitTextToSize(review.additional_notes, 180);
+                doc.text(legacyLines, 14, yPos);
+                yPos += legacyLines.length * 4 + 5;
             }
             if (review.follow_up_instructions) {
                 if (yPos > 250) { doc.addPage(); yPos = 20; }
@@ -670,17 +661,26 @@ function generatePDF(reviews) {
                 doc.text('Follow-Up Instructions:', 14, yPos);
                 yPos += 5;
                 doc.setFont(undefined, 'normal');
-                doc.text(doc.splitTextToSize(review.follow_up_instructions, 180), 14, yPos);
-                yPos += doc.splitTextToSize(review.follow_up_instructions, 180).length * 4 + 5;
+                const fuLines = doc.splitTextToSize(review.follow_up_instructions, 180);
+                doc.text(fuLines, 14, yPos);
+                yPos += fuLines.length * 4 + 5;
             }
-            yPos += 10;
-            if (index < reviews.length - 1) {
-                doc.setDrawColor(200);
-                doc.line(14, yPos - 5, 196, yPos - 5);
-            }
-        });
-        const dateStr = new Date().toISOString().split('T')[0];
+        }
+
+        yPos += 10;
+        if (index < reviews.length - 1) {
+            doc.setDrawColor(200);
+            doc.line(14, yPos - 5, 196, yPos - 5);
+        }
+    });
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    if (hasNew && !hasLegacy) {
+        doc.save(`Monthly_Site_Review_${dateStr}.pdf`);
+    } else if (!hasNew && hasLegacy) {
         doc.save(`Site_Evaluation_Report_${dateStr}.pdf`);
+    } else {
+        doc.save(`Site_Reviews_${dateStr}.pdf`);
     }
     showToast('PDF exported successfully');
 }
