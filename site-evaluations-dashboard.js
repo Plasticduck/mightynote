@@ -546,14 +546,13 @@ function generatePDF(reviews) {
         if (logo && logo.dataUrl) {
             try {
                 const pageW = doc.internal.pageSize.getWidth();
-                const maxLogoW = 32;
+                const maxLogoW = 18;
                 const aspect = logo.height / logo.width;
                 const logoW = maxLogoW;
                 const logoH = maxLogoW * aspect;
                 const x = pageW - 14 - logoW;
                 const y = 8;
                 doc.addImage(logo.dataUrl, 'PNG', x, y, logoW, logoH);
-                if (y + logoH > yPos) yPos = y + logoH + 4;
             } catch (e) { /* ignore */ }
         }
 
@@ -561,8 +560,8 @@ function generatePDF(reviews) {
         const a = review.answers || {};
 
         if (isNewFormat(review)) {
-            // Monthly Site Review format (matches the PDF layout)
-            if (yPos > 30) {
+            // Monthly Site Review format (matches the PDF layout) — new page only for 2nd+ review
+            if (index > 0 && yPos > 30) {
                 doc.addPage();
                 yPos = 20;
             }
@@ -647,8 +646,8 @@ function generatePDF(reviews) {
                 yPos += lines.length * 4 + 8;
             }
         } else {
-            // Legacy evaluation format (older question set)
-            if (yPos > 30) {
+            // Legacy evaluation format (older question set) — new page only for 2nd+ review
+            if (index > 0 && yPos > 30) {
                 doc.addPage();
                 yPos = 20;
             }
