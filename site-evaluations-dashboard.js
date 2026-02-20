@@ -510,8 +510,8 @@ function exportSelectedToPDF() {
     generatePDF(selected);
 }
 
-// Load MW logo as base64 for PDF (same folder as dashboard)
-function loadLogoDataUrl() {
+// Load MW logo as base64 + dimensions for PDF (preserves aspect ratio)
+function loadLogoForPDF() {
     return new Promise((resolve) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
@@ -522,7 +522,11 @@ function loadLogoDataUrl() {
                 canvas.height = img.naturalHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
-                resolve(canvas.toDataURL('image/png'));
+                resolve({
+                    dataUrl: canvas.toDataURL('image/png'),
+                    width: img.naturalWidth,
+                    height: img.naturalHeight
+                });
             } catch (e) { resolve(null); }
         };
         img.onerror = () => resolve(null);
@@ -532,17 +536,24 @@ function loadLogoDataUrl() {
 
 // Generate PDF
 function generatePDF(reviews) {
-    loadLogoDataUrl().then((logoData) => {
+    loadLogoForPDF().then((logo) => {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         let yPos = 20;
         const hasNew = reviews.some(r => isNewFormat(r));
         const hasLegacy = reviews.some(r => !isNewFormat(r));
 
-        if (logoData) {
+        if (logo && logo.dataUrl) {
             try {
-                doc.addImage(logoData, 'PNG', 14, 8, 28, 14);
-                yPos = 26;
+                const pageW = doc.internal.pageSize.getWidth();
+                const maxLogoW = 32;
+                const aspect = logo.height / logo.width;
+                const logoW = maxLogoW;
+                const logoH = maxLogoW * aspect;
+                const x = pageW - 14 - logoW;
+                const y = 8;
+                doc.addImage(logo.dataUrl, 'PNG', x, y, logoW, logoH);
+                if (y + logoH > yPos) yPos = y + logoH + 4;
             } catch (e) { /* ignore */ }
         }
 
