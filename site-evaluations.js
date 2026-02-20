@@ -64,9 +64,12 @@ function collectFormAnswers() {
         tunnel: collectSection('tunnel', SECTION_ITEMS.tunnel),
         mighty_wash_comments: document.getElementById('mightyWashComments')?.value?.trim() || '',
         procedures_management: collectSection('procedures', SECTION_ITEMS.procedures),
+        procedures_prep_time: document.getElementById('proceduresPrepTime')?.value?.trim() || '',
+        procedures_labor_pct: document.getElementById('proceduresLaborPct')?.value?.trim() || '',
         vacuum_area: collectSection('vacuum', SECTION_ITEMS.vacuum),
         office_breakroom: collectSection('office', SECTION_ITEMS.office),
-        chemical_room: collectSection('chemical', SECTION_ITEMS.chemical)
+        chemical_room: collectSection('chemical', SECTION_ITEMS.chemical),
+        chemical_ppm: document.getElementById('chemicalPpm')?.value?.trim() || ''
     };
     return answers;
 }

@@ -597,7 +597,11 @@ function generatePDF(reviews) {
 
                 const tableData = (sec.items || []).slice(0, arr.length).map((label, i) => {
                     const item = arr[i] || {};
-                    return [label, item.pass_fail || '—', item.comments || '—'];
+                    let comments = item.comments || '';
+                    if (sec.key === 'procedures_management' && i === 5 && a.procedures_prep_time) comments = (comments ? comments + ' ' : '') + 'Time: ' + a.procedures_prep_time;
+                    if (sec.key === 'procedures_management' && i === 6 && a.procedures_labor_pct) comments = (comments ? comments + ' ' : '') + 'Labor %: ' + a.procedures_labor_pct;
+                    if (sec.key === 'chemical_room' && i === 4 && a.chemical_ppm) comments = (comments ? comments + ' ' : '') + 'PPM: ' + a.chemical_ppm;
+                    return [label, item.pass_fail || '—', comments || '—'];
                 });
                 doc.autoTable({
                     startY: yPos,
