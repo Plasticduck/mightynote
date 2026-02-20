@@ -11,17 +11,17 @@ function checkAuth() {
 
 const user = checkAuth();
 
-const locations = Array.from({ length: 31 }, (_, i) => `Site #${i + 1}`);
+const locations = [...Array.from({ length: 31 }, (_, i) => `Site #${i + 1}`), 'Spotless'];
 
-// Monthly Site Review section definitions for PDF export
+// Monthly Site Review section definitions for PDF export (exact text from PDF)
 const MONTHLY_REVIEW_SECTIONS = [
-    { key: 'site_approach', title: 'Site Approach', items: ['Trash and debris free', 'Signs present and in good condition', 'XPT present and in good condition', 'Building exterior presentable', 'Employees wearing safety vests', 'Dumpster area clean and organized'] },
-    { key: 'tunnel', title: 'Tunnel', items: ['Tunnel cleanliness', 'Windows', 'Equipment', 'Chain', 'Tool room', 'Floor', 'Cameras'] },
+    { key: 'site_approach', title: 'Site Approach', items: ['Trash on lot and curbs', 'Signs are clean, visible, and not fading', 'XPT screens and area are clean', 'Building clean and yard maintained with no weeds', 'Employees clean and in proper attire', 'Employee present at XPT\'s when arrived', 'Dumpster pad clean of debris and gates shut'] },
+    { key: 'tunnel', title: 'Tunnel', items: ['Cleanliness of walls', 'Windows cleaned outside and in (including sills)', 'Equipment working properly', 'Equipment cleaned properly', 'Chain tension', 'Tool room cleaned and organized', 'Floor and ceiling cleaned', 'Trash cleaned from power locks', 'All Cameras Wiped'] },
     { key: 'mighty_wash', title: 'Mighty Wash', commentsOnly: true, commentKey: 'mighty_wash_comments' },
-    { key: 'procedures_management', title: 'Procedures / Management', items: ['Prep', 'Hand dry', 'QC', 'Interior', 'Prep time', 'Labor %', 'Rewash %', 'Damage claims'] },
-    { key: 'vacuum_area', title: 'Vacuum Area', items: ['Hoses', 'Suction', 'Trash', 'Vending / Mat washer'] },
-    { key: 'office_breakroom', title: 'Office and Breakroom', items: ['Windows', 'Restrooms', 'Office', 'Countertops', 'Lights', 'Breakroom', 'Water'] },
-    { key: 'chemical_room', title: 'Chemical Room', items: ['Organized', 'Chemicals', 'Salt', 'R.O.', 'Compressors', 'RTC / Breaker', 'Marvel oil'] }
+    { key: 'procedures_management', title: 'Procedures/Management', items: ['Proper prepping procedures', 'Proper hand dry procedures', 'Proper QC procedures', 'Proper interior procedures', 'Finished product', 'Prep time under 45 seconds Time:', 'Correct monthly labor % Labor %:', 'Rewash % (goal is <2%)', 'Auto Damage Claims'] },
+    { key: 'vacuum_area', title: 'Vacuum Area', items: ['Hoses hung and clean', 'Suction on vac and crevice tool', 'Vacs with low suction or missing (3 or more fails)', 'Trash cans clean and empty', 'Vacuum area swept and free of debris', 'Worn or broken vac/crevice tool or air guns (4 or more fails)', 'Vending machine and mat washer clean'] },
+    { key: 'office_breakroom', title: 'Office and Breakroom', items: ['Office and breakroom windows clean', 'Restrooms clean and stocked', 'Office(s) swept, mopped, and trash empty', 'Countertops clean and organized', 'Lights in and out of building all working and free of bugs', 'Breakroom clean', 'Water machine stocked and working'] },
+    { key: 'chemical_room', title: 'Chemical Room', items: ['Clean and organized', 'Chemicals organized and tops cleaned', 'Chemicals stocked', 'Salt in brine tank', 'R.O. system working and tanks full PPM:', 'Water drained from air compressors', 'All RTC and breaker box doors closed and clear', 'Marvel Air Tool oil filled'] }
 ];
 
 // Legacy question definitions for old-format PDF export
@@ -510,13 +510,41 @@ function exportSelectedToPDF() {
     generatePDF(selected);
 }
 
+// Load MW logo as base64 for PDF (same folder as dashboard)
+function loadLogoDataUrl() {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            } catch (e) { resolve(null); }
+        };
+        img.onerror = () => resolve(null);
+        img.src = 'MW Logo.png';
+    });
+}
+
 // Generate PDF
 function generatePDF(reviews) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    let yPos = 20;
-    const hasNew = reviews.some(r => isNewFormat(r));
-    const hasLegacy = reviews.some(r => !isNewFormat(r));
+    loadLogoDataUrl().then((logoData) => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        let yPos = 20;
+        const hasNew = reviews.some(r => isNewFormat(r));
+        const hasLegacy = reviews.some(r => !isNewFormat(r));
+
+        if (logoData) {
+            try {
+                doc.addImage(logoData, 'PNG', 14, 8, 28, 14);
+                yPos = 26;
+            } catch (e) { /* ignore */ }
+        }
 
     reviews.forEach((review, index) => {
         const a = review.answers || {};
@@ -596,7 +624,7 @@ function generatePDF(reviews) {
             if (review.additional_notes) {
                 if (yPos > 265) { doc.addPage(); yPos = 20; }
                 doc.setFont(undefined, 'bold');
-                doc.text('Overall Notes:', 14, yPos);
+                doc.text('Overall Notes/Comments:', 14, yPos);
                 yPos += 5;
                 doc.setFont(undefined, 'normal');
                 const lines = doc.splitTextToSize(review.additional_notes, 180);
@@ -683,6 +711,7 @@ function generatePDF(reviews) {
         doc.save(`Site_Reviews_${dateStr}.pdf`);
     }
     showToast('PDF exported successfully');
+    });
 }
 
 // Show toast

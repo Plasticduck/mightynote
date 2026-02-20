@@ -14,8 +14,8 @@ if (user) {
     document.getElementById('submitterName').textContent = user.full_name;
 }
 
-// Site locations
-const locations = Array.from({ length: 31 }, (_, i) => `Site #${i + 1}`);
+// Site locations (Site #1–31 + Spotless)
+const locations = [...Array.from({ length: 31 }, (_, i) => `Site #${i + 1}`), 'Spotless'];
 const locationSelect = document.getElementById('location');
 locations.forEach(loc => {
     const option = document.createElement('option');
@@ -31,14 +31,14 @@ if (reviewDateEl) {
     reviewDateEl.value = now.toISOString().slice(0, 10);
 }
 
-// Section config: radio name prefix -> count
+// Section config: radio name prefix -> count (matches PDF exactly)
 const SECTION_ITEMS = {
-    site_approach: 6,
-    tunnel: 7,
-    procedures: 8,
-    vacuum: 4,
+    site_approach: 7,
+    tunnel: 9,
+    procedures: 9,
+    vacuum: 7,
     office: 7,
-    chemical: 7
+    chemical: 8
 };
 
 function collectSection(sectionKey, count) {
@@ -60,13 +60,13 @@ function collectFormAnswers() {
         review_date: document.getElementById('reviewDate')?.value || '',
         weather: document.getElementById('weather')?.value?.trim() || '',
         time_arrived: document.getElementById('timeArrived')?.value || '',
-        site_approach: collectSection('site_approach', 6),
-        tunnel: collectSection('tunnel', 7),
+        site_approach: collectSection('site_approach', SECTION_ITEMS.site_approach),
+        tunnel: collectSection('tunnel', SECTION_ITEMS.tunnel),
         mighty_wash_comments: document.getElementById('mightyWashComments')?.value?.trim() || '',
-        procedures_management: collectSection('procedures', 8),
-        vacuum_area: collectSection('vacuum', 4),
-        office_breakroom: collectSection('office', 7),
-        chemical_room: collectSection('chemical', 7)
+        procedures_management: collectSection('procedures', SECTION_ITEMS.procedures),
+        vacuum_area: collectSection('vacuum', SECTION_ITEMS.vacuum),
+        office_breakroom: collectSection('office', SECTION_ITEMS.office),
+        chemical_room: collectSection('chemical', SECTION_ITEMS.chemical)
     };
     return answers;
 }
