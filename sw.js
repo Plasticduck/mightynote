@@ -1,4 +1,4 @@
-const CACHE_VERSION = 22;
+const CACHE_VERSION = 23;
 const CACHE_NAME = `mighty-ops-v${CACHE_VERSION}`;
 
 // Only cache external libraries and static assets - NOT app files

@@ -242,7 +242,7 @@
                 if (result.success) {
                     localStorage.setItem('mightyops_user', JSON.stringify(result.user));
                     // Set app version to prevent auto-logout
-                    localStorage.setItem('mightyops_app_version', '22');
+                    localStorage.setItem('mightyops_app_version', '23');
                     window.location.href = 'home.html';
                 } else {
                     errorEl.textContent = result.error || 'Invalid email or password';
