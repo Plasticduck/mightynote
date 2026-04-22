@@ -62,19 +62,18 @@ exports.handler = async (event) => {
 
         const invoice = updated[0];
 
-        // Fire submitter notification (best-effort)
+        // Notify the submitter of the decision. Awaited so the Lambda
+        // doesn't freeze before Resend responds.
         if (status === 'Approved' || status === 'Rejected') {
-            (async () => {
-                try {
-                    let submitterEmail = invoice.submitted_by_email;
-                    if (!submitterEmail && invoice.submitted_by) {
-                        const sub = await findUserByName(sql, invoice.submitted_by);
-                        if (sub) submitterEmail = sub.email;
-                    }
-                    if (!submitterEmail) {
-                        console.warn(`[invoice ${id}] no submitter email — skipping decision notification`);
-                        return;
-                    }
+            try {
+                let submitterEmail = invoice.submitted_by_email;
+                if (!submitterEmail && invoice.submitted_by) {
+                    const sub = await findUserByName(sql, invoice.submitted_by);
+                    if (sub) submitterEmail = sub.email;
+                }
+                if (!submitterEmail) {
+                    console.warn(`[invoice ${id}] no submitter email — skipping decision notification`);
+                } else {
                     const { subject, text, html } = invoiceDecisionEmail({
                         submitterName: invoice.submitted_by,
                         approverName: decided_by,
@@ -84,11 +83,12 @@ exports.handler = async (event) => {
                         glCode: invoice.gl_code,
                         publicUrl: process.env.PUBLIC_URL || 'https://mightyops.washlyfe.com'
                     });
-                    await sendEmail({ to: submitterEmail, subject, text, html });
-                } catch (err) {
-                    console.error(`[invoice ${id}] decision email failed:`, err);
+                    const mailResult = await sendEmail({ to: submitterEmail, subject, text, html });
+                    console.log(`[invoice ${id}] decision email to ${submitterEmail}:`, mailResult);
                 }
-            })();
+            } catch (err) {
+                console.error(`[invoice ${id}] decision email failed:`, err);
+            }
         }
 
         return { statusCode: 200, headers, body: JSON.stringify({ success: true, invoice }) };

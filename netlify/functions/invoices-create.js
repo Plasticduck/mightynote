@@ -104,29 +104,30 @@ exports.handler = async (event) => {
 
         const invoiceId = result[0].id;
 
-        // Fire email to assignee (best-effort — never blocks response)
-        (async () => {
-            try {
-                const assignee = await findUserByName(sql, data.assigned_to);
-                if (!assignee || !assignee.email) {
-                    console.warn(`[invoice ${invoiceId}] no user row for "${data.assigned_to}" — skipping email`);
-                    return;
-                }
+        // Send email to assignee. Awaited so serverless doesn't freeze the
+        // Lambda before the Resend request completes. The helper is
+        // best-effort (catches internally) so this never throws.
+        try {
+            const assignee = await findUserByName(sql, data.assigned_to);
+            if (!assignee || !assignee.email) {
+                console.warn(`[invoice ${invoiceId}] no user row for "${data.assigned_to}" — skipping email`);
+            } else {
                 const { subject, text, html } = invoiceRequestEmail({
                     assigneeName: assignee.full_name,
                     invoice: data,
                     submitter: data.submitted_by,
                     publicUrl: process.env.PUBLIC_URL || 'https://mightyops.washlyfe.com'
                 });
-                await sendEmail({
+                const result = await sendEmail({
                     to: assignee.email,
                     subject, text, html,
                     replyTo: data.submitted_by_email || undefined
                 });
-            } catch (err) {
-                console.error(`[invoice ${invoiceId}] email dispatch failed:`, err);
+                console.log(`[invoice ${invoiceId}] email to ${assignee.email}:`, result);
             }
-        })();
+        } catch (err) {
+            console.error(`[invoice ${invoiceId}] email dispatch failed:`, err);
+        }
 
         return {
             statusCode: 200,
