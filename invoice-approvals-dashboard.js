@@ -1,5 +1,8 @@
-// Invoice Approval Dashboard - personal queue (only invoices assigned to
-// the current user), review (approve/reject), export.
+// Invoice Approval Dashboard
+//   - Approvers see only invoices assigned to them (strict)
+//   - Accounting users see ALL invoices, with a toggle to view "My Queue"
+//     (useful if they're also occasionally assigned one)
+//   - Others (submitters): empty queue
 
 (function () {
     function checkAuth() {
@@ -12,6 +15,19 @@
     }
     const currentUser = checkAuth();
     if (!currentUser) return;
+
+    const APPROVERS = [
+        'Matt Canales', 'Isabel Castaneda', 'Lester Young', 'Rance Breed',
+        'Aaron Messina', 'Justin Gamboa', 'Kevan Jowers', 'Ernest Contreras'
+    ];
+
+    // Accounting team — can view everyone's invoices (primarily for post-approval
+    // reconciliation). Names here must be resolved against the flexible matcher
+    // so e.g. "Mikayla" resolves to "Mikala Niemeyer".
+    const ACCOUNTING = [
+        'Heather Murry', 'Rebecca Hipp', 'Mikala Niemeyer', 'Erica Campbell',
+        'Kimber Thornton', 'Elda Pineda'
+    ];
 
     function namesMatch(a, b) {
         if (!a || !b) return false;
@@ -28,6 +44,13 @@
         return false;
     }
 
+    const isAccounting = ACCOUNTING.some((n) => namesMatch(n, currentUser.full_name));
+    const isApprover = APPROVERS.some((n) => namesMatch(n, currentUser.full_name));
+
+    // queueMode: 'all' | 'mine'
+    //   Accounting defaults to 'all'. Approvers (non-accounting) are always 'mine'.
+    //   Non-accounting submitters are 'mine' (which will be empty for them).
+    let queueMode = isAccounting ? 'all' : 'mine';
     let allInvoices = [];
 
     const tbody = document.getElementById('invoicesBody');
@@ -36,12 +59,45 @@
     const statPending = document.getElementById('statPending');
     const statApprovers = document.getElementById('statApprovers');
     const filterStatus = document.getElementById('filterStatus');
+    const filterAssignee = document.getElementById('filterAssignee');
+    const filterAssigneeGroup = document.getElementById('filterAssigneeGroup');
     const filterVendor = document.getElementById('filterVendor');
     const filterFrom = document.getElementById('filterFrom');
     const filterTo = document.getElementById('filterTo');
+    const dashboardTitle = document.getElementById('dashboardTitle');
     const dashboardSubtitle = document.getElementById('dashboardSubtitle');
+    const queueToggle = document.getElementById('queueToggle');
+    const myQueueCountEl = document.getElementById('myQueueCount');
 
-    // Re-label the fourth stat for a personal dashboard
+    // Populate the assignee filter
+    APPROVERS.forEach((name) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        filterAssignee.appendChild(opt);
+    });
+
+    // Update UI based on role
+    function applyRoleUi() {
+        if (isAccounting) {
+            queueToggle.classList.remove('hidden');
+            filterAssigneeGroup.classList.remove('hidden');
+            document.querySelectorAll('.col-assigned').forEach((el) => el.classList.remove('hidden'));
+            if (queueMode === 'all') {
+                dashboardTitle.textContent = 'All Invoices';
+                dashboardSubtitle.textContent = 'Accounting view — all invoices from every approver. Filter by status or assignee as needed.';
+            } else {
+                dashboardTitle.textContent = 'My Invoices';
+                dashboardSubtitle.textContent = 'Invoices assigned to you.';
+            }
+        } else {
+            queueToggle.classList.add('hidden');
+            filterAssigneeGroup.classList.add('hidden');
+            document.querySelectorAll('.col-assigned').forEach((el) => el.classList.add('hidden'));
+        }
+    }
+    applyRoleUi();
+
     const approversLabel = statApprovers.parentElement.querySelector('.stat-label');
     if (approversLabel) approversLabel.textContent = 'Approved';
 
@@ -80,18 +136,22 @@
         }, 2500);
     }
 
-    // Personal filter — always only invoices assigned to the current user.
-    function myInvoices() {
+    function scopedInvoices() {
+        // Accounting user in All mode: every invoice.
+        // Accounting user in Mine mode, OR any approver/submitter: only theirs.
+        if (isAccounting && queueMode === 'all') return allInvoices.slice();
         return allInvoices.filter((r) => namesMatch(r.assigned_to, currentUser.full_name));
     }
 
     function applyFilters(rows) {
         const status = filterStatus.value;
+        const assignee = filterAssignee.value;
         const v = filterVendor.value.trim().toLowerCase();
         const from = filterFrom.value;
         const to = filterTo.value;
         return rows.filter((r) => {
             if (status && (r.status || 'Pending') !== status) return false;
+            if (assignee && !namesMatch(r.assigned_to, assignee)) return false;
             if (v && !(r.vendor_name || '').toLowerCase().includes(v)) return false;
             if (from && r.invoice_date && r.invoice_date < from) return false;
             if (to && r.invoice_date && r.invoice_date > to) return false;
@@ -123,14 +183,17 @@
     }
 
     function renderTable(rows) {
+        const colCount = isAccounting ? 9 : 8;
         if (!rows.length) {
-            tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No invoices assigned to you right now.</td></tr>`;
+            const msg = queueMode === 'all' ? 'No invoices match the current filters.' : 'No invoices assigned to you right now.';
+            tbody.innerHTML = `<tr><td colspan="${colCount}" class="empty-state">${msg}</td></tr>`;
             return;
         }
         tbody.innerHTML = rows.map((r) => {
             const status = (r.status || 'Pending');
             const statusClass = status === 'Approved' ? 'approved' : (status === 'Rejected' ? 'rejected' : '');
-            const canReview = status === 'Pending';
+            const isMine = namesMatch(r.assigned_to, currentUser.full_name);
+            const canReview = status === 'Pending' && isMine;
             return `
                 <tr>
                     <td data-label="#">${r.id}</td>
@@ -138,6 +201,7 @@
                         <strong>${escapeHtml(r.vendor_name)}</strong>
                         ${r.site ? `<div class="status-note" style="margin-top:2px;">${escapeHtml(r.site)}</div>` : ''}
                     </td>
+                    ${isAccounting ? `<td data-label="Assigned" class="col-assigned assignee-cell">${escapeHtml(r.assigned_to || '—')}</td>` : ''}
                     <td data-label="Date" class="date-cell">${fmtDate(r.invoice_date)}</td>
                     <td data-label="Amount" class="amount-cell">${fmtMoney(r.amount)}</td>
                     <td data-label="Status">
@@ -157,11 +221,19 @@
         }).join('');
     }
 
+    function myPendingCount() {
+        return allInvoices.filter((r) =>
+            (r.status || 'Pending') === 'Pending' && namesMatch(r.assigned_to, currentUser.full_name)
+        ).length;
+    }
+
     function render() {
-        const mine = myInvoices();
-        const filtered = applyFilters(mine);
+        const scoped = scopedInvoices();
+        const filtered = applyFilters(scoped);
         renderStats(filtered);
         renderTable(filtered);
+        if (myQueueCountEl) myQueueCountEl.textContent = myPendingCount();
+        applyRoleUi();
     }
 
     async function loadInvoices() {
@@ -173,7 +245,8 @@
             render();
         } catch (err) {
             console.error(err);
-            tbody.innerHTML = `<tr><td colspan="8" class="empty-state">Error loading invoices: ${escapeHtml(err.message)}</td></tr>`;
+            const colCount = isAccounting ? 9 : 8;
+            tbody.innerHTML = `<tr><td colspan="${colCount}" class="empty-state">Error loading invoices: ${escapeHtml(err.message)}</td></tr>`;
         }
     }
 
@@ -341,12 +414,21 @@
         }
     });
 
-    [filterStatus, filterVendor, filterFrom, filterTo].forEach((el) => {
+    queueToggle.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-queue]');
+        if (!btn) return;
+        queueMode = btn.getAttribute('data-queue');
+        queueToggle.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
+        render();
+    });
+
+    [filterStatus, filterAssignee, filterVendor, filterFrom, filterTo].forEach((el) => {
         el.addEventListener('input', render);
         el.addEventListener('change', render);
     });
     document.getElementById('clearFiltersBtn').addEventListener('click', () => {
         filterStatus.value = '';
+        filterAssignee.value = '';
         filterVendor.value = '';
         filterFrom.value = '';
         filterTo.value = '';
@@ -354,14 +436,15 @@
     });
 
     document.getElementById('exportCSVBtn').addEventListener('click', () => {
-        const rows = applyFilters(myInvoices());
-        const header = ['ID', 'Site', 'Vendor', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Decision Notes', 'Submitted By', 'Submitted At'];
+        const rows = applyFilters(scopedInvoices());
+        const header = ['ID', 'Site', 'Vendor', 'Assigned To', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Decision Notes', 'Submitted By', 'Submitted At'];
         const lines = [header.join(',')];
         rows.forEach((r) => {
             const line = [
                 r.id,
                 `"${(r.site || '').replace(/"/g, '""')}"`,
                 `"${(r.vendor_name || '').replace(/"/g, '""')}"`,
+                `"${(r.assigned_to || '').replace(/"/g, '""')}"`,
                 r.invoice_date || '',
                 parseFloat(r.amount) || 0,
                 r.status || 'Pending',
@@ -376,7 +459,8 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `my-invoices-${new Date().toISOString().slice(0, 10)}.csv`;
+        const prefix = queueMode === 'all' ? 'invoices' : 'my-invoices';
+        a.download = `${prefix}-${new Date().toISOString().slice(0, 10)}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -384,13 +468,14 @@
     });
 
     document.getElementById('exportPDFBtn').addEventListener('click', () => {
-        const rows = applyFilters(myInvoices());
+        const rows = applyFilters(scopedInvoices());
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
 
         pdf.setFontSize(16);
         pdf.setFont('helvetica', 'bold');
-        pdf.text(`${currentUser.full_name} — Invoice Queue`, 40, 40);
+        const title = queueMode === 'all' ? 'Invoice Approval Database' : `${currentUser.full_name} — Invoice Queue`;
+        pdf.text(title, 40, 40);
         pdf.setFontSize(10);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(110);
@@ -404,6 +489,7 @@
             r.id,
             r.site || '',
             r.vendor_name || '',
+            r.assigned_to || '',
             fmtDate(r.invoice_date),
             fmtMoney(r.amount),
             r.status || 'Pending',
@@ -414,20 +500,21 @@
 
         pdf.autoTable({
             startY: 90,
-            head: [['#', 'Site', 'Vendor', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Notes', 'Submitted By']],
+            head: [['#', 'Site', 'Vendor', 'Assigned To', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Notes', 'Submitted By']],
             body,
             theme: 'grid',
             styles: { fontSize: 9, cellPadding: 6, overflow: 'linebreak' },
             headStyles: { fillColor: [10, 132, 255], textColor: 255, fontStyle: 'bold' },
             alternateRowStyles: { fillColor: [245, 247, 251] },
             columnStyles: {
-                0: { cellWidth: 30, halign: 'right' },
-                4: { halign: 'right', fontStyle: 'bold' },
-                7: { cellWidth: 130 }
+                0: { cellWidth: 26, halign: 'right' },
+                5: { halign: 'right', fontStyle: 'bold' },
+                8: { cellWidth: 120 }
             }
         });
 
-        pdf.save(`my-invoices-${new Date().toISOString().slice(0, 10)}.pdf`);
+        const prefix = queueMode === 'all' ? 'invoices' : 'my-invoices';
+        pdf.save(`${prefix}-${new Date().toISOString().slice(0, 10)}.pdf`);
     });
 
     loadInvoices();
