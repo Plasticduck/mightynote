@@ -26,7 +26,7 @@
     // so e.g. "Mikayla" resolves to "Mikala Niemeyer".
     const ACCOUNTING = [
         'Heather Murry', 'Rebecca Hipp', 'Mikala Niemeyer', 'Erica Campbell',
-        'Kimber Thornton', 'Elda Pineda'
+        'Kimber Thornton', 'Elda Pineda', 'Kevan Jowers'
     ];
 
     function namesMatch(a, b) {
