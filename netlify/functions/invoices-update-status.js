@@ -21,7 +21,7 @@ exports.handler = async (event) => {
     try {
         const sql = neon(process.env.NETLIFY_DATABASE_URL);
         const data = JSON.parse(event.body);
-        const { id, status, reason, decided_by } = data;
+        const { id, status, reason, decided_by, gl_code } = data;
 
         if (!id || !status) {
             return { statusCode: 400, headers, body: JSON.stringify({ error: 'id and status required' }) };
@@ -29,6 +29,18 @@ exports.handler = async (event) => {
         if (!['Approved', 'Rejected', 'Pending'].includes(status)) {
             return { statusCode: 400, headers, body: JSON.stringify({ error: 'invalid status' }) };
         }
+        if (status === 'Rejected' && !(reason && reason.trim())) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'A reason is required when rejecting an invoice.' }) };
+        }
+
+        // Ensure gl_code column exists (safety for older DBs)
+        try {
+            const exists = await sql`
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'invoices' AND column_name = 'gl_code'
+            `;
+            if (!exists.length) await sql`ALTER TABLE invoices ADD COLUMN gl_code TEXT`;
+        } catch (e) { console.error('gl_code column ensure failed', e); }
 
         const now = new Date().toISOString();
         const updated = await sql`
@@ -36,10 +48,11 @@ exports.handler = async (event) => {
             SET status = ${status},
                 decision_reason = ${reason || null},
                 decided_by = ${decided_by || null},
-                decided_at = ${status === 'Pending' ? null : now}
+                decided_at = ${status === 'Pending' ? null : now},
+                gl_code = ${status === 'Approved' ? (gl_code || null) : null}
             WHERE id = ${id}
             RETURNING id, assigned_to, vendor_name, invoice_date, amount,
-                      status, decision_reason, decided_by, decided_at,
+                      status, decision_reason, decided_by, decided_at, gl_code,
                       submitted_by, submitted_by_email
         `;
 
@@ -68,6 +81,7 @@ exports.handler = async (event) => {
                         invoice,
                         status,
                         reason,
+                        glCode: invoice.gl_code,
                         publicUrl: process.env.PUBLIC_URL || 'https://mightyops.washlyfe.com'
                     });
                     await sendEmail({ to: submitterEmail, subject, text, html });

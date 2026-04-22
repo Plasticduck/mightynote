@@ -52,12 +52,13 @@ exports.handler = async (event) => {
         await ensureCol('decided_by', 'TEXT');
         await ensureCol('decided_at', 'TIMESTAMP WITH TIME ZONE');
         await ensureCol('submitted_by_email', 'TEXT');
+        await ensureCol('gl_code', 'TEXT');
 
         const invoices = await sql`
             SELECT
                 id, assigned_to, vendor_name, invoice_date, amount,
                 file_name, file_type, status, decision_reason, decided_by, decided_at,
-                submitted_by, submitted_by_email, submitted_at,
+                gl_code, submitted_by, submitted_by_email, submitted_at,
                 CASE WHEN file_data IS NOT NULL AND file_data != '' THEN true ELSE false END as has_file
             FROM invoices
             ORDER BY submitted_at DESC

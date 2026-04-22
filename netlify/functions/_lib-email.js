@@ -104,7 +104,7 @@ function invoiceRequestEmail({ assigneeName, invoice, submitter, publicUrl }) {
     return { subject, text, html };
 }
 
-function invoiceDecisionEmail({ submitterName, approverName, invoice, status, reason, publicUrl }) {
+function invoiceDecisionEmail({ submitterName, approverName, invoice, status, reason, glCode, publicUrl }) {
     const decision = status === 'Approved' ? 'approved' : 'rejected';
     const subject = `Invoice ${decision} — ${invoice.vendor_name} ${money(invoice.amount)}`;
     const dashboardLink = `${publicUrl}/invoice-approvals-dashboard.html`;
@@ -120,7 +120,8 @@ function invoiceDecisionEmail({ submitterName, approverName, invoice, status, re
         `Date:    ${fmtDate(invoice.invoice_date)}`,
         `Amount:  ${money(invoice.amount)}`,
         `Status:  ${status}`,
-        reason ? `Reason:  ${reason}` : '',
+        glCode ? `GL Code: ${glCode}` : '',
+        reason ? `Notes:   ${reason}` : '',
         '',
         `View in dashboard: ${dashboardLink}`
     ].filter(Boolean).join('\n');
@@ -137,7 +138,8 @@ function invoiceDecisionEmail({ submitterName, approverName, invoice, status, re
                     <tr><td style="padding: 6px 0; color: #64748b; width: 120px;">Vendor</td><td style="padding: 6px 0; font-weight: 600;">${escapeHtml(invoice.vendor_name)}</td></tr>
                     <tr><td style="padding: 6px 0; color: #64748b;">Invoice date</td><td style="padding: 6px 0;">${fmtDate(invoice.invoice_date)}</td></tr>
                     <tr><td style="padding: 6px 0; color: #64748b;">Amount</td><td style="padding: 6px 0; font-weight: 700;">${money(invoice.amount)}</td></tr>
-                    ${reason ? `<tr><td style="padding: 6px 0; color: #64748b;">Reason</td><td style="padding: 6px 0;">${escapeHtml(reason)}</td></tr>` : ''}
+                    ${glCode ? `<tr><td style="padding: 6px 0; color: #64748b;">GL Code</td><td style="padding: 6px 0; font-family: 'SF Mono', Menlo, monospace;">${escapeHtml(glCode)}</td></tr>` : ''}
+                    ${reason ? `<tr><td style="padding: 6px 0; color: #64748b;">Notes</td><td style="padding: 6px 0;">${escapeHtml(reason)}</td></tr>` : ''}
                 </table>
                 <div style="margin-top: 22px;">
                     <a href="${dashboardLink}" style="display: inline-block; background: #0a84ff; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 14px;">Open Dashboard</a>

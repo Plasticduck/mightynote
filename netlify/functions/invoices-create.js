@@ -61,6 +61,7 @@ exports.handler = async (event) => {
             await ensureCol('decided_by', 'TEXT');
             await ensureCol('decided_at', 'TIMESTAMP WITH TIME ZONE');
             await ensureCol('submitted_by_email', 'TEXT');
+            await ensureCol('gl_code', 'TEXT');
             tableInitialized = true;
         }
     } catch (tableError) {

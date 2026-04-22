@@ -1,4 +1,4 @@
-// Invoice Approval Dashboard - fetch, filter, export, approve/reject
+// Invoice Approval Dashboard - fetch, filter, export, review (approve/reject)
 
 (function () {
     function checkAuth() {
@@ -17,8 +17,6 @@
         'Aaron Messina', 'Justin Gamboa', 'Kevan Jowers', 'Ernest Contreras'
     ];
 
-    // Treat the logged-in user as an approver if their name matches any dropdown
-    // value, allowing for "Matt" -> "Matthew" etc.
     function namesMatch(a, b) {
         if (!a || !b) return false;
         const aN = a.trim().toLowerCase();
@@ -57,7 +55,6 @@
         filterAssignee.appendChild(opt);
     });
 
-    // Hide the queue toggle entirely for users who aren't approvers
     if (!isApprover) {
         queueToggle.style.display = 'none';
     }
@@ -122,6 +119,19 @@
         statApprovers.textContent = uniqueAssignees;
     }
 
+    function statusDetailHtml(r) {
+        if (r.status === 'Approved' && r.gl_code) {
+            return `<div class="gl-code-chip">GL: ${escapeHtml(r.gl_code)}</div>`;
+        }
+        if (r.status === 'Rejected' && r.decision_reason) {
+            return `<div class="status-note">${escapeHtml(r.decision_reason)}</div>`;
+        }
+        if (r.status === 'Approved' && r.decision_reason) {
+            return `<div class="status-note">${escapeHtml(r.decision_reason)}</div>`;
+        }
+        return '';
+    }
+
     function renderTable(rows) {
         if (!rows.length) {
             const msg = queueMode === 'mine' ? 'No invoices in your queue.' : 'No invoices found.';
@@ -133,7 +143,7 @@
             const statusClass = status === 'Approved' ? 'approved' : (status === 'Rejected' ? 'rejected' : '');
             const isPending = status === 'Pending';
             const isMine = namesMatch(r.assigned_to, currentUser.full_name);
-            const canDecide = isPending && isMine;
+            const canReview = isPending && isMine;
             return `
                 <tr>
                     <td data-label="#">${r.id}</td>
@@ -143,15 +153,14 @@
                     <td data-label="Amount" class="amount-cell">${fmtMoney(r.amount)}</td>
                     <td data-label="Status">
                         <span class="status-badge ${statusClass}">${escapeHtml(status)}</span>
-                        ${r.decision_reason ? `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;max-width:200px;">${escapeHtml(r.decision_reason)}</div>` : ''}
+                        ${statusDetailHtml(r)}
                     </td>
                     <td data-label="Submitted" class="date-cell">${fmtDateTime(r.submitted_at)}</td>
                     <td data-label="Actions" style="text-align: right;">
                         <div class="row-actions">
-                            ${canDecide ? `<button class="row-btn approve" data-action="approve" data-id="${r.id}">Approve</button>` : ''}
-                            ${canDecide ? `<button class="row-btn reject" data-action="reject" data-id="${r.id}" data-vendor="${escapeHtml(r.vendor_name)}" data-amount="${escapeHtml(fmtMoney(r.amount))}">Reject</button>` : ''}
+                            ${canReview ? `<button class="row-btn approve" data-action="review" data-id="${r.id}">Review</button>` : ''}
                             ${r.has_file ? `<button class="row-btn" data-action="view" data-id="${r.id}">View</button>` : ''}
-                            ${!canDecide ? `<button class="row-btn danger" data-action="delete" data-id="${r.id}">Delete</button>` : ''}
+                            ${!canReview ? `<button class="row-btn danger" data-action="delete" data-id="${r.id}">Delete</button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -208,7 +217,7 @@
         }
     }
 
-    async function updateStatus(id, status, reason) {
+    async function submitDecision(id, status, reason, glCode) {
         try {
             const res = await fetch('/.netlify/functions/invoices-update-status', {
                 method: 'POST',
@@ -217,6 +226,7 @@
                     id: Number(id),
                     status,
                     reason: reason || null,
+                    gl_code: glCode || null,
                     decided_by: currentUser.full_name
                 })
             });
@@ -249,34 +259,107 @@
         }
     }
 
-    // Reject modal
-    const rejectModal = document.getElementById('rejectModal');
-    const rejectReason = document.getElementById('rejectReason');
-    const rejectModalSub = document.getElementById('rejectModalSub');
-    let pendingRejectId = null;
+    // Review modal
+    const reviewModal = document.getElementById('reviewModal');
+    const reviewSummary = document.getElementById('reviewSummary');
+    const reviewModalSub = document.getElementById('reviewModalSub');
+    const decisionApprove = document.getElementById('decisionApprove');
+    const decisionReject = document.getElementById('decisionReject');
+    const decisionApproveOption = document.getElementById('decisionApproveOption');
+    const decisionRejectOption = document.getElementById('decisionRejectOption');
+    const glCodeGroup = document.getElementById('glCodeGroup');
+    const glCodeInput = document.getElementById('glCodeInput');
+    const reviewNotes = document.getElementById('reviewNotes');
+    const notesLabel = document.getElementById('notesLabel');
+    const notesRequired = document.getElementById('notesRequired');
+    const reviewConfirm = document.getElementById('reviewConfirm');
+    let pendingReviewId = null;
 
-    function openRejectModal(id, vendor, amount) {
-        pendingRejectId = id;
-        rejectReason.value = '';
-        rejectModalSub.textContent = `${vendor || 'Invoice'} — ${amount || ''}. Reason is optional but helps the submitter understand.`;
-        rejectModal.classList.remove('hidden');
-        setTimeout(() => rejectReason.focus(), 50);
-    }
-    function closeRejectModal() {
-        pendingRejectId = null;
-        rejectModal.classList.add('hidden');
+    function resetReviewModal() {
+        decisionApprove.checked = false;
+        decisionReject.checked = false;
+        decisionApproveOption.classList.remove('selected-approve');
+        decisionRejectOption.classList.remove('selected-reject');
+        glCodeInput.value = '';
+        reviewNotes.value = '';
+        reviewNotes.placeholder = '';
+        glCodeGroup.classList.add('hidden');
+        notesLabel.textContent = 'Notes';
+        notesRequired.classList.add('hidden');
+        reviewConfirm.disabled = true;
+        reviewConfirm.textContent = 'Submit Decision';
+        reviewConfirm.classList.remove('danger');
+        reviewConfirm.classList.add('primary');
     }
 
-    document.getElementById('rejectCancel').addEventListener('click', closeRejectModal);
-    document.getElementById('rejectConfirm').addEventListener('click', () => {
-        if (pendingRejectId == null) return;
-        const id = pendingRejectId;
-        const reason = rejectReason.value.trim();
-        closeRejectModal();
-        updateStatus(id, 'Rejected', reason);
+    function openReviewModal(invoice) {
+        pendingReviewId = invoice.id;
+        resetReviewModal();
+        reviewModalSub.textContent = `Decide whether to approve this invoice. Your choice will be emailed to the submitter.`;
+        reviewSummary.innerHTML = `
+            <div><strong>${escapeHtml(invoice.vendor_name)}</strong> — <span class="amount">${fmtMoney(invoice.amount)}</span></div>
+            <div>Invoice date: ${fmtDate(invoice.invoice_date)}</div>
+            <div>Submitted by: ${escapeHtml(invoice.submitted_by || '—')}</div>
+        `;
+        reviewModal.classList.remove('hidden');
+    }
+    function closeReviewModal() {
+        pendingReviewId = null;
+        reviewModal.classList.add('hidden');
+    }
+
+    function updateReviewUi() {
+        const approved = decisionApprove.checked;
+        const rejected = decisionReject.checked;
+        decisionApproveOption.classList.toggle('selected-approve', approved);
+        decisionRejectOption.classList.toggle('selected-reject', rejected);
+
+        if (approved) {
+            glCodeGroup.classList.remove('hidden');
+            notesLabel.textContent = 'Notes (optional)';
+            notesRequired.classList.add('hidden');
+            reviewNotes.placeholder = 'Add any approval notes (optional)';
+            reviewConfirm.disabled = false;
+            reviewConfirm.textContent = 'Approve Invoice';
+            reviewConfirm.classList.remove('danger');
+            reviewConfirm.classList.add('primary');
+        } else if (rejected) {
+            glCodeGroup.classList.add('hidden');
+            notesLabel.textContent = 'Reason';
+            notesRequired.classList.remove('hidden');
+            reviewNotes.placeholder = 'Explain why this invoice is not being approved';
+            reviewConfirm.disabled = !reviewNotes.value.trim();
+            reviewConfirm.textContent = 'Reject Invoice';
+            reviewConfirm.classList.add('danger');
+            reviewConfirm.classList.remove('primary');
+        } else {
+            glCodeGroup.classList.add('hidden');
+            reviewConfirm.disabled = true;
+        }
+    }
+
+    decisionApprove.addEventListener('change', updateReviewUi);
+    decisionReject.addEventListener('change', updateReviewUi);
+    reviewNotes.addEventListener('input', updateReviewUi);
+
+    document.getElementById('reviewCancel').addEventListener('click', closeReviewModal);
+    reviewModal.addEventListener('click', (e) => {
+        if (e.target === reviewModal) closeReviewModal();
     });
-    rejectModal.addEventListener('click', (e) => {
-        if (e.target === rejectModal) closeRejectModal();
+
+    reviewConfirm.addEventListener('click', () => {
+        if (pendingReviewId == null) return;
+        const id = pendingReviewId;
+        const status = decisionApprove.checked ? 'Approved' : (decisionReject.checked ? 'Rejected' : null);
+        if (!status) return;
+        const notes = reviewNotes.value.trim();
+        const glCode = decisionApprove.checked ? glCodeInput.value.trim() : null;
+        if (status === 'Rejected' && !notes) {
+            reviewNotes.focus();
+            return;
+        }
+        closeReviewModal();
+        submitDecision(id, status, notes || null, glCode || null);
     });
 
     tbody.addEventListener('click', (e) => {
@@ -286,10 +369,9 @@
         const id = btn.getAttribute('data-id');
         if (action === 'view') viewFile(id);
         else if (action === 'delete') deleteInvoice(id);
-        else if (action === 'approve') {
-            if (confirm('Approve this invoice?')) updateStatus(id, 'Approved');
-        } else if (action === 'reject') {
-            openRejectModal(id, btn.getAttribute('data-vendor'), btn.getAttribute('data-amount'));
+        else if (action === 'review') {
+            const invoice = allInvoices.find((r) => r.id === Number(id));
+            if (invoice) openReviewModal(invoice);
         }
     });
 
@@ -315,7 +397,7 @@
 
     document.getElementById('exportCSVBtn').addEventListener('click', () => {
         const rows = applyFilters(allInvoices);
-        const header = ['ID', 'Vendor', 'Assigned To', 'Invoice Date', 'Amount', 'Status', 'Decided By', 'Decision Reason', 'Submitted By', 'Submitted At'];
+        const header = ['ID', 'Vendor', 'Assigned To', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Decided By', 'Decision Notes', 'Submitted By', 'Submitted At'];
         const lines = [header.join(',')];
         rows.forEach((r) => {
             const line = [
@@ -325,6 +407,7 @@
                 r.invoice_date || '',
                 parseFloat(r.amount) || 0,
                 r.status || 'Pending',
+                `"${(r.gl_code || '').replace(/"/g, '""')}"`,
                 `"${(r.decided_by || '').replace(/"/g, '""')}"`,
                 `"${(r.decision_reason || '').replace(/"/g, '""')}"`,
                 `"${(r.submitted_by || '').replace(/"/g, '""')}"`,
@@ -367,22 +450,24 @@
             fmtDate(r.invoice_date),
             fmtMoney(r.amount),
             r.status || 'Pending',
+            r.gl_code || '',
             r.decided_by || '',
-            r.submitted_by || '',
-            fmtDateTime(r.submitted_at)
+            r.decision_reason || '',
+            r.submitted_by || ''
         ]);
 
         pdf.autoTable({
             startY: 90,
-            head: [['#', 'Vendor', 'Assigned To', 'Invoice Date', 'Amount', 'Status', 'Decided By', 'Submitted By', 'Submitted At']],
+            head: [['#', 'Vendor', 'Assigned To', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Decided By', 'Notes', 'Submitted By']],
             body,
             theme: 'grid',
-            styles: { fontSize: 9, cellPadding: 6 },
+            styles: { fontSize: 9, cellPadding: 6, overflow: 'linebreak' },
             headStyles: { fillColor: [10, 132, 255], textColor: 255, fontStyle: 'bold' },
             alternateRowStyles: { fillColor: [245, 247, 251] },
             columnStyles: {
                 0: { cellWidth: 30, halign: 'right' },
-                4: { halign: 'right', fontStyle: 'bold' }
+                4: { halign: 'right', fontStyle: 'bold' },
+                8: { cellWidth: 120 }
             }
         });
 

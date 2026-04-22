@@ -1,7 +1,7 @@
 exports.handler = async (event, context) => {
     // Return the current app version
     // Update this number whenever you deploy a new version
-    const CURRENT_VERSION = 24;
+    const CURRENT_VERSION = 25;
     
     return {
         statusCode: 200,

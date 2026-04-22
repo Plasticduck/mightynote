@@ -288,6 +288,138 @@
             color: var(--white);
         }
         .modal-btn.danger:hover { background: #d63030; }
+        .modal-btn.primary {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: var(--white);
+        }
+        .modal-btn.primary:hover { background: #0077ed; }
+        .modal-btn.primary:disabled {
+            background: var(--white-10);
+            border-color: var(--border-color);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* Review modal extras */
+        .review-summary {
+            padding: 12px 14px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-md);
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .review-summary strong { color: var(--white); font-weight: 600; }
+        .review-summary .amount { color: var(--accent-blue); font-weight: 700; font-family: var(--font-mono); }
+
+        .decision-group {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+        .decision-option {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        .decision-option:hover {
+            background: var(--bg-hover);
+            border-color: var(--white-15);
+        }
+        .decision-option input[type="radio"] {
+            margin-top: 3px;
+            flex-shrink: 0;
+            accent-color: var(--accent-blue);
+        }
+        .decision-option .decision-label {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .decision-option .decision-title {
+            font-weight: 600;
+            color: var(--white);
+            font-size: 0.95rem;
+        }
+        .decision-option .decision-sub {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+        .decision-option.selected-approve {
+            background: var(--accent-green-dim);
+            border-color: var(--accent-green);
+        }
+        .decision-option.selected-approve .decision-title { color: var(--accent-green); }
+        .decision-option.selected-reject {
+            background: var(--accent-red-dim);
+            border-color: var(--accent-red);
+        }
+        .decision-option.selected-reject .decision-title { color: var(--accent-red); }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: var(--space-md);
+        }
+        .field-group label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+        }
+        .field-group input,
+        .field-group textarea {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--white);
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 0.92rem;
+        }
+        .field-group input:focus,
+        .field-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--accent-blue-dim);
+        }
+        .field-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .notes-required { color: var(--accent-red); font-size: 0.72rem; margin-left: 4px; }
+
+        /* GL code + notes inline badges on rows */
+        .gl-code-chip {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--white-05);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--white);
+            margin-top: 4px;
+        }
+        .status-note {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            max-width: 240px;
+            line-height: 1.4;
+        }
 
         /* Mobile: hide less-critical columns, stack cards */
         @media (max-width: 768px) {
@@ -437,22 +569,51 @@
             <span class="toast-message">Success</span>
         </div>
 
-        <!-- Reject reason modal -->
-        <div class="modal-backdrop hidden" id="rejectModal">
-            <div class="modal-card">
-                <h3>Reject invoice</h3>
-                <p class="modal-sub" id="rejectModalSub">Provide an optional reason for rejecting this invoice.</p>
-                <textarea id="rejectReason" placeholder="Reason (optional)"></textarea>
+        <!-- Review modal: approve or not approve, notes, GL code -->
+        <div class="modal-backdrop hidden" id="reviewModal">
+            <div class="modal-card" style="max-width: 520px;">
+                <h3 id="reviewModalTitle">Review invoice</h3>
+                <p class="modal-sub" id="reviewModalSub"></p>
+
+                <div class="review-summary" id="reviewSummary"></div>
+
+                <div class="decision-group">
+                    <label class="decision-option" id="decisionApproveOption">
+                        <input type="radio" name="decision" value="Approved" id="decisionApprove">
+                        <span class="decision-label">
+                            <span class="decision-title">Approved</span>
+                            <span class="decision-sub">Mark this invoice as approved</span>
+                        </span>
+                    </label>
+                    <label class="decision-option" id="decisionRejectOption">
+                        <input type="radio" name="decision" value="Rejected" id="decisionReject">
+                        <span class="decision-label">
+                            <span class="decision-title">Not Approved</span>
+                            <span class="decision-sub">Reject this invoice</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="field-group hidden" id="glCodeGroup">
+                    <label for="glCodeInput">GL Code</label>
+                    <input type="text" id="glCodeInput" placeholder="Enter GL code (e.g., 6050-100)" autocomplete="off">
+                </div>
+
+                <div class="field-group" id="notesGroup">
+                    <label for="reviewNotes"><span id="notesLabel">Notes</span> <span class="notes-required hidden" id="notesRequired">(required)</span></label>
+                    <textarea id="reviewNotes" placeholder=""></textarea>
+                </div>
+
                 <div class="modal-actions">
-                    <button type="button" class="modal-btn" id="rejectCancel">Cancel</button>
-                    <button type="button" class="modal-btn danger" id="rejectConfirm">Reject Invoice</button>
+                    <button type="button" class="modal-btn" id="reviewCancel">Cancel</button>
+                    <button type="button" class="modal-btn primary" id="reviewConfirm" disabled>Submit Decision</button>
                 </div>
             </div>
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <script src="invoice-approvals-dashboard.js?v=2"></script>
+    <script src="invoice-approvals-dashboard.js?v=3"></script>
     <script src="version-check.js"></script>
 </body>
 </html>
