@@ -156,6 +156,7 @@
                 file_name: currentFile.name,
                 file_type: currentFile.type,
                 submitted_by: user.full_name,
+                submitted_by_email: user.email || null,
                 submitted_at: new Date().toISOString()
             };
 

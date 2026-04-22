@@ -177,6 +177,118 @@
             color: var(--text-muted);
         }
 
+        /* Queue toggle segmented control */
+        .queue-toggle {
+            display: inline-flex;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 3px;
+            gap: 2px;
+        }
+        .queue-toggle button {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        .queue-toggle button:hover { color: var(--white); }
+        .queue-toggle button.active {
+            background: var(--accent-blue);
+            color: var(--white);
+            box-shadow: 0 2px 6px rgba(10, 132, 255, 0.3);
+        }
+        .queue-toggle .count {
+            margin-left: 6px;
+            opacity: 0.8;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        .row-btn.approve {
+            background: var(--accent-green-dim);
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+        .row-btn.approve:hover {
+            background: var(--accent-green);
+            color: var(--white);
+        }
+        .row-btn.reject {
+            background: var(--accent-red-dim);
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+        }
+        .row-btn.reject:hover {
+            background: var(--accent-red);
+            color: var(--white);
+        }
+
+        /* Reject reason modal */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-lg);
+        }
+        .modal-backdrop.hidden { display: none; }
+        .modal-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            max-width: 440px;
+            width: 100%;
+            box-shadow: var(--shadow-lg);
+        }
+        .modal-card h3 { color: var(--white); margin-bottom: 4px; font-size: 1.1rem; }
+        .modal-card .modal-sub { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: var(--space-md); }
+        .modal-card textarea {
+            width: 100%;
+            min-height: 90px;
+            padding: 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--white);
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+        .modal-actions {
+            display: flex;
+            gap: var(--space-sm);
+            justify-content: flex-end;
+            margin-top: var(--space-md);
+        }
+        .modal-btn {
+            padding: 10px 18px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--white-05);
+            color: var(--white);
+        }
+        .modal-btn:hover { background: var(--white-10); }
+        .modal-btn.danger {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: var(--white);
+        }
+        .modal-btn.danger:hover { background: #d63030; }
+
         /* Mobile: hide less-critical columns, stack cards */
         @media (max-width: 768px) {
             .dashboard-content { padding: var(--space-md); }
@@ -232,6 +344,10 @@
                     <div>
                         <h2>Invoices</h2>
                         <p>All submitted invoices pending and historical. Export the full database as PDF.</p>
+                        <div class="queue-toggle" id="queueToggle" style="margin-top: 14px;">
+                            <button type="button" data-queue="mine" class="active">My Queue <span class="count" id="myQueueCount">0</span></button>
+                            <button type="button" data-queue="all">All Invoices</button>
+                        </div>
                     </div>
                     <div class="btn-group">
                         <button type="button" class="btn-dl secondary" id="exportCSVBtn">
@@ -320,10 +436,23 @@
             <span class="toast-icon">&#10003;</span>
             <span class="toast-message">Success</span>
         </div>
+
+        <!-- Reject reason modal -->
+        <div class="modal-backdrop hidden" id="rejectModal">
+            <div class="modal-card">
+                <h3>Reject invoice</h3>
+                <p class="modal-sub" id="rejectModalSub">Provide an optional reason for rejecting this invoice.</p>
+                <textarea id="rejectReason" placeholder="Reason (optional)"></textarea>
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn" id="rejectCancel">Cancel</button>
+                    <button type="button" class="modal-btn danger" id="rejectConfirm">Reject Invoice</button>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <script src="invoice-approvals-dashboard.js?v=1"></script>
+    <script src="invoice-approvals-dashboard.js?v=2"></script>
     <script src="version-check.js"></script>
 </body>
 </html>

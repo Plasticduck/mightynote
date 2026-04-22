@@ -137,6 +137,31 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+
+        .app-card { position: relative; }
+        .pending-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 7px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 11px;
+            background: var(--accent-red);
+            color: var(--white);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0;
+            box-shadow: 0 2px 8px rgba(255, 69, 58, 0.4);
+            animation: pulse-badge 2s ease-in-out infinite;
+        }
+        @keyframes pulse-badge {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
         
         .user-greeting {
             display: flex;
@@ -276,7 +301,8 @@
                     </a>
                     
                     <!-- Invoice Approval App -->
-                    <a href="invoice-approvals.html" class="app-card">
+                    <a href="invoice-approvals.html" class="app-card" id="invoiceAppCard">
+                        <span class="pending-badge hidden" id="invoicePendingBadge">0</span>
                         <div class="app-icon" style="background: linear-gradient(135deg, #30d158, #0a84ff); box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -286,7 +312,7 @@
                             </svg>
                         </div>
                         <h3>Invoice Approval</h3>
-                        <p>Upload &amp; route invoices</p>
+                        <p id="invoicePendingText">Upload &amp; route invoices</p>
                     </a>
 
                     <!-- Corporate Apparel App -->
@@ -310,6 +336,42 @@
         } else {
             const user = JSON.parse(userStr);
             document.getElementById('userName').textContent = user.full_name.split(' ')[0];
+
+            // Pending invoice badge — fetch and count invoices assigned to this user
+            (async () => {
+                try {
+                    const res = await fetch('/.netlify/functions/invoices-get');
+                    if (!res.ok) return;
+                    const invoices = await res.json();
+                    if (!Array.isArray(invoices)) return;
+                    function namesMatch(a, b) {
+                        if (!a || !b) return false;
+                        const aN = a.trim().toLowerCase();
+                        const bN = b.trim().toLowerCase();
+                        if (aN === bN) return true;
+                        const aParts = aN.split(/\s+/);
+                        const bParts = bN.split(/\s+/);
+                        if (aParts.length >= 2 && bParts.length >= 2) {
+                            const aLast = aParts[aParts.length - 1];
+                            const bLast = bParts[bParts.length - 1];
+                            if (aLast === bLast && (aParts[0].startsWith(bParts[0]) || bParts[0].startsWith(aParts[0]))) return true;
+                        }
+                        return false;
+                    }
+                    const pending = invoices.filter((inv) =>
+                        (inv.status || 'Pending') === 'Pending' && namesMatch(inv.assigned_to, user.full_name)
+                    ).length;
+                    if (pending > 0) {
+                        const badge = document.getElementById('invoicePendingBadge');
+                        const text = document.getElementById('invoicePendingText');
+                        badge.textContent = pending > 99 ? '99+' : String(pending);
+                        badge.classList.remove('hidden');
+                        text.textContent = `${pending} awaiting your approval`;
+                    }
+                } catch (err) {
+                    console.log('[home] invoice badge fetch failed', err);
+                }
+            })();
         }
     </script>
     <script src="version-check.js"></script>
