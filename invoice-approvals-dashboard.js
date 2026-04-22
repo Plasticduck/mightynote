@@ -1,4 +1,5 @@
-// Invoice Approval Dashboard - fetch, filter, export, review (approve/reject)
+// Invoice Approval Dashboard - personal queue (only invoices assigned to
+// the current user), review (approve/reject), export.
 
 (function () {
     function checkAuth() {
@@ -11,11 +12,6 @@
     }
     const currentUser = checkAuth();
     if (!currentUser) return;
-
-    const APPROVERS = [
-        'Matt Canales', 'Isabel Castaneda', 'Lester Young', 'Rance Breed',
-        'Aaron Messina', 'Justin Gamboa', 'Kevan Jowers', 'Ernest Contreras'
-    ];
 
     function namesMatch(a, b) {
         if (!a || !b) return false;
@@ -32,8 +28,6 @@
         return false;
     }
 
-    const isApprover = APPROVERS.some((n) => namesMatch(n, currentUser.full_name));
-    let queueMode = isApprover ? 'mine' : 'all';
     let allInvoices = [];
 
     const tbody = document.getElementById('invoicesBody');
@@ -41,23 +35,15 @@
     const statAmount = document.getElementById('statAmount');
     const statPending = document.getElementById('statPending');
     const statApprovers = document.getElementById('statApprovers');
-    const filterAssignee = document.getElementById('filterAssignee');
+    const filterStatus = document.getElementById('filterStatus');
     const filterVendor = document.getElementById('filterVendor');
     const filterFrom = document.getElementById('filterFrom');
     const filterTo = document.getElementById('filterTo');
-    const queueToggle = document.getElementById('queueToggle');
-    const myQueueCountEl = document.getElementById('myQueueCount');
+    const dashboardSubtitle = document.getElementById('dashboardSubtitle');
 
-    APPROVERS.forEach((name) => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        filterAssignee.appendChild(opt);
-    });
-
-    if (!isApprover) {
-        queueToggle.style.display = 'none';
-    }
+    // Re-label the fourth stat for a personal dashboard
+    const approversLabel = statApprovers.parentElement.querySelector('.stat-label');
+    if (approversLabel) approversLabel.textContent = 'Approved';
 
     function fmtMoney(n) {
         const num = parseFloat(n);
@@ -94,14 +80,18 @@
         }, 2500);
     }
 
+    // Personal filter — always only invoices assigned to the current user.
+    function myInvoices() {
+        return allInvoices.filter((r) => namesMatch(r.assigned_to, currentUser.full_name));
+    }
+
     function applyFilters(rows) {
-        const a = filterAssignee.value;
+        const status = filterStatus.value;
         const v = filterVendor.value.trim().toLowerCase();
         const from = filterFrom.value;
         const to = filterTo.value;
         return rows.filter((r) => {
-            if (queueMode === 'mine' && !namesMatch(r.assigned_to, currentUser.full_name)) return false;
-            if (a && r.assigned_to !== a) return false;
+            if (status && (r.status || 'Pending') !== status) return false;
             if (v && !(r.vendor_name || '').toLowerCase().includes(v)) return false;
             if (from && r.invoice_date && r.invoice_date < from) return false;
             if (to && r.invoice_date && r.invoice_date > to) return false;
@@ -115,8 +105,8 @@
         statAmount.textContent = fmtMoney(total);
         const pending = rows.filter((r) => (r.status || 'Pending') === 'Pending').length;
         statPending.textContent = pending;
-        const uniqueAssignees = new Set(rows.map((r) => r.assigned_to)).size;
-        statApprovers.textContent = uniqueAssignees;
+        const approved = rows.filter((r) => r.status === 'Approved').length;
+        statApprovers.textContent = approved;
     }
 
     function statusDetailHtml(r) {
@@ -134,33 +124,29 @@
 
     function renderTable(rows) {
         if (!rows.length) {
-            const msg = queueMode === 'mine' ? 'No invoices in your queue.' : 'No invoices found.';
-            tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${msg}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No invoices assigned to you right now.</td></tr>`;
             return;
         }
         tbody.innerHTML = rows.map((r) => {
             const status = (r.status || 'Pending');
             const statusClass = status === 'Approved' ? 'approved' : (status === 'Rejected' ? 'rejected' : '');
-            const isPending = status === 'Pending';
-            const isMine = namesMatch(r.assigned_to, currentUser.full_name);
-            const canReview = isPending && isMine;
+            const canReview = status === 'Pending';
             return `
                 <tr>
                     <td data-label="#">${r.id}</td>
                     <td data-label="Vendor"><strong>${escapeHtml(r.vendor_name)}</strong></td>
-                    <td data-label="Assigned" class="assignee-cell">${escapeHtml(r.assigned_to)}</td>
                     <td data-label="Date" class="date-cell">${fmtDate(r.invoice_date)}</td>
                     <td data-label="Amount" class="amount-cell">${fmtMoney(r.amount)}</td>
                     <td data-label="Status">
-                        <span class="status-badge ${statusClass}">${escapeHtml(status)}</span>
+                        <span class="status-badge ${statusClass}">${escapeHtml(status === 'Rejected' ? 'Not Approved' : status)}</span>
                         ${statusDetailHtml(r)}
                     </td>
+                    <td data-label="Submitted By">${escapeHtml(r.submitted_by || '—')}</td>
                     <td data-label="Submitted" class="date-cell">${fmtDateTime(r.submitted_at)}</td>
                     <td data-label="Actions" style="text-align: right;">
                         <div class="row-actions">
                             ${canReview ? `<button class="row-btn approve" data-action="review" data-id="${r.id}">Review</button>` : ''}
                             ${r.has_file ? `<button class="row-btn" data-action="view" data-id="${r.id}">View</button>` : ''}
-                            ${!canReview ? `<button class="row-btn danger" data-action="delete" data-id="${r.id}">Delete</button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -168,17 +154,11 @@
         }).join('');
     }
 
-    function myPendingCount() {
-        return allInvoices.filter((r) =>
-            (r.status || 'Pending') === 'Pending' && namesMatch(r.assigned_to, currentUser.full_name)
-        ).length;
-    }
-
     function render() {
-        const filtered = applyFilters(allInvoices);
+        const mine = myInvoices();
+        const filtered = applyFilters(mine);
         renderStats(filtered);
         renderTable(filtered);
-        myQueueCountEl.textContent = myPendingCount();
     }
 
     async function loadInvoices() {
@@ -235,25 +215,8 @@
             const updated = data.invoice;
             allInvoices = allInvoices.map((r) => r.id === updated.id ? Object.assign({}, r, updated) : r);
             render();
-            showToast(`Invoice ${status.toLowerCase()} — submitter notified`, 'success');
-        } catch (err) {
-            showToast(err.message, 'error');
-        }
-    }
-
-    async function deleteInvoice(id) {
-        if (!confirm('Delete invoice #' + id + '?')) return;
-        try {
-            const res = await fetch('/.netlify/functions/invoices-delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: Number(id) })
-            });
-            const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Delete failed');
-            allInvoices = allInvoices.filter((r) => r.id !== Number(id));
-            render();
-            showToast('Invoice deleted', 'success');
+            const verb = status === 'Approved' ? 'approved' : 'rejected';
+            showToast(`Invoice ${verb} — submitter notified`, 'success');
         } catch (err) {
             showToast(err.message, 'error');
         }
@@ -368,27 +331,18 @@
         const action = btn.getAttribute('data-action');
         const id = btn.getAttribute('data-id');
         if (action === 'view') viewFile(id);
-        else if (action === 'delete') deleteInvoice(id);
         else if (action === 'review') {
             const invoice = allInvoices.find((r) => r.id === Number(id));
             if (invoice) openReviewModal(invoice);
         }
     });
 
-    queueToggle.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-queue]');
-        if (!btn) return;
-        queueMode = btn.getAttribute('data-queue');
-        queueToggle.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
-        render();
-    });
-
-    [filterAssignee, filterVendor, filterFrom, filterTo].forEach((el) => {
+    [filterStatus, filterVendor, filterFrom, filterTo].forEach((el) => {
         el.addEventListener('input', render);
         el.addEventListener('change', render);
     });
     document.getElementById('clearFiltersBtn').addEventListener('click', () => {
-        filterAssignee.value = '';
+        filterStatus.value = '';
         filterVendor.value = '';
         filterFrom.value = '';
         filterTo.value = '';
@@ -396,19 +350,17 @@
     });
 
     document.getElementById('exportCSVBtn').addEventListener('click', () => {
-        const rows = applyFilters(allInvoices);
-        const header = ['ID', 'Vendor', 'Assigned To', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Decided By', 'Decision Notes', 'Submitted By', 'Submitted At'];
+        const rows = applyFilters(myInvoices());
+        const header = ['ID', 'Vendor', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Decision Notes', 'Submitted By', 'Submitted At'];
         const lines = [header.join(',')];
         rows.forEach((r) => {
             const line = [
                 r.id,
                 `"${(r.vendor_name || '').replace(/"/g, '""')}"`,
-                `"${(r.assigned_to || '').replace(/"/g, '""')}"`,
                 r.invoice_date || '',
                 parseFloat(r.amount) || 0,
                 r.status || 'Pending',
                 `"${(r.gl_code || '').replace(/"/g, '""')}"`,
-                `"${(r.decided_by || '').replace(/"/g, '""')}"`,
                 `"${(r.decision_reason || '').replace(/"/g, '""')}"`,
                 `"${(r.submitted_by || '').replace(/"/g, '""')}"`,
                 r.submitted_at || ''
@@ -419,7 +371,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `invoices-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.download = `my-invoices-${new Date().toISOString().slice(0, 10)}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -427,13 +379,13 @@
     });
 
     document.getElementById('exportPDFBtn').addEventListener('click', () => {
-        const rows = applyFilters(allInvoices);
+        const rows = applyFilters(myInvoices());
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
 
         pdf.setFontSize(16);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('Invoice Approval Database', 40, 40);
+        pdf.text(`${currentUser.full_name} — Invoice Queue`, 40, 40);
         pdf.setFontSize(10);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(110);
@@ -446,19 +398,17 @@
         const body = rows.map((r) => [
             r.id,
             r.vendor_name || '',
-            r.assigned_to || '',
             fmtDate(r.invoice_date),
             fmtMoney(r.amount),
             r.status || 'Pending',
             r.gl_code || '',
-            r.decided_by || '',
             r.decision_reason || '',
             r.submitted_by || ''
         ]);
 
         pdf.autoTable({
             startY: 90,
-            head: [['#', 'Vendor', 'Assigned To', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Decided By', 'Notes', 'Submitted By']],
+            head: [['#', 'Vendor', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Notes', 'Submitted By']],
             body,
             theme: 'grid',
             styles: { fontSize: 9, cellPadding: 6, overflow: 'linebreak' },
@@ -466,12 +416,12 @@
             alternateRowStyles: { fillColor: [245, 247, 251] },
             columnStyles: {
                 0: { cellWidth: 30, halign: 'right' },
-                4: { halign: 'right', fontStyle: 'bold' },
-                8: { cellWidth: 120 }
+                3: { halign: 'right', fontStyle: 'bold' },
+                6: { cellWidth: 140 }
             }
         });
 
-        pdf.save(`invoices-${new Date().toISOString().slice(0, 10)}.pdf`);
+        pdf.save(`my-invoices-${new Date().toISOString().slice(0, 10)}.pdf`);
     });
 
     loadInvoices();

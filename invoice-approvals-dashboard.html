@@ -474,12 +474,8 @@
             <div class="dashboard-content">
                 <div class="dashboard-head">
                     <div>
-                        <h2>Invoices</h2>
-                        <p>All submitted invoices pending and historical. Export the full database as PDF.</p>
-                        <div class="queue-toggle" id="queueToggle" style="margin-top: 14px;">
-                            <button type="button" data-queue="mine" class="active">My Queue <span class="count" id="myQueueCount">0</span></button>
-                            <button type="button" data-queue="all">All Invoices</button>
-                        </div>
+                        <h2>My Invoices</h2>
+                        <p id="dashboardSubtitle">Invoices assigned to you. Export the list as PDF or CSV.</p>
                     </div>
                     <div class="btn-group">
                         <button type="button" class="btn-dl secondary" id="exportCSVBtn">
@@ -523,9 +519,12 @@
 
                 <div class="filters-bar">
                     <div class="form-group">
-                        <label for="filterAssignee">Assigned To</label>
-                        <select id="filterAssignee">
+                        <label for="filterStatus">Status</label>
+                        <select id="filterStatus">
                             <option value="">All</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Not Approved</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -549,10 +548,10 @@
                             <tr>
                                 <th>#</th>
                                 <th>Vendor</th>
-                                <th>Assigned To</th>
                                 <th>Invoice Date</th>
                                 <th>Amount</th>
                                 <th>Status</th>
+                                <th>Submitted By</th>
                                 <th>Submitted</th>
                                 <th style="text-align: right;">Actions</th>
                             </tr>
@@ -613,7 +612,7 @@
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <script src="invoice-approvals-dashboard.js?v=4"></script>
+    <script src="invoice-approvals-dashboard.js?v=5"></script>
     <script src="version-check.js"></script>
 </body>
 </html>
