@@ -134,7 +134,10 @@
             return `
                 <tr>
                     <td data-label="#">${r.id}</td>
-                    <td data-label="Vendor"><strong>${escapeHtml(r.vendor_name)}</strong></td>
+                    <td data-label="Vendor">
+                        <strong>${escapeHtml(r.vendor_name)}</strong>
+                        ${r.site ? `<div class="status-note" style="margin-top:2px;">${escapeHtml(r.site)}</div>` : ''}
+                    </td>
                     <td data-label="Date" class="date-cell">${fmtDate(r.invoice_date)}</td>
                     <td data-label="Amount" class="amount-cell">${fmtMoney(r.amount)}</td>
                     <td data-label="Status">
@@ -261,6 +264,7 @@
         reviewModalSub.textContent = `Decide whether to approve this invoice. Your choice will be emailed to the submitter.`;
         reviewSummary.innerHTML = `
             <div><strong>${escapeHtml(invoice.vendor_name)}</strong> — <span class="amount">${fmtMoney(invoice.amount)}</span></div>
+            ${invoice.site ? `<div>Site: ${escapeHtml(invoice.site)}</div>` : ''}
             <div>Invoice date: ${fmtDate(invoice.invoice_date)}</div>
             <div>Submitted by: ${escapeHtml(invoice.submitted_by || '—')}</div>
         `;
@@ -351,11 +355,12 @@
 
     document.getElementById('exportCSVBtn').addEventListener('click', () => {
         const rows = applyFilters(myInvoices());
-        const header = ['ID', 'Vendor', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Decision Notes', 'Submitted By', 'Submitted At'];
+        const header = ['ID', 'Site', 'Vendor', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Decision Notes', 'Submitted By', 'Submitted At'];
         const lines = [header.join(',')];
         rows.forEach((r) => {
             const line = [
                 r.id,
+                `"${(r.site || '').replace(/"/g, '""')}"`,
                 `"${(r.vendor_name || '').replace(/"/g, '""')}"`,
                 r.invoice_date || '',
                 parseFloat(r.amount) || 0,
@@ -397,6 +402,7 @@
 
         const body = rows.map((r) => [
             r.id,
+            r.site || '',
             r.vendor_name || '',
             fmtDate(r.invoice_date),
             fmtMoney(r.amount),
@@ -408,7 +414,7 @@
 
         pdf.autoTable({
             startY: 90,
-            head: [['#', 'Vendor', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Notes', 'Submitted By']],
+            head: [['#', 'Site', 'Vendor', 'Invoice Date', 'Amount', 'Status', 'GL Code', 'Notes', 'Submitted By']],
             body,
             theme: 'grid',
             styles: { fontSize: 9, cellPadding: 6, overflow: 'linebreak' },
@@ -416,8 +422,8 @@
             alternateRowStyles: { fillColor: [245, 247, 251] },
             columnStyles: {
                 0: { cellWidth: 30, halign: 'right' },
-                3: { halign: 'right', fontStyle: 'bold' },
-                6: { cellWidth: 140 }
+                4: { halign: 'right', fontStyle: 'bold' },
+                7: { cellWidth: 130 }
             }
         });
 

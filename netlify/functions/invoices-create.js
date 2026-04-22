@@ -62,6 +62,7 @@ exports.handler = async (event) => {
             await ensureCol('decided_at', 'TIMESTAMP WITH TIME ZONE');
             await ensureCol('submitted_by_email', 'TEXT');
             await ensureCol('gl_code', 'TEXT');
+            await ensureCol('site', 'TEXT');
             tableInitialized = true;
         }
     } catch (tableError) {
@@ -81,12 +82,13 @@ exports.handler = async (event) => {
 
         const result = await sql`
             INSERT INTO invoices (
-                assigned_to, vendor_name, invoice_date, amount,
+                assigned_to, site, vendor_name, invoice_date, amount,
                 file_data, file_name, file_type,
                 submitted_by, submitted_by_email, submitted_at
             )
             VALUES (
                 ${data.assigned_to},
+                ${data.site || null},
                 ${data.vendor_name},
                 ${data.invoice_date || null},
                 ${data.amount || null},

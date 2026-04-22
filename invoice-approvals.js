@@ -14,6 +14,19 @@
     if (!user) return;
     document.getElementById('submitterName').textContent = user.full_name;
 
+    // Populate the Site dropdown: Site #1..#32 + Spotless
+    const siteSelect = document.getElementById('site');
+    for (let i = 1; i <= 32; i++) {
+        const opt = document.createElement('option');
+        opt.value = `Site #${i}`;
+        opt.textContent = `Site #${i}`;
+        siteSelect.appendChild(opt);
+    }
+    const spotless = document.createElement('option');
+    spotless.value = 'Spotless';
+    spotless.textContent = 'Spotless';
+    siteSelect.appendChild(spotless);
+
     // Default the date picker to today
     const dateInput = document.getElementById('invoiceDate');
     const today = new Date().toISOString().slice(0, 10);
@@ -148,6 +161,7 @@
 
         try {
             const payload = {
+                site: document.getElementById('site').value,
                 assigned_to: document.getElementById('assignedTo').value,
                 vendor_name: document.getElementById('vendorName').value.trim(),
                 invoice_date: document.getElementById('invoiceDate').value || null,
@@ -173,6 +187,7 @@
             showToast('Invoice submitted for approval!', 'success');
             e.target.reset();
             dateInput.value = today;
+            siteSelect.value = '';
             resetFile();
         } catch (err) {
             console.error(err);

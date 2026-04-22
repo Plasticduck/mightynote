@@ -70,6 +70,7 @@ function invoiceRequestEmail({ assigneeName, invoice, submitter, publicUrl }) {
         '',
         `${submitter || 'A team member'} submitted an invoice that requires your approval.`,
         '',
+        invoice.site ? `Site:    ${invoice.site}` : '',
         `Vendor:  ${invoice.vendor_name}`,
         `Date:    ${fmtDate(invoice.invoice_date)}`,
         `Amount:  ${money(invoice.amount)}`,
@@ -77,7 +78,7 @@ function invoiceRequestEmail({ assigneeName, invoice, submitter, publicUrl }) {
         `Review and approve/reject here: ${dashboardLink}`,
         '',
         '— MightyOps'
-    ].join('\n');
+    ].filter(Boolean).join('\n');
 
     const html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; color: #0f172a;">
@@ -87,6 +88,7 @@ function invoiceRequestEmail({ assigneeName, invoice, submitter, publicUrl }) {
             </div>
             <div style="padding: 20px 24px;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+                    ${invoice.site ? `<tr><td style="padding: 6px 0; color: #64748b; width: 120px;">Site</td><td style="padding: 6px 0; font-weight: 600;">${escapeHtml(invoice.site)}</td></tr>` : ''}
                     <tr><td style="padding: 6px 0; color: #64748b; width: 120px;">Vendor</td><td style="padding: 6px 0; font-weight: 600;">${escapeHtml(invoice.vendor_name)}</td></tr>
                     <tr><td style="padding: 6px 0; color: #64748b;">Invoice date</td><td style="padding: 6px 0;">${fmtDate(invoice.invoice_date)}</td></tr>
                     <tr><td style="padding: 6px 0; color: #64748b;">Amount</td><td style="padding: 6px 0; font-weight: 700; color: #0a84ff;">${money(invoice.amount)}</td></tr>
