@@ -1,33 +1,19 @@
-// ===== App Version (for cache busting) =====
-const APP_VERSION = 22;
-
 // ===== Service Worker Message Handler =====
+// Version-mismatch logouts are handled centrally by version-check.js (banner)
+// and the SW FORCE_LOGOUT message below — no need for a stale in-file version
+// constant that drifts every deploy.
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'FORCE_LOGOUT') {
             console.log('[App] Force logout triggered by SW version update');
             localStorage.removeItem('mightyops_user');
             localStorage.setItem('mightyops_app_version', event.data.version);
-            // Only redirect if not already on login page
             if (!window.location.pathname.includes('login.html')) {
                 window.location.href = 'login.html';
             }
         }
     });
 }
-
-// Check version on load - force logout if version mismatch
-(function checkVersion() {
-    const storedVersion = localStorage.getItem('mightyops_app_version');
-    // Only logout if version exists and doesn't match (don't logout on first visit)
-    if (storedVersion && parseInt(storedVersion) !== APP_VERSION) {
-        console.log('[App] Version mismatch detected, forcing logout');
-        localStorage.removeItem('mightyops_user');
-        // Don't redirect here - let checkAuth() handle it naturally
-    }
-    // Always update to current version
-    localStorage.setItem('mightyops_app_version', APP_VERSION);
-})();
 
 // ===== Authentication =====
 let currentUser = null;
