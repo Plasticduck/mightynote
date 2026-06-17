@@ -1,4 +1,4 @@
-const CACHE_VERSION = 32;
+const CACHE_VERSION = 33;
 const CACHE_NAME = `mighty-ops-v${CACHE_VERSION}`;
 
 // Only cache external libraries and static assets - NOT app files
@@ -132,27 +132,30 @@ async function networkFirst(request) {
 // Cache-first strategy: Try cache, fall back to network
 async function cacheFirst(request) {
     const cachedResponse = await caches.match(request);
-    
+
     if (cachedResponse) {
         return cachedResponse;
     }
-    
+
     try {
         const networkResponse = await fetch(request);
-        
+
         // Cache successful responses
         if (networkResponse && networkResponse.status === 200) {
             const cache = await caches.open(CACHE_NAME);
             cache.put(request, networkResponse.clone());
         }
-        
+
         return networkResponse;
     } catch (error) {
         // For navigation requests, return the cached login
         if (request.mode === 'navigate') {
             return caches.match('/login.html');
         }
-        throw error;
+        // For other assets (e.g. blocked third-party beacons like Cloudflare
+        // Insights), don't rethrow — that surfaces as an uncaught promise
+        // rejection in the console. Return a benign error response instead.
+        return Response.error();
     }
 }
 

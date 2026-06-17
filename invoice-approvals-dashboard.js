@@ -440,88 +440,95 @@
     const assignConfirm = document.getElementById('assignConfirm');
     let pendingAssignId = null;
 
-    // Populate the Site (#1–#32 + Spotless) and Approver dropdowns once.
-    for (let i = 1; i <= 32; i++) {
-        const opt = document.createElement('option');
-        opt.value = `Site #${i}`;
-        opt.textContent = `Site #${i}`;
-        assignSite.appendChild(opt);
-    }
-    const spotlessOpt = document.createElement('option');
-    spotlessOpt.value = 'Spotless';
-    spotlessOpt.textContent = 'Spotless';
-    assignSite.appendChild(spotlessOpt);
-    APPROVERS.forEach((name) => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        assignApprover.appendChild(opt);
-    });
+    // Default no-op so a stale/cached page without the assign-modal markup can't
+    // crash dashboard init (getElementById would return null → appendChild throws).
+    // Reassigned to the real handler below only if the modal elements are present.
+    let openAssignModal = function () {
+        showToast('A new version is available — please refresh the page to assign invoices.', 'error');
+    };
 
-    function updateAssignUi() {
-        assignConfirm.disabled = !assignApprover.value;
-    }
-
-    function openAssignModal(invoice) {
-        pendingAssignId = invoice.id;
-        assignSummary.innerHTML = `
-            <div><strong>Emailed invoice #${invoice.id}</strong></div>
-            ${invoice.sender_email ? `<div>From: ${escapeHtml(invoice.sender_email)}</div>` : ''}
-            ${invoice.email_subject ? `<div>Subject: ${escapeHtml(invoice.email_subject)}</div>` : ''}
-            ${invoice.has_file ? `<div>Attachment: ${escapeHtml(invoice.file_name || 'file')}</div>` : `<div class="status-note">No attachment on this email</div>`}
-        `;
-        // Prefill vendor from the email subject; the rest is entered by the user.
-        assignVendor.value = invoice.email_subject || invoice.vendor_name || '';
-        assignAmount.value = '';
-        assignDate.value = new Date().toISOString().slice(0, 10);
-        assignSite.value = '';
-        assignApprover.value = '';
-        updateAssignUi();
-        assignModal.classList.remove('hidden');
-    }
-
-    function closeAssignModal() {
-        pendingAssignId = null;
-        assignModal.classList.add('hidden');
-    }
-
-    assignApprover.addEventListener('change', updateAssignUi);
-    assignCancel.addEventListener('click', closeAssignModal);
-    assignModal.addEventListener('click', (e) => {
-        if (e.target === assignModal) closeAssignModal();
-    });
-
-    assignConfirm.addEventListener('click', async () => {
-        if (pendingAssignId == null || !assignApprover.value) return;
-        const id = pendingAssignId;
-        const payload = {
-            id: Number(id),
-            assigned_to: assignApprover.value,
-            vendor_name: assignVendor.value.trim(),
-            amount: assignAmount.value === '' ? null : parseFloat(assignAmount.value),
-            invoice_date: assignDate.value || null,
-            site: assignSite.value || null,
-            assigned_by: currentUser.full_name
-        };
-        assignConfirm.disabled = true;
-        try {
-            const res = await fetch('/.netlify/functions/invoices-assign', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Assign failed');
-            const updated = data.invoice;
-            allInvoices = allInvoices.map((r) => r.id === updated.id ? Object.assign({}, r, updated) : r);
-            closeAssignModal();
-            render();
-            showToast(`Assigned to ${updated.assigned_to} — approver notified`, 'success');
-        } catch (err) {
-            showToast(err.message, 'error');
-            assignConfirm.disabled = false;
+    if (assignModal && assignSite && assignApprover && assignConfirm && assignCancel) {
+        // Populate the Site (#1–#32 + Spotless) and Approver dropdowns once.
+        for (let i = 1; i <= 32; i++) {
+            const opt = document.createElement('option');
+            opt.value = `Site #${i}`;
+            opt.textContent = `Site #${i}`;
+            assignSite.appendChild(opt);
         }
-    });
+        const spotlessOpt = document.createElement('option');
+        spotlessOpt.value = 'Spotless';
+        spotlessOpt.textContent = 'Spotless';
+        assignSite.appendChild(spotlessOpt);
+        APPROVERS.forEach((name) => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            assignApprover.appendChild(opt);
+        });
+
+        const updateAssignUi = () => { assignConfirm.disabled = !assignApprover.value; };
+
+        openAssignModal = function (invoice) {
+            pendingAssignId = invoice.id;
+            assignSummary.innerHTML = `
+                <div><strong>Emailed invoice #${invoice.id}</strong></div>
+                ${invoice.sender_email ? `<div>From: ${escapeHtml(invoice.sender_email)}</div>` : ''}
+                ${invoice.email_subject ? `<div>Subject: ${escapeHtml(invoice.email_subject)}</div>` : ''}
+                ${invoice.has_file ? `<div>Attachment: ${escapeHtml(invoice.file_name || 'file')}</div>` : `<div class="status-note">No attachment on this email</div>`}
+            `;
+            // Prefill vendor from the email subject; the rest is entered by the user.
+            assignVendor.value = invoice.email_subject || invoice.vendor_name || '';
+            assignAmount.value = '';
+            assignDate.value = new Date().toISOString().slice(0, 10);
+            assignSite.value = '';
+            assignApprover.value = '';
+            updateAssignUi();
+            assignModal.classList.remove('hidden');
+        };
+
+        const closeAssignModal = () => {
+            pendingAssignId = null;
+            assignModal.classList.add('hidden');
+        };
+
+        assignApprover.addEventListener('change', updateAssignUi);
+        assignCancel.addEventListener('click', closeAssignModal);
+        assignModal.addEventListener('click', (e) => {
+            if (e.target === assignModal) closeAssignModal();
+        });
+
+        assignConfirm.addEventListener('click', async () => {
+            if (pendingAssignId == null || !assignApprover.value) return;
+            const id = pendingAssignId;
+            const payload = {
+                id: Number(id),
+                assigned_to: assignApprover.value,
+                vendor_name: assignVendor.value.trim(),
+                amount: assignAmount.value === '' ? null : parseFloat(assignAmount.value),
+                invoice_date: assignDate.value || null,
+                site: assignSite.value || null,
+                assigned_by: currentUser.full_name
+            };
+            assignConfirm.disabled = true;
+            try {
+                const res = await fetch('/.netlify/functions/invoices-assign', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Assign failed');
+                const updated = data.invoice;
+                allInvoices = allInvoices.map((r) => r.id === updated.id ? Object.assign({}, r, updated) : r);
+                closeAssignModal();
+                render();
+                showToast(`Assigned to ${updated.assigned_to} — approver notified`, 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+                assignConfirm.disabled = false;
+            }
+        });
+    }
 
     tbody.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-action]');
