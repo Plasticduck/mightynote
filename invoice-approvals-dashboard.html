@@ -151,6 +151,7 @@
         }
         .status-badge.approved { background: var(--accent-green-dim); color: var(--accent-green); border-color: var(--accent-green); }
         .status-badge.rejected { background: var(--accent-red-dim); color: var(--accent-red); border-color: var(--accent-red); }
+        .status-badge.unassigned { background: var(--accent-blue-dim); color: var(--accent-blue); border-color: var(--accent-blue); }
         .row-actions {
             display: inline-flex;
             gap: 6px;
@@ -380,6 +381,7 @@
             font-weight: 600;
         }
         .field-group input,
+        .field-group select,
         .field-group textarea {
             background: var(--bg-input);
             border: 1px solid var(--border-color);
@@ -388,13 +390,22 @@
             padding: 10px 12px;
             font-family: inherit;
             font-size: 0.92rem;
+            color-scheme: dark;
         }
         .field-group input:focus,
+        .field-group select:focus,
         .field-group textarea:focus {
             outline: none;
             border-color: var(--accent-blue);
             box-shadow: 0 0 0 3px var(--accent-blue-dim);
         }
+        .assign-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-sm) var(--space-md);
+        }
+        .assign-grid .field-group { margin-bottom: 0; }
+        .assign-grid .field-group.full { grid-column: 1 / -1; }
         .field-group textarea {
             min-height: 80px;
             resize: vertical;
@@ -479,6 +490,7 @@
                         <div class="queue-toggle hidden" id="queueToggle" style="margin-top: 14px;">
                             <button type="button" data-queue="all" class="active">All Invoices</button>
                             <button type="button" data-queue="mine">My Queue <span class="count" id="myQueueCount">0</span></button>
+                            <button type="button" data-queue="inbox">Inbox <span class="count" id="inboxCount">0</span></button>
                         </div>
                     </div>
                     <div class="btn-group">
@@ -532,6 +544,7 @@
                         <label for="filterStatus">Status</label>
                         <select id="filterStatus">
                             <option value="">All</option>
+                            <option value="Unassigned">Unassigned</option>
                             <option value="Pending">Pending</option>
                             <option value="Approved">Approved</option>
                             <option value="Rejected">Not Approved</option>
@@ -620,10 +633,52 @@
                 </div>
             </div>
         </div>
+
+        <!-- Assign modal: route an emailed-in (Unassigned) invoice to an approver -->
+        <div class="modal-backdrop hidden" id="assignModal">
+            <div class="modal-card" style="max-width: 520px;">
+                <h3>Assign invoice</h3>
+                <p class="modal-sub">Fill in the invoice details and choose an approver. They'll be emailed a request to review it.</p>
+
+                <div class="review-summary" id="assignSummary"></div>
+
+                <div class="assign-grid">
+                    <div class="field-group full">
+                        <label for="assignVendor">Vendor Name</label>
+                        <input type="text" id="assignVendor" autocomplete="off" placeholder="e.g., Acme Supply Co.">
+                    </div>
+                    <div class="field-group">
+                        <label for="assignAmount">Amount</label>
+                        <input type="number" id="assignAmount" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="field-group">
+                        <label for="assignDate">Invoice Date</label>
+                        <input type="date" id="assignDate">
+                    </div>
+                    <div class="field-group">
+                        <label for="assignSite">Site</label>
+                        <select id="assignSite">
+                            <option value="">Select a site...</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label for="assignApprover">Assign To <span class="notes-required" id="assignApproverRequired">(required)</span></label>
+                        <select id="assignApprover">
+                            <option value="">Select an approver...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn" id="assignCancel">Cancel</button>
+                    <button type="button" class="modal-btn primary" id="assignConfirm" disabled>Assign &amp; Notify</button>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <script src="invoice-approvals-dashboard.js?v=8"></script>
+    <script src="invoice-approvals-dashboard.js?v=9"></script>
     <script src="version-check.js"></script>
 </body>
 </html>

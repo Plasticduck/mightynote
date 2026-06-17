@@ -46,11 +46,14 @@
 
     const isAccounting = ACCOUNTING.some((n) => namesMatch(n, currentUser.full_name));
     const isApprover = APPROVERS.some((n) => namesMatch(n, currentUser.full_name));
+    const isAdmin = currentUser.is_admin === true;
+    // Accounting + admins get the "all invoices" view and the emailed-in Inbox.
+    const canManageInbox = isAccounting || isAdmin;
 
-    // queueMode: 'all' | 'mine'
-    //   Accounting defaults to 'all'. Approvers (non-accounting) are always 'mine'.
-    //   Non-accounting submitters are 'mine' (which will be empty for them).
-    let queueMode = isAccounting ? 'all' : 'mine';
+    // queueMode: 'all' | 'mine' | 'inbox'
+    //   Accounting/admins default to 'all'. Approvers (others) are always 'mine'.
+    //   Non-privileged submitters are 'mine' (which will be empty for them).
+    let queueMode = canManageInbox ? 'all' : 'mine';
     let allInvoices = [];
 
     const tbody = document.getElementById('invoicesBody');
@@ -68,6 +71,7 @@
     const dashboardSubtitle = document.getElementById('dashboardSubtitle');
     const queueToggle = document.getElementById('queueToggle');
     const myQueueCountEl = document.getElementById('myQueueCount');
+    const inboxCountEl = document.getElementById('inboxCount');
 
     // Populate the assignee filter
     APPROVERS.forEach((name) => {
@@ -79,13 +83,16 @@
 
     // Update UI based on role
     function applyRoleUi() {
-        if (isAccounting) {
+        if (canManageInbox) {
             queueToggle.classList.remove('hidden');
             filterAssigneeGroup.classList.remove('hidden');
             document.querySelectorAll('.col-assigned').forEach((el) => el.classList.remove('hidden'));
-            if (queueMode === 'all') {
+            if (queueMode === 'inbox') {
+                dashboardTitle.textContent = 'Inbox';
+                dashboardSubtitle.textContent = 'Invoices emailed to payables@washlyfe.com. Open one to fill in the details and assign it to an approver.';
+            } else if (queueMode === 'all') {
                 dashboardTitle.textContent = 'All Invoices';
-                dashboardSubtitle.textContent = 'Accounting view — all invoices from every approver. Filter by status or assignee as needed.';
+                dashboardSubtitle.textContent = 'All invoices from every approver. Filter by status or assignee as needed.';
             } else {
                 dashboardTitle.textContent = 'My Invoices';
                 dashboardSubtitle.textContent = 'Invoices assigned to you.';
@@ -137,9 +144,11 @@
     }
 
     function scopedInvoices() {
-        // Accounting user in All mode: every invoice.
-        // Accounting user in Mine mode, OR any approver/submitter: only theirs.
-        if (isAccounting && queueMode === 'all') return allInvoices.slice();
+        // Inbox: emailed-in invoices that haven't been assigned yet.
+        if (queueMode === 'inbox') return allInvoices.filter((r) => (r.status || '') === 'Unassigned');
+        // Accounting/admin in All mode: every invoice.
+        // All mode for others, or Mine mode: only those assigned to the user.
+        if (canManageInbox && queueMode === 'all') return allInvoices.slice();
         return allInvoices.filter((r) => namesMatch(r.assigned_to, currentUser.full_name));
     }
 
@@ -183,25 +192,36 @@
     }
 
     function renderTable(rows) {
-        const colCount = isAccounting ? 9 : 8;
+        const colCount = canManageInbox ? 9 : 8;
         if (!rows.length) {
-            const msg = queueMode === 'all' ? 'No invoices match the current filters.' : 'No invoices assigned to you right now.';
+            const msg = queueMode === 'inbox'
+                ? 'No emailed-in invoices waiting. Forward invoices to payables@washlyfe.com and they’ll appear here.'
+                : (queueMode === 'all' ? 'No invoices match the current filters.' : 'No invoices assigned to you right now.');
             tbody.innerHTML = `<tr><td colspan="${colCount}" class="empty-state">${msg}</td></tr>`;
             return;
         }
         tbody.innerHTML = rows.map((r) => {
             const status = (r.status || 'Pending');
-            const statusClass = status === 'Approved' ? 'approved' : (status === 'Rejected' ? 'rejected' : '');
+            const statusClass = status === 'Approved' ? 'approved'
+                : (status === 'Rejected' ? 'rejected'
+                : (status === 'Unassigned' ? 'unassigned' : ''));
             const isMine = namesMatch(r.assigned_to, currentUser.full_name);
             const canReview = status === 'Pending' && isMine;
+            const canAssign = status === 'Unassigned' && canManageInbox;
+            // Sub-line under the vendor: site for normal rows, sender for emailed-in ones.
+            const vendorSub = r.site
+                ? `<div class="status-note" style="margin-top:2px;">${escapeHtml(r.site)}</div>`
+                : (status === 'Unassigned' && r.sender_email
+                    ? `<div class="status-note" style="margin-top:2px;">From: ${escapeHtml(r.sender_email)}</div>`
+                    : '');
             return `
                 <tr>
                     <td data-label="#">${r.id}</td>
                     <td data-label="Vendor">
                         <strong>${escapeHtml(r.vendor_name)}</strong>
-                        ${r.site ? `<div class="status-note" style="margin-top:2px;">${escapeHtml(r.site)}</div>` : ''}
+                        ${vendorSub}
                     </td>
-                    ${isAccounting ? `<td data-label="Assigned" class="col-assigned assignee-cell">${escapeHtml(r.assigned_to || '—')}</td>` : ''}
+                    ${canManageInbox ? `<td data-label="Assigned" class="col-assigned assignee-cell">${escapeHtml(r.assigned_to || '—')}</td>` : ''}
                     <td data-label="Date" class="date-cell">${fmtDate(r.invoice_date)}</td>
                     <td data-label="Amount" class="amount-cell">${fmtMoney(r.amount)}</td>
                     <td data-label="Status">
@@ -213,6 +233,7 @@
                     <td data-label="Actions" style="text-align: right;">
                         <div class="row-actions">
                             ${canReview ? `<button class="row-btn approve" data-action="review" data-id="${r.id}">Review</button>` : ''}
+                            ${canAssign ? `<button class="row-btn approve" data-action="assign" data-id="${r.id}">Assign</button>` : ''}
                             ${r.has_file ? `<button class="row-btn" data-action="view" data-id="${r.id}">View</button>` : ''}
                         </div>
                     </td>
@@ -227,12 +248,17 @@
         ).length;
     }
 
+    function inboxCount() {
+        return allInvoices.filter((r) => (r.status || '') === 'Unassigned').length;
+    }
+
     function render() {
         const scoped = scopedInvoices();
         const filtered = applyFilters(scoped);
         renderStats(filtered);
         renderTable(filtered);
         if (myQueueCountEl) myQueueCountEl.textContent = myPendingCount();
+        if (inboxCountEl) inboxCountEl.textContent = inboxCount();
         applyRoleUi();
     }
 
@@ -245,7 +271,7 @@
             render();
         } catch (err) {
             console.error(err);
-            const colCount = isAccounting ? 9 : 8;
+            const colCount = canManageInbox ? 9 : 8;
             tbody.innerHTML = `<tr><td colspan="${colCount}" class="empty-state">Error loading invoices: ${escapeHtml(err.message)}</td></tr>`;
         }
     }
@@ -402,6 +428,101 @@
         submitDecision(id, status, notes || null, glCode || null);
     });
 
+    // ===== Assign modal (route an emailed-in invoice to an approver) =====
+    const assignModal = document.getElementById('assignModal');
+    const assignSummary = document.getElementById('assignSummary');
+    const assignVendor = document.getElementById('assignVendor');
+    const assignAmount = document.getElementById('assignAmount');
+    const assignDate = document.getElementById('assignDate');
+    const assignSite = document.getElementById('assignSite');
+    const assignApprover = document.getElementById('assignApprover');
+    const assignCancel = document.getElementById('assignCancel');
+    const assignConfirm = document.getElementById('assignConfirm');
+    let pendingAssignId = null;
+
+    // Populate the Site (#1–#32 + Spotless) and Approver dropdowns once.
+    for (let i = 1; i <= 32; i++) {
+        const opt = document.createElement('option');
+        opt.value = `Site #${i}`;
+        opt.textContent = `Site #${i}`;
+        assignSite.appendChild(opt);
+    }
+    const spotlessOpt = document.createElement('option');
+    spotlessOpt.value = 'Spotless';
+    spotlessOpt.textContent = 'Spotless';
+    assignSite.appendChild(spotlessOpt);
+    APPROVERS.forEach((name) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        assignApprover.appendChild(opt);
+    });
+
+    function updateAssignUi() {
+        assignConfirm.disabled = !assignApprover.value;
+    }
+
+    function openAssignModal(invoice) {
+        pendingAssignId = invoice.id;
+        assignSummary.innerHTML = `
+            <div><strong>Emailed invoice #${invoice.id}</strong></div>
+            ${invoice.sender_email ? `<div>From: ${escapeHtml(invoice.sender_email)}</div>` : ''}
+            ${invoice.email_subject ? `<div>Subject: ${escapeHtml(invoice.email_subject)}</div>` : ''}
+            ${invoice.has_file ? `<div>Attachment: ${escapeHtml(invoice.file_name || 'file')}</div>` : `<div class="status-note">No attachment on this email</div>`}
+        `;
+        // Prefill vendor from the email subject; the rest is entered by the user.
+        assignVendor.value = invoice.email_subject || invoice.vendor_name || '';
+        assignAmount.value = '';
+        assignDate.value = new Date().toISOString().slice(0, 10);
+        assignSite.value = '';
+        assignApprover.value = '';
+        updateAssignUi();
+        assignModal.classList.remove('hidden');
+    }
+
+    function closeAssignModal() {
+        pendingAssignId = null;
+        assignModal.classList.add('hidden');
+    }
+
+    assignApprover.addEventListener('change', updateAssignUi);
+    assignCancel.addEventListener('click', closeAssignModal);
+    assignModal.addEventListener('click', (e) => {
+        if (e.target === assignModal) closeAssignModal();
+    });
+
+    assignConfirm.addEventListener('click', async () => {
+        if (pendingAssignId == null || !assignApprover.value) return;
+        const id = pendingAssignId;
+        const payload = {
+            id: Number(id),
+            assigned_to: assignApprover.value,
+            vendor_name: assignVendor.value.trim(),
+            amount: assignAmount.value === '' ? null : parseFloat(assignAmount.value),
+            invoice_date: assignDate.value || null,
+            site: assignSite.value || null,
+            assigned_by: currentUser.full_name
+        };
+        assignConfirm.disabled = true;
+        try {
+            const res = await fetch('/.netlify/functions/invoices-assign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Assign failed');
+            const updated = data.invoice;
+            allInvoices = allInvoices.map((r) => r.id === updated.id ? Object.assign({}, r, updated) : r);
+            closeAssignModal();
+            render();
+            showToast(`Assigned to ${updated.assigned_to} — approver notified`, 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+            assignConfirm.disabled = false;
+        }
+    });
+
     tbody.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
@@ -411,6 +532,9 @@
         else if (action === 'review') {
             const invoice = allInvoices.find((r) => r.id === Number(id));
             if (invoice) openReviewModal(invoice);
+        } else if (action === 'assign') {
+            const invoice = allInvoices.find((r) => r.id === Number(id));
+            if (invoice) openAssignModal(invoice);
         }
     });
 

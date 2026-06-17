@@ -2,6 +2,7 @@
 const { neon } = require('@neondatabase/serverless');
 const { findUserByName } = require('./_lib-users');
 const { sendEmail, invoiceRequestEmail } = require('./_lib-email');
+const { ensureInvoicesSchema } = require('./_lib-invoices');
 
 let tableInitialized = false;
 
@@ -30,39 +31,7 @@ exports.handler = async (event) => {
 
     try {
         if (!tableInitialized) {
-            await sql`
-                CREATE TABLE IF NOT EXISTS invoices (
-                    id SERIAL PRIMARY KEY,
-                    assigned_to TEXT NOT NULL,
-                    vendor_name TEXT NOT NULL,
-                    invoice_date DATE,
-                    amount NUMERIC(12, 2),
-                    file_data TEXT,
-                    file_name TEXT,
-                    file_type TEXT,
-                    status TEXT DEFAULT 'Pending',
-                    decision_reason TEXT,
-                    decided_by TEXT,
-                    decided_at TIMESTAMP WITH TIME ZONE,
-                    submitted_by TEXT,
-                    submitted_by_email TEXT,
-                    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                )
-            `;
-            // Add columns to existing tables if they don't exist
-            const ensureCol = async (col, ddl) => {
-                const exists = await sql`
-                    SELECT column_name FROM information_schema.columns
-                    WHERE table_name = 'invoices' AND column_name = ${col}
-                `;
-                if (!exists.length) await sql(`ALTER TABLE invoices ADD COLUMN ${col} ${ddl}`);
-            };
-            await ensureCol('decision_reason', 'TEXT');
-            await ensureCol('decided_by', 'TEXT');
-            await ensureCol('decided_at', 'TIMESTAMP WITH TIME ZONE');
-            await ensureCol('submitted_by_email', 'TEXT');
-            await ensureCol('gl_code', 'TEXT');
-            await ensureCol('site', 'TEXT');
+            await ensureInvoicesSchema(sql);
             tableInitialized = true;
         }
     } catch (tableError) {
