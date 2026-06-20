@@ -328,6 +328,7 @@
         </div>
     </div>
     
+    <script src="auth-client.js?v=1"></script>
     <script>
         // Check authentication
         const userStr = localStorage.getItem('mightyops_user');
@@ -340,7 +341,7 @@
             // Pending invoice badge — fetch and count invoices assigned to this user
             (async () => {
                 try {
-                    const res = await fetch('/.netlify/functions/invoices-get');
+                    const res = await authFetch('/.netlify/functions/invoices-get');
                     if (!res.ok) return;
                     const invoices = await res.json();
                     if (!Array.isArray(invoices)) return;
@@ -358,9 +359,15 @@
                         }
                         return false;
                     }
-                    const pending = invoices.filter((inv) =>
-                        (inv.status || 'Pending') === 'Pending' && namesMatch(inv.assigned_to, user.full_name)
-                    ).length;
+                    // An invoice awaits this user when it's 'Assigned' and they're
+                    // one of its approvers (new multi-approver model, with a
+                    // legacy single-assignee fallback).
+                    function awaitsMe(inv) {
+                        if ((inv.status || '') !== 'Assigned') return false;
+                        if (Array.isArray(inv.approvers) && inv.approvers.some((n) => namesMatch(n, user.full_name))) return true;
+                        return namesMatch(inv.assigned_to, user.full_name);
+                    }
+                    const pending = invoices.filter(awaitsMe).length;
                     if (pending > 0) {
                         const badge = document.getElementById('invoicePendingBadge');
                         const text = document.getElementById('invoicePendingText');

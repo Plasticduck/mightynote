@@ -1,5 +1,6 @@
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
+const { signToken } = require('./_lib-auth');
 
 // Simple password hashing (for production, use bcrypt)
 function hashPassword(password) {
@@ -75,12 +76,27 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Return user info (without password hash)
+        // Issue a signed session token. If AUTH_SECRET isn't configured this
+        // throws and we 500 — the app must not "log in" without a valid token.
+        let token;
+        try {
+            token = signToken(user);
+        } catch (e) {
+            console.error('Error signing token:', e.message);
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ success: false, error: 'Server auth is not configured. Please contact an administrator.' })
+            };
+        }
+
+        // Return user info (without password hash) plus the bearer token.
         return {
             statusCode: 200,
             headers,
-            body: JSON.stringify({ 
-                success: true, 
+            body: JSON.stringify({
+                success: true,
+                token,
                 user: {
                     id: user.id,
                     full_name: user.full_name,

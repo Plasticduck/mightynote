@@ -14,6 +14,30 @@
     if (!user) return;
     document.getElementById('submitterName').textContent = user.full_name;
 
+    // Refresh the approver dropdown from the server roster (single source of
+    // truth in _lib-roles.js). The hardcoded <option>s in the HTML are only a
+    // fallback used if this fetch fails.
+    (async () => {
+        try {
+            const res = await authFetch('/.netlify/functions/roles-get');
+            if (!res.ok) return;
+            const roles = await res.json();
+            if (!Array.isArray(roles.approvers) || !roles.approvers.length) return;
+            const sel = document.getElementById('assignedTo');
+            const current = sel.value;
+            sel.innerHTML = '<option value="">Select an approver...</option>';
+            roles.approvers.forEach((name) => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                sel.appendChild(opt);
+            });
+            if (current) sel.value = current;
+        } catch (e) {
+            console.warn('[invoice] roles-get failed — using fallback approver list', e);
+        }
+    })();
+
     // Populate the Site dropdown: Site #1..#32 + Spotless
     const siteSelect = document.getElementById('site');
     for (let i = 1; i <= 32; i++) {
@@ -174,7 +198,7 @@
                 submitted_at: new Date().toISOString()
             };
 
-            const res = await fetch('/.netlify/functions/invoices-create', {
+            const res = await authFetch('/.netlify/functions/invoices-create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -184,7 +208,7 @@
                 throw new Error(result.error || 'Submission failed');
             }
 
-            showToast('Invoice submitted for approval!', 'success');
+            showToast('Invoice submitted — Accounting will route it for approval.', 'success');
             e.target.reset();
             dateInput.value = today;
             siteSelect.value = '';

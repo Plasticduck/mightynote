@@ -1,17 +1,26 @@
-// Assign an Unassigned (emailed-in) invoice to an approver.
-// Promotes a dashboard Inbox row to a normal Pending invoice: fills in the
-// details Accounting entered, sets the assignee, flips status to Pending, and
-// notifies the approver by email — reusing the same path as invoices-create.
+// Assign an Unassigned (emailed-in) invoice to site(s) + approver(s) and put it
+// in the QUEUE. This does NOT notify anyone — accounting batches assignments and
+// later calls invoices-submit-queue, which flips Queued -> Assigned and sends a
+// single summary email per approver.
+//
+// An invoice can be assigned to MULTIPLE sites and MULTIPLE approvers. Only one
+// approver needs to act for it to be approved (handled in invoices-update-status).
 
 const { neon } = require('@neondatabase/serverless');
-const { findUserByName } = require('./_lib-users');
-const { sendEmail, invoiceRequestEmail } = require('./_lib-email');
 const { ensureInvoicesSchema } = require('./_lib-invoices');
+const { requireAuth } = require('./_lib-auth');
+const { canManageInbox } = require('./_lib-roles');
+
+function asCleanArray(v) {
+    if (Array.isArray(v)) return v.map((s) => String(s).trim()).filter(Boolean);
+    if (typeof v === 'string' && v.trim()) return [v.trim()];
+    return [];
+}
 
 exports.handler = async (event) => {
     const headers = {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
     };
@@ -22,6 +31,11 @@ exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
     }
+
+    // Only accounting/admins may assign/queue invoices.
+    const auth = requireAuth(event, headers, { check: canManageInbox });
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     let sql;
     try {
@@ -35,60 +49,58 @@ exports.handler = async (event) => {
         await ensureInvoicesSchema(sql);
 
         const data = JSON.parse(event.body || '{}');
-        const { id, assigned_to, vendor_name, amount, invoice_date, site, assigned_by } = data;
+        const { id, vendor_name, amount, invoice_date } = data;
 
-        if (!id || !assigned_to) {
-            return { statusCode: 400, headers, body: JSON.stringify({ error: 'id and assigned_to are required' }) };
+        // Accept arrays (sites/approvers) or legacy singletons (site/assigned_to).
+        const sites = asCleanArray(data.sites != null ? data.sites : data.site);
+        const approvers = asCleanArray(data.approvers != null ? data.approvers : data.assigned_to);
+
+        if (!id) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'id is required' }) };
+        }
+        if (!approvers.length) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'At least one approver is required' }) };
+        }
+        if (!sites.length) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'At least one site is required' }) };
         }
 
         const amountVal = (amount === '' || amount === null || amount === undefined) ? null : parseFloat(amount);
+        // Legacy joined values kept in sync for any code/CSV that still reads them.
+        const assignedJoined = approvers.join(', ');
+        const sitesJoined = sites.join(', ');
+        const now = new Date().toISOString();
 
-        // Only assign rows currently in the Inbox. The status guard makes this
-        // safe to retry and prevents re-routing an already-assigned invoice.
+        // Only queue rows currently Unassigned (or already Queued — allows
+        // editing an assignment before submission). The status guard makes this
+        // safe to retry and prevents re-routing an invoice that's already out
+        // for approval.
         const updated = await sql`
             UPDATE invoices
-            SET assigned_to = ${assigned_to},
+            SET sites = ${sites},
+                approvers = ${approvers},
+                assigned_to = ${assignedJoined},
+                site = ${sitesJoined},
                 vendor_name = COALESCE(NULLIF(${vendor_name || null}, ''), vendor_name),
                 amount = ${amountVal},
                 invoice_date = ${invoice_date || null},
-                site = ${site || null},
-                status = 'Pending'
-            WHERE id = ${id} AND status = 'Unassigned'
-            RETURNING id, assigned_to, site, vendor_name, invoice_date, amount,
-                      file_name, file_type, status, decision_reason, decided_by, decided_at,
-                      gl_code, submitted_by, submitted_by_email, submitted_at,
+                status = 'Queued',
+                queued_by = ${user.full_name},
+                queued_at = ${now},
+                viewed_by = '{}'::text[]
+            WHERE id = ${id} AND status IN ('Unassigned', 'Queued')
+            RETURNING id, sites, approvers, assigned_to, site, vendor_name, invoice_date, amount,
+                      file_name, file_type, status, queued_by, queued_at,
+                      submitted_by, submitted_by_email, submitted_at,
                       source, sender_email, email_subject,
                       CASE WHEN file_data IS NOT NULL AND file_data != '' THEN true ELSE false END as has_file
         `;
 
         if (!updated.length) {
-            // Either the id doesn't exist or it's no longer Unassigned.
-            return { statusCode: 409, headers, body: JSON.stringify({ error: 'Invoice not found or already assigned' }) };
+            return { statusCode: 409, headers, body: JSON.stringify({ error: 'Invoice not found or no longer assignable (already submitted/approved/cancelled).' }) };
         }
 
-        const invoice = updated[0];
-
-        // Notify the assigned approver. Awaited so the Lambda doesn't freeze
-        // before Resend responds; best-effort (never throws).
-        try {
-            const assignee = await findUserByName(sql, assigned_to);
-            if (!assignee || !assignee.email) {
-                console.warn(`[assign ${id}] no user row for "${assigned_to}" — skipping email`);
-            } else {
-                const { subject, text, html } = invoiceRequestEmail({
-                    assigneeName: assignee.full_name,
-                    invoice,
-                    submitter: assigned_by || invoice.submitted_by,
-                    publicUrl: process.env.PUBLIC_URL || 'https://mightyops.washlyfe.com'
-                });
-                const mailResult = await sendEmail({ to: assignee.email, subject, text, html });
-                console.log(`[assign ${id}] email to ${assignee.email}:`, mailResult);
-            }
-        } catch (err) {
-            console.error(`[assign ${id}] email dispatch failed:`, err);
-        }
-
-        return { statusCode: 200, headers, body: JSON.stringify({ success: true, invoice }) };
+        return { statusCode: 200, headers, body: JSON.stringify({ success: true, invoice: updated[0] }) };
     } catch (error) {
         console.error('[assign] error:', error);
         return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };

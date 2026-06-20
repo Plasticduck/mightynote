@@ -23,7 +23,7 @@
             margin-bottom: var(--space-lg);
         }
         .dashboard-head h2 { color: var(--white); font-size: 1.4rem; margin-bottom: 2px; letter-spacing: -0.02em; }
-        .dashboard-head p { color: var(--text-secondary); font-size: 0.9rem; }
+        .dashboard-head p { color: var(--text-secondary); font-size: 0.9rem; max-width: 640px; }
         .btn-group { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
         .btn-dl {
             display: inline-flex;
@@ -40,12 +40,52 @@
             transition: all var(--transition-base);
         }
         .btn-dl:hover { background: #0077ed; box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3); transform: translateY(-1px); }
-        .btn-dl.secondary {
-            background: var(--white-05);
-            color: var(--white);
-            border-color: var(--border-color);
-        }
+        .btn-dl:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-dl.green { background: var(--accent-green); border-color: var(--accent-green); }
+        .btn-dl.green:hover { background: #28a745; box-shadow: 0 4px 12px rgba(48, 209, 88, 0.3); }
+        .btn-dl.secondary { background: var(--white-05); color: var(--white); border-color: var(--border-color); }
         .btn-dl.secondary:hover { background: var(--white-10); box-shadow: none; transform: none; }
+
+        /* Tab bar */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-bottom: var(--space-lg);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0;
+        }
+        .tab-btn {
+            position: relative;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tab-btn:hover { color: var(--white); }
+        .tab-btn.active { color: var(--white); border-bottom-color: var(--accent-blue); }
+        .tab-count {
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: var(--white-10);
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+        .tab-btn.active .tab-count { background: var(--accent-blue); color: var(--white); }
+        .tab-btn.attention .tab-count { background: var(--accent-red); color: var(--white); }
 
         .stats-row {
             display: grid;
@@ -67,7 +107,6 @@
             margin-bottom: 4px;
         }
         .stat-card .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--white); }
-        .stat-card .stat-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
 
         .filters-bar {
             display: flex;
@@ -78,9 +117,9 @@
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
             margin-bottom: var(--space-md);
-            align-items: center;
+            align-items: flex-end;
         }
-        .filters-bar .form-group { margin: 0; flex: 1; min-width: 160px; }
+        .filters-bar .form-group { margin: 0; flex: 1; min-width: 150px; }
         .filters-bar label { font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
         .filters-bar select,
         .filters-bar input {
@@ -91,6 +130,7 @@
             border-radius: var(--radius-sm);
             color: var(--white);
             font-size: 0.9rem;
+            color-scheme: dark;
         }
         .filters-bar .clear-btn {
             padding: 10px 14px;
@@ -100,7 +140,6 @@
             border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 0.85rem;
-            align-self: flex-end;
         }
         .filters-bar .clear-btn:hover { background: var(--white-10); color: var(--white); }
 
@@ -110,11 +149,7 @@
             border-radius: var(--radius-md);
             overflow: hidden;
         }
-        table.inv-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
+        table.inv-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         table.inv-table thead th {
             background: var(--bg-elevated);
             text-align: left;
@@ -136,7 +171,18 @@
         table.inv-table tbody tr:hover { background: var(--bg-hover); }
         td.amount-cell { font-family: var(--font-mono); font-weight: 600; color: var(--accent-green); white-space: nowrap; }
         td.date-cell { color: var(--text-secondary); white-space: nowrap; }
-        td.assignee-cell { color: var(--accent-blue); font-weight: 500; }
+        .pill-list { display: flex; flex-wrap: wrap; gap: 4px; }
+        .pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--white-05);
+            border: 1px solid var(--border-color);
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+        }
+        .pill.site { color: var(--accent-blue); border-color: var(--accent-blue); background: var(--accent-blue-dim); }
+        .pill.approver { color: var(--white); }
         .status-badge {
             display: inline-block;
             padding: 3px 10px;
@@ -150,12 +196,13 @@
             border: 1px solid var(--accent-yellow);
         }
         .status-badge.approved { background: var(--accent-green-dim); color: var(--accent-green); border-color: var(--accent-green); }
-        .status-badge.rejected { background: var(--accent-red-dim); color: var(--accent-red); border-color: var(--accent-red); }
+        .status-badge.needsattention { background: var(--accent-red-dim); color: var(--accent-red); border-color: var(--accent-red); }
         .status-badge.unassigned { background: var(--accent-blue-dim); color: var(--accent-blue); border-color: var(--accent-blue); }
-        .row-actions {
-            display: inline-flex;
-            gap: 6px;
-        }
+        .status-badge.queued { background: var(--white-05); color: var(--text-secondary); border-color: var(--border-color); }
+        .status-badge.exported { background: rgba(191,90,242,0.15); color: #bf5af2; border-color: #bf5af2; }
+        .status-badge.cancelled { background: var(--white-05); color: var(--text-muted); border-color: var(--border-color); }
+
+        .row-actions { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
         .row-btn {
             display: inline-flex;
             align-items: center;
@@ -170,76 +217,38 @@
             text-decoration: none;
         }
         .row-btn:hover { background: var(--white-10); color: var(--white); }
+        .row-btn.approve { background: var(--accent-green-dim); color: var(--accent-green); border-color: var(--accent-green); }
+        .row-btn.approve:hover { background: var(--accent-green); color: var(--white); }
         .row-btn.danger:hover { background: var(--accent-red-dim); color: var(--accent-red); border-color: var(--accent-red); }
 
-        .empty-state, .loading-state {
-            padding: var(--space-2xl) var(--space-lg);
-            text-align: center;
-            color: var(--text-muted);
-        }
+        .status-note { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; max-width: 260px; display: inline-block; }
+        .empty-state, .loading-state { padding: var(--space-2xl) var(--space-lg); text-align: center; color: var(--text-muted); }
 
-        /* Queue toggle segmented control */
-        .queue-toggle {
-            display: inline-flex;
-            background: var(--bg-elevated);
+        /* Export batch cards (Exported tab) */
+        .batch-list { display: flex; flex-direction: column; gap: var(--space-md); }
+        .batch-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-md);
+            padding: var(--space-lg);
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
-            padding: 3px;
-            gap: 2px;
+            flex-wrap: wrap;
         }
-        .queue-toggle button {
-            padding: 8px 16px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            background: transparent;
-            border: none;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-        .queue-toggle button:hover { color: var(--white); }
-        .queue-toggle button.active {
-            background: var(--accent-blue);
-            color: var(--white);
-            box-shadow: 0 2px 6px rgba(10, 132, 255, 0.3);
-        }
-        .queue-toggle .count {
-            margin-left: 6px;
-            opacity: 0.8;
-            font-size: 0.78rem;
-            font-weight: 500;
-        }
+        .batch-card h4 { color: var(--white); font-size: 1rem; margin-bottom: 4px; font-family: var(--font-mono); }
+        .batch-meta { color: var(--text-secondary); font-size: 0.85rem; }
+        .batch-exported { font-size: 0.8rem; margin-top: 4px; font-weight: 600; }
+        .batch-exported.done { color: var(--accent-red); }
 
-        .row-btn.approve {
-            background: var(--accent-green-dim);
-            color: var(--accent-green);
-            border-color: var(--accent-green);
-        }
-        .row-btn.approve:hover {
-            background: var(--accent-green);
-            color: var(--white);
-        }
-        .row-btn.reject {
-            background: var(--accent-red-dim);
-            color: var(--accent-red);
-            border-color: var(--accent-red);
-        }
-        .row-btn.reject:hover {
-            background: var(--accent-red);
-            color: var(--white);
-        }
-
-        /* Reject reason modal */
+        /* Modals */
         .modal-backdrop {
-            position: fixed;
-            inset: 0;
+            position: fixed; inset: 0;
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(4px);
             z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             padding: var(--space-lg);
         }
         .modal-backdrop.hidden { display: none; }
@@ -248,212 +257,132 @@
             border: 1px solid var(--border-color);
             border-radius: var(--radius-lg);
             padding: var(--space-lg);
-            max-width: 440px;
-            width: 100%;
+            max-width: 520px; width: 100%;
             box-shadow: var(--shadow-lg);
+            max-height: 90vh; overflow-y: auto;
         }
         .modal-card h3 { color: var(--white); margin-bottom: 4px; font-size: 1.1rem; }
         .modal-card .modal-sub { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: var(--space-md); }
-        .modal-card textarea {
-            width: 100%;
-            min-height: 90px;
-            padding: 12px;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            color: var(--white);
-            font-family: inherit;
-            font-size: 0.9rem;
-            resize: vertical;
-        }
-        .modal-actions {
-            display: flex;
-            gap: var(--space-sm);
-            justify-content: flex-end;
-            margin-top: var(--space-md);
-        }
+        .modal-actions { display: flex; gap: var(--space-sm); justify-content: flex-end; margin-top: var(--space-md); flex-wrap: wrap; }
         .modal-btn {
-            padding: 10px 18px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            border: 1px solid var(--border-color);
-            background: var(--white-05);
-            color: var(--white);
+            padding: 10px 18px; font-size: 0.9rem; font-weight: 600;
+            border-radius: var(--radius-sm); cursor: pointer;
+            border: 1px solid var(--border-color); background: var(--white-05); color: var(--white);
         }
         .modal-btn:hover { background: var(--white-10); }
-        .modal-btn.danger {
-            background: var(--accent-red);
-            border-color: var(--accent-red);
-            color: var(--white);
-        }
+        .modal-btn.danger { background: var(--accent-red); border-color: var(--accent-red); color: var(--white); }
         .modal-btn.danger:hover { background: #d63030; }
-        .modal-btn.primary {
-            background: var(--accent-blue);
-            border-color: var(--accent-blue);
-            color: var(--white);
-        }
+        .modal-btn.primary { background: var(--accent-blue); border-color: var(--accent-blue); color: var(--white); }
         .modal-btn.primary:hover { background: #0077ed; }
-        .modal-btn.primary:disabled {
-            background: var(--white-10);
-            border-color: var(--border-color);
-            color: var(--text-muted);
-            cursor: not-allowed;
+        .modal-btn.primary:disabled, .modal-btn.danger:disabled {
+            background: var(--white-10); border-color: var(--border-color); color: var(--text-muted); cursor: not-allowed;
         }
 
-        /* Review modal extras */
         .review-summary {
-            padding: 12px 14px;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            margin-bottom: var(--space-md);
-            font-size: 0.88rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
+            padding: 12px 14px; background: var(--bg-elevated);
+            border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+            margin-bottom: var(--space-md); font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;
         }
         .review-summary strong { color: var(--white); font-weight: 600; }
         .review-summary .amount { color: var(--accent-blue); font-weight: 700; font-family: var(--font-mono); }
 
-        .decision-group {
-            display: flex;
-            gap: var(--space-sm);
-            margin-bottom: var(--space-md);
-        }
-        .decision-option {
-            flex: 1;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 12px 14px;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-        .decision-option:hover {
-            background: var(--bg-hover);
-            border-color: var(--white-15);
-        }
-        .decision-option input[type="radio"] {
-            margin-top: 3px;
-            flex-shrink: 0;
-            accent-color: var(--accent-blue);
-        }
-        .decision-option .decision-label {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .decision-option .decision-title {
-            font-weight: 600;
-            color: var(--white);
-            font-size: 0.95rem;
-        }
-        .decision-option .decision-sub {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-        }
-        .decision-option.selected-approve {
-            background: var(--accent-green-dim);
-            border-color: var(--accent-green);
-        }
-        .decision-option.selected-approve .decision-title { color: var(--accent-green); }
-        .decision-option.selected-reject {
-            background: var(--accent-red-dim);
-            border-color: var(--accent-red);
-        }
-        .decision-option.selected-reject .decision-title { color: var(--accent-red); }
-
-        .field-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: var(--space-md);
-        }
+        .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-md); }
         .field-group label {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            font-weight: 600;
+            font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
         }
-        .field-group input,
-        .field-group select,
-        .field-group textarea {
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            color: var(--white);
-            padding: 10px 12px;
-            font-family: inherit;
-            font-size: 0.92rem;
-            color-scheme: dark;
+        .field-group input, .field-group select, .field-group textarea {
+            background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+            color: var(--white); padding: 10px 12px; font-family: inherit; font-size: 0.92rem; color-scheme: dark;
         }
-        .field-group input:focus,
-        .field-group select:focus,
-        .field-group textarea:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px var(--accent-blue-dim);
+        .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
+            outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px var(--accent-blue-dim);
         }
-        .assign-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-sm) var(--space-md);
-        }
+        .field-group textarea { min-height: 80px; resize: vertical; }
+        .assign-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm) var(--space-md); }
         .assign-grid .field-group { margin-bottom: 0; }
         .assign-grid .field-group.full { grid-column: 1 / -1; }
-        .field-group textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
         .notes-required { color: var(--accent-red); font-size: 0.72rem; margin-left: 4px; }
 
-        /* GL code + notes inline badges on rows */
-        .gl-code-chip {
-            display: inline-block;
-            padding: 2px 8px;
-            background: var(--white-05);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-family: var(--font-mono);
-            font-size: 0.72rem;
-            color: var(--white);
-            margin-top: 4px;
+        /* Multi-select checkbox chips */
+        .chip-select {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            max-height: 150px; overflow-y: auto;
+            padding: 10px; background: var(--bg-input);
+            border: 1px solid var(--border-color); border-radius: var(--radius-sm);
         }
-        .status-note {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            max-width: 240px;
-            line-height: 1.4;
+        .chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 10px; border-radius: 14px;
+            background: var(--white-05); border: 1px solid var(--border-color);
+            font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; user-select: none;
+        }
+        .chip input { display: none; }
+        .chip.checked { background: var(--accent-blue-dim); border-color: var(--accent-blue); color: var(--white); }
+
+        /* Decision options (review modal) */
+        .decision-group { display: flex; gap: var(--space-sm); margin-bottom: var(--space-md); }
+        .decision-option {
+            flex: 1; display: flex; align-items: flex-start; gap: 10px;
+            padding: 12px 14px; background: var(--bg-input);
+            border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+            cursor: pointer; transition: all var(--transition-base);
+        }
+        .decision-option:hover { background: var(--bg-hover); border-color: var(--white-15); }
+        .decision-option.disabled { opacity: 0.5; pointer-events: none; }
+        .decision-option input[type="radio"] { margin-top: 3px; flex-shrink: 0; accent-color: var(--accent-blue); }
+        .decision-option .decision-title { font-weight: 600; color: var(--white); font-size: 0.95rem; }
+        .decision-option .decision-sub { font-size: 0.78rem; color: var(--text-muted); }
+        .decision-option.selected-approve { background: var(--accent-green-dim); border-color: var(--accent-green); }
+        .decision-option.selected-approve .decision-title { color: var(--accent-green); }
+        .decision-option.selected-reject { background: var(--accent-red-dim); border-color: var(--accent-red); }
+        .decision-option.selected-reject .decision-title { color: var(--accent-red); }
+
+        .view-gate {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            padding: 12px 14px; margin-bottom: var(--space-md);
+            background: var(--accent-yellow-dim); border: 1px solid var(--accent-yellow);
+            border-radius: var(--radius-sm); color: var(--accent-yellow); font-size: 0.85rem;
+        }
+        .view-gate.viewed { background: var(--accent-green-dim); border-color: var(--accent-green); color: var(--accent-green); }
+        .view-gate .btn-view {
+            padding: 7px 14px; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.85rem;
+            background: var(--accent-blue); color: var(--white); border: none; cursor: pointer; margin-left: auto;
         }
 
-        /* Mobile: hide less-critical columns, stack cards */
+        /* Duplicate-export warning modal */
+        .warn-card { max-width: 540px; padding: 0; overflow: hidden; }
+        .warn-head { display: flex; align-items: center; gap: 14px; padding: 20px 24px; background: var(--accent-yellow-dim); }
+        .warn-icon {
+            width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+            background: #c0721a; color: #fff; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: 800;
+        }
+        .warn-head .warn-kicker { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #c0721a; }
+        .warn-head h3 { color: var(--white); font-size: 1.2rem; margin: 2px 0 0; }
+        .warn-body { padding: 22px 24px; }
+        .warn-body p { color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; margin-bottom: var(--space-md); }
+        .warn-body p strong { color: var(--white); }
+        .warn-table { width: 100%; border-collapse: collapse; margin-bottom: var(--space-md); font-size: 0.9rem; }
+        .warn-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); }
+        .warn-table tr:nth-child(even) { background: var(--white-05); }
+        .warn-table td:first-child { color: var(--text-muted); }
+        .warn-table td:last-child { color: var(--white); text-align: right; font-weight: 600; }
+        .warn-danger { color: var(--accent-red); font-size: 0.88rem; line-height: 1.6; margin-bottom: var(--space-md); }
+        .warn-ack { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--white); cursor: pointer; }
+        .warn-ack input { width: 18px; height: 18px; accent-color: var(--accent-blue); }
+        .warn-actions { display: flex; justify-content: flex-end; gap: var(--space-sm); padding: 16px 24px; background: var(--bg-secondary); }
+
         @media (max-width: 768px) {
             .dashboard-content { padding: var(--space-md); }
             .dashboard-head { flex-direction: column; align-items: stretch; }
+            .assign-grid { grid-template-columns: 1fr; }
             table.inv-table thead { display: none; }
             table.inv-table, table.inv-table tbody, table.inv-table tr, table.inv-table td { display: block; width: 100%; }
-            table.inv-table tbody tr {
-                border-bottom: 1px solid var(--border-color);
-                padding: 10px 0;
-            }
-            table.inv-table tbody td {
-                border: none;
-                padding: 4px 16px;
-            }
+            table.inv-table tbody tr { border-bottom: 1px solid var(--border-color); padding: 10px 0; }
+            table.inv-table tbody td { border: none; padding: 4px 16px; }
             table.inv-table tbody td::before {
-                content: attr(data-label);
-                display: inline-block;
-                width: 90px;
-                color: var(--text-muted);
-                font-size: 0.72rem;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
+                content: attr(data-label); display: inline-block; width: 90px;
+                color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
             }
         }
     </style>
@@ -469,14 +398,12 @@
             <div class="header-actions">
                 <a href="invoice-approvals.html" class="btn-icon" title="New Invoice">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                     </svg>
                 </a>
                 <a href="home.html" class="btn-icon" title="Back to Apps">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                        <polyline points="9 22 9 12 15 12 15 22"/>
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                     </svg>
                 </a>
             </div>
@@ -485,71 +412,27 @@
             <div class="dashboard-content">
                 <div class="dashboard-head">
                     <div>
-                        <h2 id="dashboardTitle">My Invoices</h2>
-                        <p id="dashboardSubtitle">Invoices assigned to you. Export the list as PDF or CSV.</p>
-                        <div class="queue-toggle hidden" id="queueToggle" style="margin-top: 14px;">
-                            <button type="button" data-queue="all" class="active">All Invoices</button>
-                            <button type="button" data-queue="mine">My Queue <span class="count" id="myQueueCount">0</span></button>
-                            <button type="button" data-queue="inbox">Inbox <span class="count" id="inboxCount">0</span></button>
-                        </div>
+                        <h2 id="dashboardTitle">Invoice Approval</h2>
+                        <p id="dashboardSubtitle">Loading…</p>
                     </div>
-                    <div class="btn-group">
-                        <button type="button" class="btn-dl secondary" id="exportCSVBtn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="7 10 12 15 17 10"/>
-                                <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                            CSV
+                    <div class="btn-group" id="contextActions">
+                        <button type="button" class="btn-dl" id="submitQueueBtn" style="display:none;">
+                            Submit Queue <span id="submitQueueCount">(0)</span>
                         </button>
-                        <button type="button" class="btn-dl" id="exportPDFBtn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                                <line x1="16" y1="13" x2="8" y2="13"/>
-                                <line x1="16" y1="17" x2="8" y2="17"/>
-                            </svg>
-                            Download PDF Database
+                        <button type="button" class="btn-dl green" id="exportBtn" style="display:none;">
+                            Export to QuickBooks CSV
                         </button>
                     </div>
                 </div>
 
-                <div class="stats-row">
-                    <div class="stat-card">
-                        <div class="stat-label">Total Invoices</div>
-                        <div class="stat-value" id="statTotal">0</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Total Amount</div>
-                        <div class="stat-value" id="statAmount">$0.00</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Pending</div>
-                        <div class="stat-value" id="statPending">0</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Approvers</div>
-                        <div class="stat-value" id="statApprovers">0</div>
-                    </div>
+                <div class="tab-bar" id="tabBar"></div>
+
+                <div class="stats-row" id="statsRow">
+                    <div class="stat-card"><div class="stat-label">In this tab</div><div class="stat-value" id="statCount">0</div></div>
+                    <div class="stat-card"><div class="stat-label">Total amount</div><div class="stat-value" id="statAmount">$0.00</div></div>
                 </div>
 
-                <div class="filters-bar">
-                    <div class="form-group hidden" id="filterAssigneeGroup">
-                        <label for="filterAssignee">Assigned To</label>
-                        <select id="filterAssignee">
-                            <option value="">All</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="filterStatus">Status</label>
-                        <select id="filterStatus">
-                            <option value="">All</option>
-                            <option value="Unassigned">Unassigned</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Rejected">Not Approved</option>
-                        </select>
-                    </div>
+                <div class="filters-bar" id="filtersBar">
                     <div class="form-group">
                         <label for="filterVendor">Vendor</label>
                         <input type="text" id="filterVendor" placeholder="Search vendor...">
@@ -565,83 +448,32 @@
                     <button type="button" class="clear-btn" id="clearFiltersBtn">Clear</button>
                 </div>
 
-                <div class="table-wrap">
+                <!-- Invoice table (most tabs) -->
+                <div class="table-wrap" id="tableWrap">
                     <table class="inv-table" id="invoicesTable">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Vendor</th>
-                                <th class="col-assigned hidden">Assigned To</th>
-                                <th>Invoice Date</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Submitted By</th>
-                                <th>Submitted</th>
-                                <th style="text-align: right;">Actions</th>
-                            </tr>
-                        </thead>
+                        <thead id="invoicesHead"></thead>
                         <tbody id="invoicesBody">
-                            <tr><td colspan="9" class="loading-state">Loading invoices...</td></tr>
+                            <tr><td class="loading-state">Loading invoices…</td></tr>
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Export batches (Exported tab) -->
+                <div class="batch-list" id="batchList" style="display:none;"></div>
             </div>
         </main>
+
         <div class="toast hidden" id="toast">
             <span class="toast-icon">&#10003;</span>
             <span class="toast-message">Success</span>
         </div>
 
-        <!-- Review modal: approve or not approve, notes, GL code -->
-        <div class="modal-backdrop hidden" id="reviewModal">
-            <div class="modal-card" style="max-width: 520px;">
-                <h3 id="reviewModalTitle">Review invoice</h3>
-                <p class="modal-sub" id="reviewModalSub"></p>
-
-                <div class="review-summary" id="reviewSummary"></div>
-
-                <div class="decision-group">
-                    <label class="decision-option" id="decisionApproveOption">
-                        <input type="radio" name="decision" value="Approved" id="decisionApprove">
-                        <span class="decision-label">
-                            <span class="decision-title">Approved</span>
-                            <span class="decision-sub">Mark this invoice as approved</span>
-                        </span>
-                    </label>
-                    <label class="decision-option" id="decisionRejectOption">
-                        <input type="radio" name="decision" value="Rejected" id="decisionReject">
-                        <span class="decision-label">
-                            <span class="decision-title">Not Approved</span>
-                            <span class="decision-sub">Reject this invoice</span>
-                        </span>
-                    </label>
-                </div>
-
-                <div class="field-group hidden" id="glCodeGroup">
-                    <label for="glCodeInput">GL Code</label>
-                    <input type="text" id="glCodeInput" autocomplete="off">
-                </div>
-
-                <div class="field-group" id="notesGroup">
-                    <label for="reviewNotes"><span id="notesLabel">Notes</span> <span class="notes-required hidden" id="notesRequired">(required)</span></label>
-                    <textarea id="reviewNotes" placeholder=""></textarea>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="modal-btn" id="reviewCancel">Cancel</button>
-                    <button type="button" class="modal-btn primary" id="reviewConfirm" disabled>Submit Decision</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Assign modal: route an emailed-in (Unassigned) invoice to an approver -->
+        <!-- Assign modal: multi-site + multi-approver, add to queue -->
         <div class="modal-backdrop hidden" id="assignModal">
-            <div class="modal-card" style="max-width: 520px;">
-                <h3>Assign invoice</h3>
-                <p class="modal-sub">Fill in the invoice details and choose an approver. They'll be emailed a request to review it.</p>
-
+            <div class="modal-card">
+                <h3 id="assignTitle">Assign invoice</h3>
+                <p class="modal-sub">Set the details, choose one or more sites and approvers, then add it to the queue. Approvers are notified when you submit the queue.</p>
                 <div class="review-summary" id="assignSummary"></div>
-
                 <div class="assign-grid">
                     <div class="field-group full">
                         <label for="assignVendor">Vendor Name</label>
@@ -655,30 +487,108 @@
                         <label for="assignDate">Invoice Date</label>
                         <input type="date" id="assignDate">
                     </div>
-                    <div class="field-group">
-                        <label for="assignSite">Site</label>
-                        <select id="assignSite">
-                            <option value="">Select a site...</option>
-                        </select>
+                    <div class="field-group full">
+                        <label>Site(s) <span class="notes-required">(required)</span></label>
+                        <div class="chip-select" id="assignSites"></div>
                     </div>
-                    <div class="field-group">
-                        <label for="assignApprover">Assign To <span class="notes-required" id="assignApproverRequired">(required)</span></label>
-                        <select id="assignApprover">
-                            <option value="">Select an approver...</option>
-                        </select>
+                    <div class="field-group full">
+                        <label>Approver(s) <span class="notes-required">(required)</span></label>
+                        <div class="chip-select" id="assignApprovers"></div>
                     </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn" id="assignCancel">Cancel</button>
+                    <button type="button" class="modal-btn primary" id="assignConfirm" disabled>Add to Queue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review modal: must view, then approve/deny -->
+        <div class="modal-backdrop hidden" id="reviewModal">
+            <div class="modal-card">
+                <h3>Review invoice</h3>
+                <p class="modal-sub">You must open the invoice before approving or denying it. Your decision is emailed to the submitter.</p>
+                <div class="review-summary" id="reviewSummary"></div>
+
+                <div class="view-gate" id="viewGate">
+                    <span id="viewGateText">Open the invoice to enable a decision.</span>
+                    <button type="button" class="btn-view" id="reviewViewBtn">View Invoice</button>
+                </div>
+
+                <div class="decision-group">
+                    <label class="decision-option disabled" id="decisionApproveOption">
+                        <input type="radio" name="decision" value="Approved" id="decisionApprove" disabled>
+                        <span class="decision-label">
+                            <span class="decision-title">Approve</span>
+                            <span class="decision-sub">Send to QuickBooks export</span>
+                        </span>
+                    </label>
+                    <label class="decision-option disabled" id="decisionRejectOption">
+                        <input type="radio" name="decision" value="Denied" id="decisionReject" disabled>
+                        <span class="decision-label">
+                            <span class="decision-title">Deny</span>
+                            <span class="decision-sub">Send to Needs Attention</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="field-group hidden" id="glCodeGroup">
+                    <label for="glCodeInput">GL Code (optional)</label>
+                    <input type="text" id="glCodeInput" autocomplete="off">
+                </div>
+                <div class="field-group" id="notesGroup">
+                    <label for="reviewNotes"><span id="notesLabel">Notes</span> <span class="notes-required hidden" id="notesRequired">(required)</span></label>
+                    <textarea id="reviewNotes" placeholder=""></textarea>
                 </div>
 
                 <div class="modal-actions">
-                    <button type="button" class="modal-btn" id="assignCancel">Cancel</button>
-                    <button type="button" class="modal-btn primary" id="assignConfirm" disabled>Assign &amp; Notify</button>
+                    <button type="button" class="modal-btn" id="reviewCancel">Cancel</button>
+                    <button type="button" class="modal-btn primary" id="reviewConfirm" disabled>Submit Decision</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cancel confirmation -->
+        <div class="modal-backdrop hidden" id="cancelModal">
+            <div class="modal-card" style="max-width:440px;">
+                <h3>Cancel invoice</h3>
+                <p class="modal-sub" id="cancelSub">This invoice will be moved to the Cancelled tab. You can restart it later.</p>
+                <div class="field-group">
+                    <label for="cancelReason">Reason (optional)</label>
+                    <textarea id="cancelReason" placeholder="Why is this being cancelled?"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn" id="cancelClose">Back</button>
+                    <button type="button" class="modal-btn danger" id="cancelConfirm">Cancel Invoice</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Duplicate-export warning -->
+        <div class="modal-backdrop hidden" id="dupModal">
+            <div class="modal-card warn-card">
+                <div class="warn-head">
+                    <div class="warn-icon">!</div>
+                    <div>
+                        <div class="warn-kicker">Already exported</div>
+                        <h3>This batch was already exported</h3>
+                    </div>
+                </div>
+                <div class="warn-body">
+                    <p id="dupIntro"></p>
+                    <table class="warn-table" id="dupTable"></table>
+                    <p class="warn-danger">Duplicate bills inflate accounts payable and can lead to paying the same invoice twice. Only export again if the previous import failed or you already deleted these bills in QuickBooks.</p>
+                    <label class="warn-ack"><input type="checkbox" id="dupAck"> I understand this may create duplicate bills in QuickBooks.</label>
+                </div>
+                <div class="warn-actions">
+                    <button type="button" class="modal-btn" id="dupCancel">Cancel</button>
+                    <button type="button" class="modal-btn primary" id="dupConfirm" disabled>Export again</button>
                 </div>
             </div>
         </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <script src="invoice-approvals-dashboard.js?v=10"></script>
+    <script src="auth-client.js?v=1"></script>
+    <script src="invoice-approvals-dashboard.js?v=12"></script>
     <script src="version-check.js"></script>
 </body>
 </html>

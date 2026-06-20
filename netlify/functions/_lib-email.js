@@ -106,8 +106,73 @@ function invoiceRequestEmail({ assigneeName, invoice, submitter, publicUrl }) {
     return { subject, text, html };
 }
 
+// Daily queue summary sent to a single approver when accounting submits the
+// queue. Lists every invoice now awaiting that approver's review.
+function invoiceQueueSummaryEmail({ approverName, invoices, publicUrl }) {
+    const n = invoices.length;
+    const subject = `${n} invoice${n === 1 ? '' : 's'} awaiting your approval`;
+    const dashboardLink = `${publicUrl}/invoice-approvals-dashboard.html`;
+    const greeting = approverName ? `Hi ${approverName.split(' ')[0]},` : 'Hi,';
+    const total = invoices.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
+
+    const text = [
+        greeting,
+        '',
+        `You have ${n} invoice${n === 1 ? '' : 's'} to review (total ${money(total)}):`,
+        '',
+        ...invoices.map((i) => {
+            const sites = Array.isArray(i.sites) && i.sites.length ? ` [${i.sites.join(', ')}]` : '';
+            return `  • ${i.vendor_name} — ${money(i.amount)}${sites} (invoice #${i.id})`;
+        }),
+        '',
+        'You must open each invoice before approving or denying it.',
+        `Review them here: ${dashboardLink}`,
+        '',
+        '— MightyOps'
+    ].join('\n');
+
+    const rows = invoices.map((i) => {
+        const sites = Array.isArray(i.sites) && i.sites.length ? escapeHtml(i.sites.join(', ')) : '—';
+        return `
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-weight: 600;">${escapeHtml(i.vendor_name)}</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">${sites}</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 700; color: #0a84ff;">${money(i.amount)}</td>
+            </tr>`;
+    }).join('');
+
+    const html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #0f172a;">
+            <div style="padding: 24px 24px 16px; border-bottom: 1px solid #e5e7eb;">
+                <h2 style="margin: 0; font-size: 20px; letter-spacing: -0.02em;">${n} invoice${n === 1 ? '' : 's'} awaiting your approval</h2>
+                <p style="margin: 6px 0 0; color: #64748b; font-size: 14px;">Total ${money(total)} · open each invoice before deciding</p>
+            </div>
+            <div style="padding: 20px 24px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 6px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Vendor</th>
+                            <th style="text-align: left; padding: 6px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Site(s)</th>
+                            <th style="text-align: right; padding: 6px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                <div style="margin-top: 24px;">
+                    <a href="${dashboardLink}" style="display: inline-block; background: #0a84ff; color: #fff; text-decoration: none; padding: 12px 22px; border-radius: 8px; font-weight: 600; font-size: 15px;">Review Invoices</a>
+                </div>
+            </div>
+            <div style="padding: 12px 24px 22px; color: #94a3b8; font-size: 12px;">
+                MightyOps · Invoice Approval
+            </div>
+        </div>
+    `;
+
+    return { subject, text, html };
+}
+
 function invoiceDecisionEmail({ submitterName, approverName, invoice, status, reason, glCode, publicUrl }) {
-    const decision = status === 'Approved' ? 'approved' : 'rejected';
+    const decision = status === 'Approved' ? 'approved' : 'denied';
     const subject = `Invoice ${decision} — ${invoice.vendor_name} ${money(invoice.amount)}`;
     const dashboardLink = `${publicUrl}/invoice-approvals-dashboard.html`;
     const greeting = submitterName ? `Hi ${submitterName.split(' ')[0]},` : 'Hi,';
@@ -159,4 +224,4 @@ function escapeHtml(s) {
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-module.exports = { sendEmail, invoiceRequestEmail, invoiceDecisionEmail };
+module.exports = { sendEmail, invoiceRequestEmail, invoiceQueueSummaryEmail, invoiceDecisionEmail };

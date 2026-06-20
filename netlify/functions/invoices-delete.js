@@ -1,10 +1,12 @@
 // Delete invoice approval record(s)
 const { neon } = require('@neondatabase/serverless');
+const { requireAuth } = require('./_lib-auth');
+const { canManageInbox } = require('./_lib-roles');
 
 exports.handler = async (event) => {
     const headers = {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Content-Type': 'application/json'
     };
 
@@ -15,6 +17,10 @@ exports.handler = async (event) => {
     if (event.httpMethod !== 'POST' && event.httpMethod !== 'DELETE') {
         return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
     }
+
+    // Deletion is destructive — restrict to accounting/admins.
+    const auth = requireAuth(event, headers, { check: canManageInbox });
+    if (auth.error) return auth.error;
 
     try {
         const sql = neon(process.env.NETLIFY_DATABASE_URL);

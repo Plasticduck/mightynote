@@ -9,7 +9,16 @@
 // the only thing standing between the public internet and invoice creation.)
 
 const { neon } = require('@neondatabase/serverless');
+const crypto = require('crypto');
 const { createInboundInvoices } = require('./_lib-invoice-intake');
+
+// Constant-time string compare so the secret can't be guessed by timing.
+function safeEqual(a, b) {
+    const ba = Buffer.from(String(a || ''));
+    const bb = Buffer.from(String(b || ''));
+    if (ba.length !== bb.length) return false;
+    return crypto.timingSafeEqual(ba, bb);
+}
 
 exports.handler = async (event) => {
     const headers = {
@@ -33,7 +42,7 @@ exports.handler = async (event) => {
         return { statusCode: 500, headers, body: JSON.stringify({ error: 'Inbound intake not configured' }) };
     }
     const provided = event.headers['x-inbound-secret'] || event.headers['X-Inbound-Secret'];
-    if (provided !== expected) {
+    if (!safeEqual(provided, expected)) {
         console.warn('[inbound] rejected request with bad/missing secret');
         return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
     }
