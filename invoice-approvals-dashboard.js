@@ -11,6 +11,18 @@
 // checks here only drive what the UI shows.
 
 (async function () {
+    // Use the shared helper when present; otherwise a self-contained fallback
+    // that still attaches the bearer token — so a stale cached page that hasn't
+    // loaded auth-client.js yet won't throw "authFetch is not defined".
+    const authFetch = window.authFetch || function (input, init) {
+        init = init || {};
+        const h = new Headers(init.headers || {});
+        const t = localStorage.getItem('mightyops_token');
+        if (t) h.set('Authorization', 'Bearer ' + t);
+        init.headers = h;
+        return fetch(input, init);
+    };
+
     function checkAuth() {
         const userStr = localStorage.getItem('mightyops_user');
         if (!userStr) { window.location.href = 'login.html'; return null; }
