@@ -241,6 +241,10 @@
                 
                 if (result.success) {
                     localStorage.setItem('mightyops_user', JSON.stringify(result.user));
+                    // Store the session token used to authenticate API calls.
+                    if (result.token) {
+                        localStorage.setItem('mightyops_token', result.token);
+                    }
                     // Set app version to prevent auto-logout
                     localStorage.setItem('mightyops_app_version', '32');
                     window.location.href = 'home.html';
