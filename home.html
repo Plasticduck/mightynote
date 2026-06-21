@@ -22,10 +22,25 @@
         }
         
         .welcome-section {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-lg);
+            text-align: left;
             margin-bottom: var(--space-2xl);
         }
-        
+
+        .welcome-mascot {
+            height: 120px;
+            width: auto;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 480px) {
+            .welcome-section { flex-direction: column; text-align: center; gap: var(--space-md); }
+            .welcome-mascot { height: 96px; }
+        }
+
         .welcome-section h1 {
             font-size: 2rem;
             font-weight: 700;
@@ -211,8 +226,11 @@
         
         <div class="home-container">
             <div class="welcome-section">
-                <h1>Welcome, <span id="userName">User</span></h1>
-                <p>Select an app to get started</p>
+                <img src="mighty-mascot.png" alt="Mighty Wash mascot" class="welcome-mascot">
+                <div class="welcome-text">
+                    <h1>Welcome, <span id="userName">User</span></h1>
+                    <p>Select an app to get started</p>
+                </div>
             </div>
             
             <div class="apps-section">
