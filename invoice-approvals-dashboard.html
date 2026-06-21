@@ -374,16 +374,76 @@
 
         @media (max-width: 768px) {
             .dashboard-content { padding: var(--space-md); }
-            .dashboard-head { flex-direction: column; align-items: stretch; }
+            .logo .logo-text { font-size: 0.95rem; }
+
+            /* Head + context buttons: full width */
+            .dashboard-head { flex-direction: column; align-items: stretch; gap: var(--space-md); }
+            .dashboard-head .btn-group { width: 100%; }
+            .dashboard-head .btn-dl { flex: 1 1 auto; justify-content: center; padding: 12px 16px; }
+
+            /* Tabs: one swipeable row instead of wrapping */
+            .tab-bar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 2px; }
+            .tab-bar::-webkit-scrollbar { display: none; }
+            .tab-btn { white-space: nowrap; flex: 0 0 auto; padding: 10px 12px; font-size: 0.85rem; }
+
+            /* Filters stack full width */
+            .filters-bar { padding: var(--space-sm); gap: var(--space-sm); }
+            .filters-bar .form-group { flex: 1 1 100%; min-width: 0; }
+            .filters-bar .clear-btn { width: 100%; }
+
             .assign-grid { grid-template-columns: 1fr; }
+            .chip { padding: 8px 12px; font-size: 0.85rem; }
+
+            /* Invoice table -> stacked cards */
+            .table-wrap { background: transparent; border: none; border-radius: 0; overflow: visible; }
             table.inv-table thead { display: none; }
-            table.inv-table, table.inv-table tbody, table.inv-table tr, table.inv-table td { display: block; width: 100%; }
-            table.inv-table tbody tr { border-bottom: 1px solid var(--border-color); padding: 10px 0; }
-            table.inv-table tbody td { border: none; padding: 4px 16px; }
-            table.inv-table tbody td::before {
-                content: attr(data-label); display: inline-block; width: 90px;
-                color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+            table.inv-table, table.inv-table tbody { display: block; }
+            table.inv-table tr {
+                display: block; position: relative;
+                background: var(--bg-card); border: 1px solid var(--border-color);
+                border-radius: var(--radius-md); padding: var(--space-md);
+                margin-bottom: var(--space-md);
             }
+            table.inv-table tr:hover { background: var(--bg-card); }
+            table.inv-table td { display: block; border: none; padding: 0; }
+            table.inv-table td:not(:last-child) { margin-bottom: 10px; }
+            table.inv-table td::before {
+                content: attr(data-label); display: block;
+                color: var(--text-muted); font-size: 0.66rem; font-weight: 600;
+                text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px;
+            }
+            /* "#" as a small corner badge */
+            table.inv-table td[data-label="#"] {
+                position: absolute; top: var(--space-md); right: var(--space-md);
+                margin: 0; color: var(--text-muted); font-size: 0.8rem; font-weight: 600;
+            }
+            table.inv-table td[data-label="#"]::before { content: "#"; display: inline; margin: 0; font-size: 0.8rem; letter-spacing: 0; }
+            /* Vendor as the card title */
+            table.inv-table td[data-label="Vendor"] { padding-right: 44px; }
+            table.inv-table td[data-label="Vendor"]::before { display: none; }
+            table.inv-table td[data-label="Vendor"] strong { font-size: 1.05rem; }
+            .status-note { max-width: none; }
+            /* Actions: full-width tappable buttons */
+            table.inv-table td[data-label="Actions"] { margin-top: 4px; padding-top: var(--space-md); border-top: 1px solid var(--border-subtle); text-align: left !important; }
+            table.inv-table td[data-label="Actions"]::before { display: none; }
+            table.inv-table td[data-label="Actions"] .row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+            table.inv-table td[data-label="Actions"] .row-btn { flex: 1 1 auto; min-width: 76px; justify-content: center; padding: 11px 10px; font-size: 0.85rem; }
+            table.inv-table td.empty-state, table.inv-table td.loading-state { padding: var(--space-xl) 0; }
+
+            /* Export batch cards */
+            .batch-card { flex-direction: column; align-items: stretch; }
+            .batch-card .btn-dl { width: 100%; justify-content: center; padding: 12px; }
+
+            /* Modals as bottom sheets */
+            .modal-backdrop { padding: 0; align-items: flex-end; }
+            .modal-card { padding: var(--space-md); max-height: 92vh; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+            .modal-actions { flex-direction: column-reverse; }
+            .modal-actions .modal-btn { width: 100%; padding: 13px; }
+            .decision-group { flex-direction: column; }
+            .warn-card { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+            .warn-actions { flex-direction: column-reverse; }
+            .warn-actions .modal-btn { width: 100%; padding: 13px; }
+            .view-gate .btn-view { margin-left: 0; }
         }
     </style>
 </head>
