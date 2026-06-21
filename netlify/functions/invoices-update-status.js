@@ -41,6 +41,14 @@ exports.handler = async (event) => {
         // The decider is the authenticated user — never trust a client value.
         const decided_by = user.full_name;
 
+        // The approver may correct the site(s) Accounting assigned. An empty list
+        // leaves the existing sites untouched (COALESCE below), so a decision never
+        // accidentally wipes the site.
+        const sitesUpdate = Array.isArray(data.sites)
+            ? data.sites.map((s) => String(s).trim()).filter(Boolean) : [];
+        const sitesParam = sitesUpdate.length ? sitesUpdate : null;
+        const siteJoined = sitesUpdate.length ? sitesUpdate.join(', ') : null;
+
         // 'Approved' and 'Rejected' come from the UI; map 'Rejected' -> deny.
         const isApprove = status === 'Approved';
         const isDeny = status === 'Rejected' || status === 'Denied' || status === 'NeedsAttention';
@@ -94,7 +102,9 @@ exports.handler = async (event) => {
                     decision_reason = ${reason || null},
                     decided_by = ${decided_by},
                     decided_at = ${now},
-                    gl_code = ${isApprove ? (gl_code || null) : null}
+                    gl_code = ${isApprove ? (gl_code || null) : null},
+                    sites = COALESCE(${sitesParam}::text[], sites),
+                    site = COALESCE(${siteJoined}, site)
                 WHERE id = ${id}
                 RETURNING id, assigned_to, approvers, sites, vendor_name, invoice_date, amount,
                           status, decision_reason, decided_by, decided_at, gl_code,
@@ -106,7 +116,9 @@ exports.handler = async (event) => {
                     decision_reason = ${reason || null},
                     decided_by = ${decided_by},
                     decided_at = ${now},
-                    gl_code = ${isApprove ? (gl_code || null) : null}
+                    gl_code = ${isApprove ? (gl_code || null) : null},
+                    sites = COALESCE(${sitesParam}::text[], sites),
+                    site = COALESCE(${siteJoined}, site)
                 WHERE id = ${id} AND status = 'Assigned'
                 RETURNING id, assigned_to, approvers, sites, vendor_name, invoice_date, amount,
                           status, decision_reason, decided_by, decided_at, gl_code,

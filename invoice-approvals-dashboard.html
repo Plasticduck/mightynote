@@ -575,6 +575,11 @@
                     <button type="button" class="btn-view" id="reviewViewBtn">View Invoice</button>
                 </div>
 
+                <div class="field-group" id="reviewSitesGroup">
+                    <label>Site(s) <span style="color:var(--text-muted);font-weight:400;font-size:0.78rem;">— correct if Accounting assigned the wrong site</span></label>
+                    <div class="chip-select" id="reviewSites"></div>
+                </div>
+
                 <div class="decision-group">
                     <label class="decision-option disabled" id="decisionApproveOption">
                         <input type="radio" name="decision" value="Approved" id="decisionApprove" disabled>
@@ -648,7 +653,7 @@
         </div>
     </div>
     <script src="auth-client.js?v=1"></script>
-    <script src="invoice-approvals-dashboard.js?v=14"></script>
+    <script src="invoice-approvals-dashboard.js?v=15"></script>
     <script src="version-check.js"></script>
 </body>
 </html>

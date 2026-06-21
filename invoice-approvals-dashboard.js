@@ -458,7 +458,12 @@
     const notesLabel = el('notesLabel');
     const notesRequired = el('notesRequired');
     const reviewConfirm = el('reviewConfirm');
+    const reviewSites = el('reviewSites');
     let reviewId = null, hasViewed = false;
+
+    // Approver can correct the site(s) Accounting assigned, before deciding.
+    reviewSites.innerHTML = SITES.map((s) => chip(s, 'site')).join('');
+    reviewSites.addEventListener('change', (e) => { if (e.target.matches('input')) syncChip(e.target); });
 
     function resetReview() {
         hasViewed = false;
@@ -484,6 +489,7 @@
             ${sitesOf(r).length ? `<div>Site(s): ${escapeHtml(sitesOf(r).join(', '))}</div>` : ''}
             <div>Invoice date: ${fmtDate(r.invoice_date)}</div>
             <div>Submitted by: ${escapeHtml(r.submitted_by || '—')}</div>`;
+        setChips(reviewSites, sitesOf(r));
         el('reviewViewBtn').style.display = r.has_file ? '' : 'none';
         if (!r.has_file) {
             // No file to view — allow decision (nothing to gate on).
@@ -535,7 +541,11 @@
         if (!status) return;
         const notes = reviewNotes.value.trim();
         if (status === 'Denied' && !notes) { reviewNotes.focus(); return; }
-        const payload = { id: reviewId, status, reason: notes || null, gl_code: decisionApprove.checked ? glCodeInput.value.trim() : null };
+        const payload = {
+            id: reviewId, status, reason: notes || null,
+            gl_code: decisionApprove.checked ? glCodeInput.value.trim() : null,
+            sites: chipValues(reviewSites)
+        };
         reviewConfirm.disabled = true;
         try {
             const res = await authFetch('/.netlify/functions/invoices-update-status', {

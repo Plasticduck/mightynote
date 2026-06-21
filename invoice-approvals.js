@@ -214,9 +214,8 @@
         const btnText = submitBtn.querySelector('.btn-text');
         const originalText = btnText.textContent;
 
-        const sites = chipValues(siteChips);
+        const sites = chipValues(siteChips); // optional — submitter may not know the site
         const approvers = chipValues(approverChips);
-        if (!sites.length) { showToast('Select at least one site.', 'error'); return; }
         if (!approvers.length) { showToast('Select at least one approver.', 'error'); return; }
 
         btnText.textContent = 'Submitting...';
