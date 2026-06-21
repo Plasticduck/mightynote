@@ -177,6 +177,16 @@
         .chip:hover { background: var(--white-10); color: var(--white); }
         .chip input { display: none; }
         .chip.checked { background: var(--accent-blue-dim); border-color: var(--accent-blue); color: var(--white); }
+
+        /* iOS renders input[type=date] with an oversized intrinsic box that
+           ignores width:100% and overflows on phones — normalize it. */
+        @media (max-width: 768px) {
+            #invoiceForm input[type="date"] {
+                -webkit-appearance: none; appearance: none;
+                width: 100%; min-width: 0; min-height: 50px;
+            }
+            #invoiceForm input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+        }
     </style>
 </head>
 <body>
