@@ -26,42 +26,64 @@
     if (!user) return;
     document.getElementById('submitterName').textContent = user.full_name;
 
-    // Refresh the approver dropdown from the server roster (single source of
-    // truth in _lib-roles.js). The hardcoded <option>s in the HTML are only a
-    // fallback used if this fetch fails.
+    // ----- Site(s) + Approver(s) as multi-select chips -----
+    // An invoice can be attributed to more than one site and assigned to more
+    // than one approver (only one approver needs to act later).
+    const FALLBACK_APPROVERS = [
+        'Matt Canales', 'Isabel Castaneda', 'Lester Young', 'Rance Breed',
+        'Aaron Messina', 'Justin Gamboa', 'Kevan Jowers', 'Ernest Contreras'
+    ];
+    const SITES = [];
+    for (let i = 1; i <= 32; i++) SITES.push(`Site #${i}`);
+    SITES.push('Spotless');
+
+    const siteChips = document.getElementById('siteChips');
+    const approverChips = document.getElementById('approverChips');
+
+    function renderChips(container, values) {
+        container.innerHTML = '';
+        values.forEach((v) => {
+            const label = document.createElement('label');
+            label.className = 'chip';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.value = v;
+            label.appendChild(input);
+            label.appendChild(document.createTextNode(v));
+            container.appendChild(label);
+        });
+    }
+    function chipValues(container) {
+        return Array.from(container.querySelectorAll('input:checked')).map((i) => i.value);
+    }
+    function clearChips(container) {
+        container.querySelectorAll('input').forEach((i) => { i.checked = false; });
+        container.querySelectorAll('.chip').forEach((c) => c.classList.remove('checked'));
+    }
+    // Toggle the checked style; delegated so it survives a re-render.
+    [siteChips, approverChips].forEach((c) => c.addEventListener('change', (e) => {
+        if (e.target.matches('input[type="checkbox"]')) {
+            e.target.closest('.chip').classList.toggle('checked', e.target.checked);
+        }
+    }));
+
+    renderChips(siteChips, SITES);
+    renderChips(approverChips, FALLBACK_APPROVERS);
+
+    // Refresh the approver list from the server roster (single source of truth
+    // in _lib-roles.js); the baked-in list above is the offline fallback.
     (async () => {
         try {
             const res = await authFetch('/.netlify/functions/roles-get');
             if (!res.ok) return;
             const roles = await res.json();
-            if (!Array.isArray(roles.approvers) || !roles.approvers.length) return;
-            const sel = document.getElementById('assignedTo');
-            const current = sel.value;
-            sel.innerHTML = '<option value="">Select an approver...</option>';
-            roles.approvers.forEach((name) => {
-                const opt = document.createElement('option');
-                opt.value = name;
-                opt.textContent = name;
-                sel.appendChild(opt);
-            });
-            if (current) sel.value = current;
+            if (Array.isArray(roles.approvers) && roles.approvers.length) {
+                renderChips(approverChips, roles.approvers);
+            }
         } catch (e) {
             console.warn('[invoice] roles-get failed — using fallback approver list', e);
         }
     })();
-
-    // Populate the Site dropdown: Site #1..#32 + Spotless
-    const siteSelect = document.getElementById('site');
-    for (let i = 1; i <= 32; i++) {
-        const opt = document.createElement('option');
-        opt.value = `Site #${i}`;
-        opt.textContent = `Site #${i}`;
-        siteSelect.appendChild(opt);
-    }
-    const spotless = document.createElement('option');
-    spotless.value = 'Spotless';
-    spotless.textContent = 'Spotless';
-    siteSelect.appendChild(spotless);
 
     // Default the date picker to today
     const dateInput = document.getElementById('invoiceDate');
@@ -192,13 +214,18 @@
         const btnText = submitBtn.querySelector('.btn-text');
         const originalText = btnText.textContent;
 
+        const sites = chipValues(siteChips);
+        const approvers = chipValues(approverChips);
+        if (!sites.length) { showToast('Select at least one site.', 'error'); return; }
+        if (!approvers.length) { showToast('Select at least one approver.', 'error'); return; }
+
         btnText.textContent = 'Submitting...';
         submitBtn.disabled = true;
 
         try {
             const payload = {
-                site: document.getElementById('site').value,
-                assigned_to: document.getElementById('assignedTo').value,
+                sites: sites,
+                approvers: approvers,
                 vendor_name: document.getElementById('vendorName').value.trim(),
                 invoice_date: document.getElementById('invoiceDate').value || null,
                 amount: parseFloat(document.getElementById('amount').value) || 0,
@@ -223,7 +250,8 @@
             showToast('Invoice submitted — Accounting will route it for approval.', 'success');
             e.target.reset();
             dateInput.value = today;
-            siteSelect.value = '';
+            clearChips(siteChips);
+            clearChips(approverChips);
             resetFile();
         } catch (err) {
             console.error(err);
