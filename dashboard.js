@@ -524,7 +524,7 @@ function exportSelectedToExcel(notes) {
             'Date/Time': formatDate(note.created_at),
             'Site': formatLocation(note.location),
             'Department': note.department,
-            'Note Type': note.note_type,
+            'Violation Type': note.note_type,
             'Other Description': note.other_description || '',
             'Additional Notes': note.additional_notes || '',
             'Submitted By': note.submitted_by || '',
@@ -590,7 +590,7 @@ function exportSelectedToPDF(notes) {
     
     doc.autoTable({
         startY: 42,
-        head: [['Date/Time', 'Site', 'Dept', 'Note Type', 'Submitted By', 'Attachment']],
+        head: [['Date/Time', 'Site', 'Dept', 'Violation Type', 'Submitted By', 'Attachment']],
         body: tableData,
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
@@ -1200,7 +1200,7 @@ function renderNoteTypeSummary(notes) {
         .slice(0, 10);
     
     if (sortedTypes.length === 0) {
-        container.innerHTML = '<p class="no-data">No note type data</p>';
+        container.innerHTML = '<p class="no-data">No violation type data</p>';
         return;
     }
     
@@ -1284,7 +1284,7 @@ async function exportReportToExcel() {
         'Date/Time': formatDate(note.created_at),
         'Site': formatLocation(note.location),
         'Department': note.department,
-        'Note Type': note.note_type,
+        'Violation Type': note.note_type,
         'Other Description': note.other_description || '',
         'Additional Notes': note.additional_notes || '',
         'Submitted By': note.submitted_by || '',
@@ -1323,7 +1323,7 @@ async function exportReportToExcel() {
             const data = deptNotes.map(note => ({
                 'Date/Time': formatDate(note.created_at),
                 'Site': formatLocation(note.location),
-                'Note Type': note.note_type,
+                'Violation Type': note.note_type,
                 'Other Description': note.other_description || '',
                 'Additional Notes': note.additional_notes || '',
                 'Submitted By': note.submitted_by || '',
@@ -1370,7 +1370,7 @@ async function exportReportToExcel() {
         const data = locNotes.map(note => ({
             'Date/Time': formatDate(note.created_at),
             'Department': note.department,
-            'Note Type': note.note_type,
+            'Violation Type': note.note_type,
             'Other Description': note.other_description || '',
             'Additional Notes': note.additional_notes || '',
             'Submitted By': note.submitted_by || '',
@@ -1467,7 +1467,7 @@ async function exportReportToPDF() {
     // Create table
     doc.autoTable({
         startY: 50,
-        head: [['Date/Time', 'Site', 'Department', 'Note Type', 'Submitted By', 'Comments', 'Attachment']],
+        head: [['Date/Time', 'Site', 'Department', 'Violation Type', 'Submitted By', 'Comments', 'Attachment']],
         body: tableData,
         styles: {
             fontSize: 8,
