@@ -390,6 +390,13 @@
             .filters-bar { padding: var(--space-sm); gap: var(--space-sm); }
             .filters-bar .form-group { flex: 1 1 100%; min-width: 0; }
             .filters-bar .clear-btn { width: 100%; }
+            /* iOS renders input[type=date] with its own oversized intrinsic
+               box that ignores width:100% — normalize it to the styled field. */
+            .filters-bar input[type="date"] {
+                -webkit-appearance: none; appearance: none;
+                width: 100%; min-width: 0; min-height: 42px;
+            }
+            .filters-bar input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 
             .assign-grid { grid-template-columns: 1fr; }
             .chip { padding: 8px 12px; font-size: 0.85rem; }
