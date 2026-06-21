@@ -360,6 +360,7 @@
     const assignAmount = el('assignAmount');
     const assignDate = el('assignDate');
     const assignConfirm = el('assignConfirm');
+    const assignAiNote = el('assignAiNote');
     let assignId = null;
 
     function chip(value, group) {
@@ -373,7 +374,52 @@
     }
     function syncChip(input) { input.closest('.chip').classList.toggle('checked', input.checked); }
     function updateAssignUi() {
-        assignConfirm.disabled = !(chipValues(assignSites).length && chipValues(assignApprovers).length);
+        // Site(s) optional — only an approver is required to queue.
+        assignConfirm.disabled = !chipValues(assignApprovers).length;
+    }
+
+    // "M/D/YYYY" (or ISO) -> "YYYY-MM-DD" for the date input.
+    function toIsoDate(s) {
+        if (!s) return '';
+        const mdy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s).trim());
+        if (mdy) return `${mdy[3]}-${mdy[1].padStart(2, '0')}-${mdy[2].padStart(2, '0')}`;
+        const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s).trim());
+        if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+    }
+
+    // Read the invoice document and fill amount + invoice date (only fields the
+    // user hasn't already got). Best-effort: silent if AI is unavailable.
+    async function autofillFromAI(r) {
+        if (!r.has_file) return;
+        if (assignAmount.value && assignDate.value) return; // nothing to fill
+        assignAiNote.textContent = 'Reading the invoice to fill amount and date…';
+        assignAiNote.style.display = '';
+        try {
+            const res = await authFetch('/.netlify/functions/invoices-extract?id=' + encodeURIComponent(r.id));
+            const data = await res.json().catch(() => ({}));
+            // Ignore if the modal moved on to a different invoice meanwhile.
+            if (assignId !== r.id) return;
+            if (!res.ok || !data.ai) { assignAiNote.style.display = 'none'; return; }
+            const ai = data.ai;
+            let filled = false;
+            if (!assignAmount.value && ai.total_amount) {
+                const amt = parseFloat(String(ai.total_amount).replace(/[^0-9.\-]/g, ''));
+                if (!isNaN(amt)) { assignAmount.value = amt; filled = true; }
+            }
+            if (!assignDate.value && ai.date) {
+                const iso = toIsoDate(ai.date);
+                if (iso) { assignDate.value = iso; filled = true; }
+            }
+            assignAiNote.textContent = filled
+                ? 'Amount and date filled from the invoice — please verify.'
+                : 'Could not read amount/date — enter them manually.';
+            setTimeout(() => { if (assignId === r.id) assignAiNote.style.display = 'none'; }, 6000);
+        } catch (e) {
+            console.warn('[assign] AI extract failed', e);
+            assignAiNote.style.display = 'none';
+        }
     }
     [assignSites, assignApprovers].forEach((c) => c.addEventListener('change', (e) => {
         if (e.target.matches('input')) { syncChip(e.target); updateAssignUi(); }
@@ -394,11 +440,15 @@
             ${r.has_file ? `<div>Attachment: ${escapeHtml(r.file_name || 'file')}</div>` : '<div class="status-note">No attachment</div>'}`;
         assignVendor.value = r.vendor_name && r.vendor_name !== r.email_subject ? r.vendor_name : (r.email_subject || r.vendor_name || '');
         assignAmount.value = r.amount != null ? r.amount : '';
-        assignDate.value = (r.invoice_date && /^\d{4}-\d{2}-\d{2}/.test(r.invoice_date)) ? r.invoice_date.slice(0, 10) : new Date().toISOString().slice(0, 10);
+        // Use the existing invoice date if set; otherwise leave blank for AI to
+        // fill from the document (do NOT default to today — it's rarely correct).
+        assignDate.value = (r.invoice_date && /^\d{4}-\d{2}-\d{2}/.test(r.invoice_date)) ? r.invoice_date.slice(0, 10) : '';
+        assignAiNote.style.display = 'none';
         setChips(assignSites, sitesOf(r));
         setChips(assignApprovers, approversOf(r));
         updateAssignUi();
         assignModal.classList.remove('hidden');
+        autofillFromAI(r);
     }
     function closeAssign() { assignId = null; assignModal.classList.add('hidden'); }
     el('assignCancel').addEventListener('click', closeAssign);

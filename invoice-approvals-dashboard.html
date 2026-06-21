@@ -539,8 +539,9 @@
         <div class="modal-backdrop hidden" id="assignModal">
             <div class="modal-card">
                 <h3 id="assignTitle">Assign invoice</h3>
-                <p class="modal-sub">Set the details, choose one or more sites and approvers, then add it to the queue. Approvers are notified when you submit the queue.</p>
+                <p class="modal-sub">Amount and invoice date are read from the document automatically — please verify them. Choose approver(s) (and site(s) if known), then add to the queue. Approvers are notified when you submit the queue.</p>
                 <div class="review-summary" id="assignSummary"></div>
+                <div class="status-note" id="assignAiNote" style="display:none; margin-bottom: var(--space-sm);"></div>
                 <div class="assign-grid">
                     <div class="field-group full">
                         <label for="assignVendor">Vendor Name</label>
@@ -555,7 +556,7 @@
                         <input type="date" id="assignDate">
                     </div>
                     <div class="field-group full">
-                        <label>Site(s) <span class="notes-required">(required)</span></label>
+                        <label>Site(s) <span style="color:var(--text-muted);font-weight:400;font-size:0.78rem;">(optional)</span></label>
                         <div class="chip-select" id="assignSites"></div>
                     </div>
                     <div class="field-group full">
@@ -660,7 +661,7 @@
         </div>
     </div>
     <script src="auth-client.js?v=1"></script>
-    <script src="invoice-approvals-dashboard.js?v=15"></script>
+    <script src="invoice-approvals-dashboard.js?v=16"></script>
     <script src="version-check.js"></script>
 </body>
 </html>

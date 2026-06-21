@@ -61,14 +61,14 @@ exports.handler = async (event) => {
         if (!approvers.length) {
             return { statusCode: 400, headers, body: JSON.stringify({ error: 'At least one approver is required' }) };
         }
-        if (!sites.length) {
-            return { statusCode: 400, headers, body: JSON.stringify({ error: 'At least one site is required' }) };
-        }
+        // Site(s) are optional at assign time — the submitter or approver may not
+        // know the site yet; the approver can set/correct it at review.
 
         const amountVal = (amount === '' || amount === null || amount === undefined) ? null : parseFloat(amount);
         // Legacy joined values kept in sync for any code/CSV that still reads them.
         const assignedJoined = approvers.join(', ');
-        const sitesJoined = sites.join(', ');
+        const sitesParam = sites.length ? sites : null;
+        const sitesJoined = sites.length ? sites.join(', ') : null;
         const now = new Date().toISOString();
 
         // Only queue rows currently Unassigned (or already Queued — allows
@@ -77,7 +77,7 @@ exports.handler = async (event) => {
         // for approval.
         const updated = await sql`
             UPDATE invoices
-            SET sites = ${sites},
+            SET sites = ${sitesParam},
                 approvers = ${approvers},
                 assigned_to = ${assignedJoined},
                 site = ${sitesJoined},
