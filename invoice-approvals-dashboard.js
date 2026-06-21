@@ -223,7 +223,7 @@
 
         if (!rows.length) {
             const msg = activeTab === 'unassigned'
-                ? 'No emailed-in invoices waiting. Vendors can send invoices to payables@washlyfe.com.'
+                ? 'No emailed-in invoices waiting. New invoices can be forwarded to payables@washlyfe.com'
                 : 'Nothing here right now.';
             tbody.innerHTML = `<tr><td colspan="${cols.length}" class="empty-state">${msg}</td></tr>`;
             return;
