@@ -83,6 +83,19 @@
             flex-direction: column;
             gap: var(--space-xs);
         }
+
+        /* Admin select-to-delete */
+        .audit-select-wrap { display: flex; align-items: center; padding: 2px; cursor: pointer; flex-shrink: 0; }
+        .audit-select { width: 22px; height: 22px; accent-color: var(--accent-blue); cursor: pointer; }
+        .audit-card.selected { border-color: var(--accent-blue); box-shadow: 0 0 0 1px var(--accent-blue); }
+        #deleteSelectedBtn {
+            display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
+            padding: 12px 20px; font-family: var(--font-primary); font-size: 0.95rem; font-weight: 600;
+            color: var(--white); background: var(--accent-red); border: none; border-radius: var(--radius-md);
+            cursor: pointer; transition: all var(--transition-base);
+        }
+        #deleteSelectedBtn:hover:not(:disabled) { background: #d63030; }
+        #deleteSelectedBtn:disabled { opacity: 0.45; cursor: not-allowed; }
         
         .audit-location {
             font-size: 1.2rem;
@@ -541,7 +554,8 @@
                 <!-- Export Section -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
                     <h3 style="color: var(--white); margin: 0;">Site Audits</h3>
-                    <div style="display: flex; gap: var(--space-sm);">
+                    <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+                        <button type="button" id="deleteSelectedBtn" class="hidden" disabled>Delete Selected (0)</button>
                         <button type="button" id="exportExcelBtn">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -598,7 +612,7 @@
     <!-- jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <script src="site-audit-dashboard.js?v=22"></script>
+    <script src="site-audit-dashboard.js?v=23"></script>
     <script src="version-check.js"></script>
 </body>
 </html>

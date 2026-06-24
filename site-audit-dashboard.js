@@ -14,6 +14,20 @@ function checkAuth() {
     return true;
 }
 
+// Attach the session token (the delete endpoint is admin-gated).
+function authFetch(input, init) {
+    init = init || {};
+    const h = new Headers(init.headers || {});
+    const t = localStorage.getItem('mightyops_token');
+    if (t) h.set('Authorization', 'Bearer ' + t);
+    init.headers = h;
+    return fetch(input, init);
+}
+
+// ===== Admin select-to-delete state =====
+let isAdminUser = false;
+const selectedAuditIds = new Set();
+
 // ===== Configuration =====
 const CONFIG = {
     locations: [...Array.from({ length: 31 }, (_, i) => i + 1), 'Spotless'],
@@ -175,14 +189,19 @@ function renderAudit(audit) {
     const timestamp = formatDate(audit.created_at);
     const submitter = audit.submitted_by || 'Unknown';
     
+    const selectBox = isAdminUser
+        ? `<label class="audit-select-wrap" title="Select for deletion"><input type="checkbox" class="audit-select" data-id="${audit.id}"></label>`
+        : '';
+
     let html = `
-        <div class="audit-card">
+        <div class="audit-card" data-audit-id="${audit.id}">
             <div class="audit-header">
                 <div class="audit-meta">
                     <div class="audit-location">${location}</div>
                     <div class="audit-timestamp">${timestamp}</div>
                     <div class="audit-submitter">Submitted by: ${submitter}</div>
                 </div>
+                ${selectBox}
             </div>
     `;
     
@@ -253,7 +272,11 @@ function renderAudit(audit) {
 
 function renderAudits(auditsList) {
     const container = document.getElementById('auditsContainer');
-    
+
+    // A fresh render clears any prior selection (the checkboxes are recreated).
+    selectedAuditIds.clear();
+    updateDeleteBar();
+
     if (auditsList.length === 0) {
         container.innerHTML = `
             <p style="text-align: center; padding: var(--space-xl); color: var(--text-muted);">
@@ -262,8 +285,42 @@ function renderAudits(auditsList) {
         `;
         return;
     }
-    
+
     container.innerHTML = auditsList.map(audit => renderAudit(audit)).join('');
+}
+
+// Reflect the current selection count on the admin delete button.
+function updateDeleteBar() {
+    const btn = document.getElementById('deleteSelectedBtn');
+    if (!btn || !isAdminUser) return;
+    const n = selectedAuditIds.size;
+    btn.textContent = `Delete Selected (${n})`;
+    btn.disabled = n === 0;
+}
+
+// Delete the selected audits (admin only; server re-checks).
+async function deleteSelectedAudits() {
+    const ids = Array.from(selectedAuditIds);
+    if (!ids.length) return;
+    if (!confirm(`Delete ${ids.length} audit${ids.length > 1 ? 's' : ''}? This cannot be undone.`)) return;
+
+    const btn = document.getElementById('deleteSelectedBtn');
+    if (btn) btn.disabled = true;
+    try {
+        const res = await authFetch(`${API_BASE}/site-audit-delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data.error || 'Delete failed');
+        showToast(`Deleted ${data.deleted} audit${data.deleted > 1 ? 's' : ''}.`);
+        await refreshAudits();
+    } catch (err) {
+        console.error('Delete failed:', err);
+        showToast(err.message || 'Delete failed', true);
+        if (btn) btn.disabled = selectedAuditIds.size === 0;
+    }
 }
 
 function updateStats(auditsList) {
@@ -765,11 +822,33 @@ function setupEventListeners() {
 }
 
 // ===== Initialize Dashboard =====
+function setupAdminDelete() {
+    const btn = document.getElementById('deleteSelectedBtn');
+    if (btn) {
+        btn.classList.remove('hidden');
+        btn.addEventListener('click', deleteSelectedAudits);
+    }
+    // Delegated — the container persists across re-renders.
+    const container = document.getElementById('auditsContainer');
+    container.addEventListener('change', (e) => {
+        if (e.target && e.target.classList.contains('audit-select')) {
+            const id = Number(e.target.getAttribute('data-id'));
+            if (e.target.checked) selectedAuditIds.add(id); else selectedAuditIds.delete(id);
+            const card = e.target.closest('.audit-card');
+            if (card) card.classList.toggle('selected', e.target.checked);
+            updateDeleteBar();
+        }
+    });
+}
+
 async function init() {
     if (!checkAuth()) return;
-    
+
+    isAdminUser = currentUser && currentUser.is_admin === true;
+    if (isAdminUser) setupAdminDelete();
+
     await initDatabase();
-    
+
     populateLocationFilter();
     setupEventListeners();
     await refreshAudits();
