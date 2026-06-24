@@ -296,6 +296,9 @@ function updateDeleteBar() {
     const n = selectedAuditIds.size;
     btn.textContent = `Delete Selected (${n})`;
     btn.disabled = n === 0;
+    // Inline so the dim/disabled state shows even with older cached CSS.
+    btn.style.opacity = n === 0 ? '0.55' : '1';
+    btn.style.cursor = n === 0 ? 'not-allowed' : 'pointer';
 }
 
 // Delete the selected audits (admin only; server re-checks).
@@ -823,11 +826,26 @@ function setupEventListeners() {
 
 // ===== Initialize Dashboard =====
 function setupAdminDelete() {
-    const btn = document.getElementById('deleteSelectedBtn');
-    if (btn) {
-        btn.classList.remove('hidden');
-        btn.addEventListener('click', deleteSelectedAudits);
+    let btn = document.getElementById('deleteSelectedBtn');
+    if (!btn) {
+        // A stale cached page may predate the button element — create it so
+        // admins still get it, next to the export buttons (always present).
+        btn = document.createElement('button');
+        btn.id = 'deleteSelectedBtn';
+        btn.type = 'button';
+        const ref = document.getElementById('exportExcelBtn');
+        if (ref && ref.parentNode) ref.parentNode.insertBefore(btn, ref);
+        else { const dc = document.querySelector('.dashboard-content'); if (dc) dc.prepend(btn); }
     }
+    // Inline styles (CSS vars come from styles.css) so it renders correctly even
+    // when the page's own <style> block is an older cached version.
+    btn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;'
+        + 'padding:12px 20px;font-family:var(--font-primary);font-size:0.95rem;font-weight:600;'
+        + 'color:#fff;background:var(--accent-red);border:none;border-radius:var(--radius-md);cursor:pointer;';
+    btn.classList.remove('hidden');
+    btn.addEventListener('click', deleteSelectedAudits);
+    updateDeleteBar();
+
     // Delegated — the container persists across re-renders.
     const container = document.getElementById('auditsContainer');
     container.addEventListener('change', (e) => {
