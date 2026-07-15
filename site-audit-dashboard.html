@@ -225,42 +225,6 @@
             line-height: 1.6;
         }
         
-        #filterDate {
-            width: 100%;
-            max-width: 100%;
-            padding: 14px 40px 14px 16px; /* extra right padding for calendar icon */
-            font-family: var(--font-primary);
-            font-size: 1rem;
-            color: var(--white);
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            transition: all var(--transition-base);
-            cursor: pointer;
-            box-sizing: border-box;
-        }
-        
-        #filterDate:hover {
-            background: var(--bg-hover);
-            border-color: var(--white-15);
-        }
-        
-        #filterDate:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px var(--accent-blue-dim);
-        }
-        
-        #filterDate::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-            cursor: pointer;
-            opacity: 0.7;
-        }
-        
-        #filterDate::-webkit-calendar-picker-indicator:hover {
-            opacity: 1;
-        }
-        
         #exportExcelBtn {
             display: flex;
             align-items: center;
@@ -471,15 +435,6 @@
                 max-width: 100%;
             }
 
-            #filterDate {
-                width: 100%;
-                max-width: 100%;
-                padding: 12px 38px 12px 12px;
-                overflow: hidden;
-                -webkit-appearance: none;
-                appearance: none;
-                font-size: 16px;
-            }
         }
     </style>
 </head>
@@ -542,8 +497,12 @@
                             </div>
                         </div>
                         <div class="form-group" style="flex: 1; min-width: 200px;">
-                            <label for="filterDate">Date</label>
-                            <input type="date" id="filterDate">
+                            <label>Date Range</label>
+                            <div class="date-inputs">
+                                <input type="text" id="startDate" class="date-input" placeholder="mm/dd/yyyy" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
+                                <span class="date-separator">to</span>
+                                <input type="text" id="endDate" class="date-input" placeholder="mm/dd/yyyy" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
+                            </div>
                         </div>
                         <div class="form-group">
                             <button type="button" id="clearFiltersBtn">Clear</button>

@@ -73,13 +73,14 @@ async function initDatabase() {
     }
 }
 
-async function getAudits(location = null, date = null) {
+async function getAudits(location = null, startDate = null, endDate = null) {
     try {
         let url = `${API_BASE}/site-audit-get`;
         const params = new URLSearchParams();
-        
+
         if (location) params.append('location', location);
-        if (date) params.append('date', date);
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
         
         if (params.toString()) {
             url += '?' + params.toString();
@@ -361,9 +362,10 @@ function populateLocationFilter() {
 async function refreshAudits() {
     try {
         const location = document.getElementById('filterLocation').value || null;
-        const date = document.getElementById('filterDate').value || null;
-        
-        audits = await getAudits(location, date);
+        const startDate = document.getElementById('startDate').value || null;
+        const endDate = document.getElementById('endDate').value || null;
+
+        audits = await getAudits(location, startDate, endDate);
         renderAudits(audits);
         updateStats(audits);
     } catch (error) {
@@ -808,10 +810,12 @@ function showToast(message, isError = false) {
 // ===== Event Handlers =====
 function setupEventListeners() {
     document.getElementById('filterLocation').addEventListener('change', refreshAudits);
-    document.getElementById('filterDate').addEventListener('change', refreshAudits);
+    document.getElementById('startDate').addEventListener('change', refreshAudits);
+    document.getElementById('endDate').addEventListener('change', refreshAudits);
     document.getElementById('clearFiltersBtn').addEventListener('click', () => {
         document.getElementById('filterLocation').value = '';
-        document.getElementById('filterDate').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
         refreshAudits();
     });
     document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);

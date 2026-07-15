@@ -35,48 +35,27 @@ exports.handler = async (event, context) => {
         
         const params = event.queryStringParameters || {};
         const location = params.location;
-        const date = params.date;
+        const startDate = params.startDate; // Optional: filter from this date (inclusive)
+        const endDate = params.endDate;     // Optional: filter to this date (inclusive)
 
-        let query;
-        
-        if (location && date) {
-            query = sql`
-                SELECT id, location, initial_observations, primary_section, secondary_section, 
-                       priority_section, final_thoughts, photos, section_comments, explanation, 
-                       submitted_by, user_id, created_at
-                FROM site_audits
-                WHERE location = ${location} AND DATE(created_at) = ${date}
-                ORDER BY created_at DESC
-            `;
-        } else if (location) {
-            query = sql`
-                SELECT id, location, initial_observations, primary_section, secondary_section, 
-                       priority_section, final_thoughts, photos, section_comments, explanation, 
-                       submitted_by, user_id, created_at
-                FROM site_audits
-                WHERE location = ${location}
-                ORDER BY created_at DESC
-            `;
-        } else if (date) {
-            query = sql`
-                SELECT id, location, initial_observations, primary_section, secondary_section, 
-                       priority_section, final_thoughts, photos, section_comments, explanation, 
-                       submitted_by, user_id, created_at
-                FROM site_audits
-                WHERE DATE(created_at) = ${date}
-                ORDER BY created_at DESC
-            `;
-        } else {
-            query = sql`
-                SELECT id, location, initial_observations, primary_section, secondary_section, 
-                       priority_section, final_thoughts, photos, section_comments, explanation, 
-                       submitted_by, user_id, created_at
-                FROM site_audits
-                ORDER BY created_at DESC
-            `;
-        }
+        // Build the WHERE clause from whichever filters are present.
+        const conditions = [];
+        const values = [];
+        if (location) { values.push(location); conditions.push(`location = $${values.length}`); }
+        if (startDate) { values.push(startDate); conditions.push(`DATE(created_at) >= $${values.length}`); }
+        if (endDate) { values.push(endDate); conditions.push(`DATE(created_at) <= $${values.length}`); }
 
-        const audits = await query;
+        const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+        const audits = await sql.query(
+            `SELECT id, location, initial_observations, primary_section, secondary_section,
+                    priority_section, final_thoughts, photos, section_comments, explanation,
+                    submitted_by, user_id, created_at
+             FROM site_audits
+             ${where}
+             ORDER BY created_at DESC`,
+            values
+        );
 
         // Drop the heavy base64 photo data before sending (see stripPhotoData).
         const slimAudits = audits.map((a) => (

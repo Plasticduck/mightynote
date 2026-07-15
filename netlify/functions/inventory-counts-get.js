@@ -17,42 +17,41 @@ exports.handler = async (event, context) => {
         
         const params = event.queryStringParameters || {};
         const category = params.category;
-        const date = params.date; // Optional: filter by date
+        const startDate = params.startDate; // Optional: filter from this date (inclusive)
+        const endDate = params.endDate;     // Optional: filter to this date (inclusive)
 
-        let query;
-        
-        if (category && date) {
-            query = sql`
-                SELECT id, category, brand, item, quantity, submitted_by, created_at
-                FROM inventory_counts
-                WHERE category = ${category} AND DATE(created_at) = ${date}
-                ORDER BY brand ASC, item ASC
-            `;
-        } else if (category) {
-            query = sql`
-                SELECT id, category, brand, item, quantity, submitted_by, created_at
-                FROM inventory_counts
-                WHERE category = ${category}
-                ORDER BY created_at DESC, brand ASC, item ASC
-            `;
-        } else if (date) {
-            query = sql`
-                SELECT id, category, brand, item, quantity, submitted_by, created_at
-                FROM inventory_counts
-                WHERE DATE(created_at) = ${date}
-                ORDER BY category ASC, brand ASC, item ASC
-            `;
-        } else {
-            // Get latest counts grouped by category, brand, item (most recent count for each)
-            query = sql`
+        let counts;
+
+        if (!category && !startDate && !endDate) {
+            // Default view: latest count per item (most recent count for each)
+            counts = await sql`
                 SELECT DISTINCT ON (category, brand, item)
                     id, category, brand, item, quantity, submitted_by, created_at
                 FROM inventory_counts
                 ORDER BY category, brand, item, created_at DESC
             `;
-        }
+        } else {
+            // Build a filtered query from whichever filters are present.
+            const conditions = [];
+            const values = [];
+            if (category) { values.push(category); conditions.push(`category = $${values.length}`); }
+            if (startDate) { values.push(startDate); conditions.push(`DATE(created_at) >= $${values.length}`); }
+            if (endDate) { values.push(endDate); conditions.push(`DATE(created_at) <= $${values.length}`); }
 
-        const counts = await query;
+            const where = `WHERE ${conditions.join(' AND ')}`;
+            // When filtering by category, show newest first; otherwise group by category.
+            const orderBy = category
+                ? 'ORDER BY created_at DESC, brand ASC, item ASC'
+                : 'ORDER BY category ASC, brand ASC, item ASC';
+
+            counts = await sql.query(
+                `SELECT id, category, brand, item, quantity, submitted_by, created_at
+                 FROM inventory_counts
+                 ${where}
+                 ${orderBy}`,
+                values
+            );
+        }
 
         return {
             statusCode: 200,

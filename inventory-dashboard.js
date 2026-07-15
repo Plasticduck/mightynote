@@ -37,13 +37,14 @@ async function initDatabase() {
     }
 }
 
-async function getInventoryCounts(category = null, date = null) {
+async function getInventoryCounts(category = null, startDate = null, endDate = null) {
     try {
         let url = `${API_BASE}/inventory-counts-get`;
         const params = new URLSearchParams();
-        
+
         if (category) params.append('category', category);
-        if (date) params.append('date', date);
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
         
         if (params.toString()) {
             url += '?' + params.toString();
@@ -163,9 +164,10 @@ function populateCategoryFilter() {
 
 async function refreshInventoryCounts() {
     const category = document.getElementById('filterCategory').value || null;
-    const date = document.getElementById('filterDate').value || null;
-    
-    inventoryCounts = await getInventoryCounts(category, date);
+    const startDate = document.getElementById('startDate').value || null;
+    const endDate = document.getElementById('endDate').value || null;
+
+    inventoryCounts = await getInventoryCounts(category, startDate, endDate);
     
     // Filter out items with no quantity (shouldn't happen, but just in case)
     inventoryCounts = inventoryCounts.filter(c => c.quantity > 0);
@@ -286,10 +288,12 @@ function showToast(message, isError = false) {
 // ===== Event Handlers =====
 function setupEventListeners() {
     document.getElementById('filterCategory').addEventListener('change', refreshInventoryCounts);
-    document.getElementById('filterDate').addEventListener('change', refreshInventoryCounts);
+    document.getElementById('startDate').addEventListener('change', refreshInventoryCounts);
+    document.getElementById('endDate').addEventListener('change', refreshInventoryCounts);
     document.getElementById('clearFiltersBtn').addEventListener('click', () => {
         document.getElementById('filterCategory').value = '';
-        document.getElementById('filterDate').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
         refreshInventoryCounts();
     });
     document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
