@@ -127,6 +127,24 @@ const ALL_NOTE_TYPES = [
 // ===== API Configuration =====
 const API_BASE = '/.netlify/functions';
 
+// Attach the session token (editing a violation is author-gated server-side).
+// On a 401 the token is missing or expired, so send the user back to sign in.
+async function authFetch(input, init) {
+    init = init || {};
+    const h = new Headers(init.headers || {});
+    const t = localStorage.getItem('mightyops_token');
+    if (t) h.set('Authorization', 'Bearer ' + t);
+    init.headers = h;
+
+    const response = await fetch(input, init);
+    if (response.status === 401) {
+        localStorage.removeItem('mightyops_token');
+        localStorage.removeItem('mightyops_user');
+        window.location.href = 'login.html';
+    }
+    return response;
+}
+
 // ===== Database API Functions =====
 async function initDatabase() {
     try {
@@ -235,6 +253,34 @@ async function deleteNotes(ids) {
     }
 }
 
+async function updateNote(payload) {
+    const response = await authFetch(`${API_BASE}/notes-update`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+
+    let result;
+    try {
+        result = await response.json();
+    } catch (e) {
+        // A too-large attachment is rejected by the platform before the function
+        // runs, so the response isn't JSON.
+        if (response.status === 413) {
+            throw new Error('That attachment is too large to save. Try a smaller file.');
+        }
+        throw new Error('Could not save changes');
+    }
+
+    if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Could not save changes');
+    }
+
+    return result.note;
+}
+
 // ===== Helper Functions =====
 function formatLocation(location) {
     // Handle both numeric sites and text locations like "Spotless"
@@ -244,14 +290,21 @@ function formatLocation(location) {
     return `Site ${location}`;
 }
 
-function getPhotoUrl(noteId) {
-    // Photo evidence generated from images (image_pdf column)
-    return `${window.location.origin}/.netlify/functions/notes-view-image?id=${noteId}&kind=photo`;
+// notes-view-image caches attachments for a year, so the note's updated_at is
+// appended as a version — after an author swaps the file the URL changes and
+// browsers fetch the new one instead of serving the stale copy.
+function attachmentVersion(updatedAt) {
+    return updatedAt ? `&v=${encodeURIComponent(new Date(updatedAt).getTime())}` : '';
 }
 
-function getPdfUrl(noteId) {
+function getPhotoUrl(noteId, updatedAt) {
+    // Photo evidence generated from images (image_pdf column)
+    return `${window.location.origin}/.netlify/functions/notes-view-image?id=${noteId}&kind=photo${attachmentVersion(updatedAt)}`;
+}
+
+function getPdfUrl(noteId, updatedAt) {
     // Regular PDF attachments (pdf_attachment column)
-    return `${window.location.origin}/.netlify/functions/notes-view-image?id=${noteId}&kind=pdf`;
+    return `${window.location.origin}/.netlify/functions/notes-view-image?id=${noteId}&kind=pdf${attachmentVersion(updatedAt)}`;
 }
 
 function populateLocationFilter() {
@@ -331,7 +384,7 @@ function renderRecords(notes) {
         let attachmentBadges = '';
         if (hasPhoto) {
             attachmentBadges += `
-                <a href="${getPhotoUrl(note.id)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()">
+                <a href="${getPhotoUrl(note.id, note.updated_at)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                         <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -343,7 +396,7 @@ function renderRecords(notes) {
         }
         if (hasPdf) {
             attachmentBadges += `
-                <a href="${getPdfUrl(note.id)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()">
+                <a href="${getPdfUrl(note.id, note.updated_at)}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                         <polyline points="9 8 9 16 15 16"/>
@@ -517,8 +570,8 @@ function exportSelectedToExcel(notes) {
     const data = notes.map(note => {
         // Prefer photo URL, otherwise PDF URL
         const attachmentUrl = note.has_photo
-            ? getPhotoUrl(note.id)
-            : (note.has_pdf ? getPdfUrl(note.id) : '');
+            ? getPhotoUrl(note.id, note.updated_at)
+            : (note.has_pdf ? getPdfUrl(note.id, note.updated_at) : '');
 
         return {
             'Date/Time': formatDate(note.created_at),
@@ -538,7 +591,7 @@ function exportSelectedToExcel(notes) {
         if (note.has_photo || note.has_pdf) {
             const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 7 });
             if (ws[cellRef]) {
-                const url = note.has_photo ? getPhotoUrl(note.id) : getPdfUrl(note.id);
+                const url = note.has_photo ? getPhotoUrl(note.id, note.updated_at) : getPdfUrl(note.id, note.updated_at);
                 const tooltip = note.has_photo ? 'Show Photo' : 'Open PDF';
                 ws[cellRef].l = { Target: url, Tooltip: tooltip };
             }
@@ -607,7 +660,7 @@ function exportSelectedToPDF(notes) {
             if (data.section === 'body' && data.column.index === 5) {
                 const note = notes[data.row.index];
                 if (note && (note.has_photo || note.has_pdf)) {
-                    const url = note.has_photo ? getPhotoUrl(note.id) : getPdfUrl(note.id);
+                    const url = note.has_photo ? getPhotoUrl(note.id, note.updated_at) : getPdfUrl(note.id, note.updated_at);
                     photoLinks.push({
                         x: data.cell.x, y: data.cell.y,
                         width: data.cell.width, height: data.cell.height,
@@ -1070,8 +1123,8 @@ function renderReportNotes(notes) {
         const hasPhoto = !!note.has_photo;
         const hasPdf = !!note.has_pdf;
         const attachmentUrl = hasPhoto
-            ? getPhotoUrl(note.id)
-            : (hasPdf ? getPdfUrl(note.id) : null);
+            ? getPhotoUrl(note.id, note.updated_at)
+            : (hasPdf ? getPdfUrl(note.id, note.updated_at) : null);
 
         const attachmentBadge = attachmentUrl ? `
             <a href="${attachmentUrl}" target="_blank" class="record-image-badge" onclick="event.stopPropagation()">
@@ -1089,7 +1142,22 @@ function renderReportNotes(notes) {
                 By: ${note.submitted_by}
             </span>
         ` : '';
-        
+
+        // Authors can correct their own violations
+        const editBadge = canEditNote(note) ? `
+            <button type="button" class="record-edit-badge" onclick="event.stopPropagation(); openEditModal(${note.id})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>
+                </svg>
+                Edit
+            </button>
+        ` : '';
+
+        const editedMark = note.updated_at ? `
+            <span class="record-edited" title="Edited ${formatDate(note.updated_at)}">Edited</span>
+        ` : '';
+
         return `
             <div class="record-card ${isSelected ? 'selected' : ''}" data-id="${note.id}">
                 <label class="record-checkbox" onclick="event.stopPropagation()">
@@ -1098,18 +1166,404 @@ function renderReportNotes(notes) {
                 </label>
                 <div class="record-header">
                     <span class="record-type">${displayType}</span>
-                    <span class="record-timestamp">${formatDate(note.created_at)}</span>
+                    <span class="record-timestamp">${editedMark}${formatDate(note.created_at)}</span>
                 </div>
                 <div class="record-meta">
                     <span class="record-badge">${formatLocation(note.location)}</span>
                     <span class="record-badge ${deptClass}">${note.department}</span>
                     ${submitterBadge}
                     ${attachmentBadge}
+                    ${editBadge}
                 </div>
                 ${note.additional_notes ? `<p class="record-notes">${note.additional_notes}</p>` : ''}
             </div>
         `;
     }).join('');
+}
+
+// ===== Edit Violation (author only) =====
+let editingNoteId = null;
+
+// Attachment edits: 'keep' leaves the stored file alone, 'replace' uploads
+// editAttachmentData, 'remove' clears it. Nothing is written until Save.
+let editAttachmentAction = 'keep';
+let editAttachmentData = null;
+
+// A violation can be edited by the person who submitted it. Rows created before
+// notes.user_id existed only carry submitted_by, so fall back to the name.
+// The server enforces this same rule — this only decides whether to show the button.
+function canEditNote(note) {
+    if (!currentUser) return false;
+    if (note.user_id !== null && note.user_id !== undefined) {
+        return Number(note.user_id) === Number(currentUser.id);
+    }
+    return !!note.submitted_by && note.submitted_by === currentUser.full_name;
+}
+
+function populateEditLocationOptions(selected) {
+    const select = document.getElementById('editLocation');
+    const allowed = getAllowedLocationsForUser();
+    const allowedSet = allowed ? new Set(allowed.map(String)) : null;
+    const selectedStr = selected !== null && selected !== undefined ? String(selected) : '';
+
+    select.innerHTML = '<option value="">Select a site...</option>';
+
+    CONFIG.regions.forEach(region => {
+        // Regional Managers only see their own sites, plus this note's site so
+        // the current value is never silently dropped.
+        const sites = region.sites.filter(loc =>
+            !allowedSet || allowedSet.has(String(loc)) || String(loc) === selectedStr
+        );
+        if (sites.length === 0) return;
+
+        const group = document.createElement('optgroup');
+        group.label = region.name;
+        sites.forEach(loc => {
+            const option = document.createElement('option');
+            option.value = loc;
+            option.textContent = formatLocation(loc);
+            group.appendChild(option);
+        });
+        select.appendChild(group);
+    });
+
+    select.value = selectedStr;
+    if (selectedStr && select.value !== selectedStr) {
+        // Site isn't in the configured region lists (legacy record) — keep it anyway.
+        const option = document.createElement('option');
+        option.value = selectedStr;
+        option.textContent = formatLocation(selected);
+        select.appendChild(option);
+        select.value = selectedStr;
+    }
+}
+
+function populateEditNoteTypes(department, selected) {
+    const select = document.getElementById('editNoteType');
+    const types = CONFIG.noteTypes[department] || [];
+
+    select.innerHTML = '<option value="">Select a violation type...</option>';
+    types.forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        select.appendChild(option);
+    });
+
+    // A retired violation type on an existing record stays selectable.
+    if (selected && !types.includes(selected)) {
+        const option = document.createElement('option');
+        option.value = selected;
+        option.textContent = selected;
+        select.appendChild(option);
+    }
+
+    select.value = selected || '';
+    updateEditOtherDescVisibility();
+}
+
+function updateEditOtherDescVisibility() {
+    const isOther = document.getElementById('editNoteType').value === 'Other';
+    document.getElementById('editOtherDescGroup').style.display = isOther ? 'flex' : 'none';
+}
+
+// ===== Edit Attachment Handling =====
+// Same pipeline as the submit form: images are compressed and wrapped in a PDF,
+// PDFs are stored as-is. Both land in the note's image_pdf column.
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
+function compressImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            const img = new Image();
+
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                const maxSize = 1200;
+                let { width, height } = img;
+
+                if (width > height) {
+                    if (width > maxSize) {
+                        height = (height * maxSize) / width;
+                        width = maxSize;
+                    }
+                } else {
+                    if (height > maxSize) {
+                        width = (width * maxSize) / height;
+                        height = maxSize;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+
+                resolve(canvas.toDataURL('image/jpeg', 0.8));
+            };
+
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = e.target.result;
+        };
+
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
+function convertImageToPDF(imageBase64) {
+    const { jsPDF } = window.jspdf;
+
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+
+        img.onload = () => {
+            try {
+                const isLandscape = img.width > img.height;
+                const doc = new jsPDF({
+                    orientation: isLandscape ? 'landscape' : 'portrait',
+                    unit: 'mm'
+                });
+
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+
+                const margin = 10;
+                const maxWidth = pageWidth - (margin * 2);
+                const maxHeight = pageHeight - (margin * 2) - 20;
+
+                let imgWidth = img.width;
+                let imgHeight = img.height;
+
+                const scale = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+                imgWidth *= scale;
+                imgHeight *= scale;
+
+                const x = (pageWidth - imgWidth) / 2;
+                const y = margin + 15;
+
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Photo Evidence - ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour12: true })}`, margin, margin + 5);
+
+                doc.addImage(imageBase64, 'JPEG', x, y, imgWidth, imgHeight);
+
+                resolve(doc.output('datauristring'));
+            } catch (error) {
+                reject(error);
+            }
+        };
+
+        img.onerror = () => reject(new Error('Failed to process image for PDF'));
+        img.src = imageBase64;
+    });
+}
+
+async function handleEditAttachmentSelect(event) {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+            showToast('File must be less than 10MB', true);
+            return;
+        }
+
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+        if (isPdf) {
+            showToast('Processing PDF...');
+            editAttachmentData = await readFileAsDataUrl(file);
+            setEditAttachmentPreview(null, file.name);
+        } else if (file.type.startsWith('image/')) {
+            showToast('Processing image...');
+            const compressed = await compressImage(file);
+            editAttachmentData = await convertImageToPDF(compressed);
+            setEditAttachmentPreview(compressed, file.name);
+        } else {
+            showToast('Please select an image or PDF file', true);
+            return;
+        }
+
+        editAttachmentAction = 'replace';
+        updateEditAttachmentUI();
+    } catch (error) {
+        console.error('Error processing attachment:', error);
+        showToast('Error processing attachment', true);
+    }
+}
+
+function setEditAttachmentPreview(imageBase64, filename) {
+    const preview = document.getElementById('editPhotoPreview');
+    const previewImage = document.getElementById('editPreviewImage');
+    const statusEl = preview.querySelector('.photo-status');
+
+    if (imageBase64) {
+        previewImage.src = imageBase64;
+        previewImage.style.display = 'block';
+        statusEl.textContent = 'New photo ready to save';
+    } else {
+        previewImage.src = '';
+        previewImage.style.display = 'none';
+        statusEl.textContent = filename ? `New PDF ready to save: ${filename}` : 'New PDF ready to save';
+    }
+
+    preview.classList.remove('hidden');
+}
+
+// Reflects the pending attachment state (nothing is saved until Save Changes).
+function updateEditAttachmentUI() {
+    const note = reportNotes.find(n => n.id === editingNoteId);
+    const statusEl = document.getElementById('editAttachmentStatus');
+    const viewLink = document.getElementById('editAttachmentViewLink');
+    const removeBtn = document.getElementById('editRemoveAttachmentBtn');
+    const preview = document.getElementById('editPhotoPreview');
+
+    const hasStored = !!note && (!!note.has_photo || !!note.has_pdf);
+
+    if (editAttachmentAction === 'replace') {
+        statusEl.textContent = 'New attachment selected';
+        viewLink.classList.add('hidden');
+        removeBtn.classList.remove('hidden');
+        removeBtn.textContent = 'Discard new attachment';
+        return;
+    }
+
+    preview.classList.add('hidden');
+
+    if (editAttachmentAction === 'remove') {
+        statusEl.textContent = 'Attachment will be removed when you save';
+        viewLink.classList.add('hidden');
+        removeBtn.classList.add('hidden');
+        return;
+    }
+
+    if (hasStored) {
+        statusEl.textContent = note.has_photo ? 'Photo attached' : 'PDF attached';
+        viewLink.href = note.has_photo ? getPhotoUrl(note.id, note.updated_at) : getPdfUrl(note.id, note.updated_at);
+        viewLink.classList.remove('hidden');
+        removeBtn.classList.remove('hidden');
+        removeBtn.textContent = 'Remove attachment';
+    } else {
+        statusEl.textContent = 'No attachment';
+        viewLink.classList.add('hidden');
+        removeBtn.classList.add('hidden');
+    }
+}
+
+function removeEditAttachment() {
+    const note = reportNotes.find(n => n.id === editingNoteId);
+    const hasStored = !!note && (!!note.has_photo || !!note.has_pdf);
+
+    if (editAttachmentAction === 'replace') {
+        // Discard the newly picked file and fall back to whatever is stored.
+        editAttachmentData = null;
+        editAttachmentAction = 'keep';
+    } else {
+        editAttachmentAction = hasStored ? 'remove' : 'keep';
+    }
+
+    updateEditAttachmentUI();
+}
+
+function openEditModal(noteId) {
+    const note = reportNotes.find(n => n.id === noteId);
+    if (!note) return;
+
+    if (!canEditNote(note)) {
+        showToast('You can only edit violations you submitted', true);
+        return;
+    }
+
+    editingNoteId = note.id;
+    populateEditLocationOptions(note.location);
+    document.getElementById('editDepartment').value = note.department;
+    populateEditNoteTypes(note.department, note.note_type);
+    document.getElementById('editOtherDesc').value = note.other_description || '';
+    document.getElementById('editNotes').value = note.additional_notes || '';
+
+    editAttachmentAction = 'keep';
+    editAttachmentData = null;
+    updateEditAttachmentUI();
+
+    document.getElementById('editModal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    editingNoteId = null;
+    editAttachmentAction = 'keep';
+    editAttachmentData = null;
+    document.getElementById('editPhotoPreview').classList.add('hidden');
+    document.getElementById('editModal').classList.add('hidden');
+}
+
+async function saveEditedNote(e) {
+    e.preventDefault();
+
+    if (!editingNoteId) return;
+
+    const location = document.getElementById('editLocation').value;
+    const department = document.getElementById('editDepartment').value;
+    const noteType = document.getElementById('editNoteType').value;
+    const otherDesc = document.getElementById('editOtherDesc').value;
+    const additionalNotes = document.getElementById('editNotes').value;
+
+    if (!location || !department || !noteType) {
+        showToast('Please fill in all required fields', true);
+        return;
+    }
+
+    if (noteType === 'Other' && !otherDesc.trim()) {
+        showToast('Please describe the violation', true);
+        return;
+    }
+
+    const saveBtn = document.getElementById('editSaveBtn');
+    saveBtn.disabled = true;
+
+    try {
+        const updated = await updateNote({
+            id: editingNoteId,
+            location,
+            department,
+            note_type: noteType,
+            other_description: otherDesc,
+            additional_notes: additionalNotes,
+            attachment_action: editAttachmentAction,
+            image_pdf: editAttachmentAction === 'replace' ? editAttachmentData : null
+        });
+
+        // Swap the edited record into the report in place — no need to re-run the query.
+        const index = reportNotes.findIndex(n => n.id === updated.id);
+        if (index !== -1) {
+            reportNotes[index] = { ...reportNotes[index], ...updated };
+        }
+
+        closeEditModal();
+        renderReportNotes(reportNotes);
+        await updateStats();
+        showToast('Violation updated');
+    } catch (error) {
+        console.error('Error updating violation:', error);
+        showToast(error.message || 'Error saving changes', true);
+    } finally {
+        saveBtn.disabled = false;
+    }
 }
 
 function renderLocationSummary(notes) {
@@ -1288,7 +1742,7 @@ async function exportReportToExcel() {
         'Other Description': note.other_description || '',
         'Additional Notes': note.additional_notes || '',
         'Submitted By': note.submitted_by || '',
-        'Attachment': note.has_image ? getPhotoUrl(note.id) : ''
+        'Attachment': note.has_image ? getPhotoUrl(note.id, note.updated_at) : ''
     }));
     
     const allWs = XLSX.utils.json_to_sheet(allData);
@@ -1298,7 +1752,7 @@ async function exportReportToExcel() {
         if (note.has_image) {
             const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 7 }); // Attachment column (H)
             if (allWs[cellRef]) {
-                allWs[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Attachment' };
+                allWs[cellRef].l = { Target: getPhotoUrl(note.id, note.updated_at), Tooltip: 'View Attachment' };
             }
         }
     });
@@ -1327,7 +1781,7 @@ async function exportReportToExcel() {
                 'Other Description': note.other_description || '',
                 'Additional Notes': note.additional_notes || '',
                 'Submitted By': note.submitted_by || '',
-                'Attachment': note.has_image ? getPhotoUrl(note.id) : ''
+                'Attachment': note.has_image ? getPhotoUrl(note.id, note.updated_at) : ''
             }));
             
             const ws = XLSX.utils.json_to_sheet(data);
@@ -1337,7 +1791,7 @@ async function exportReportToExcel() {
                 if (note.has_image) {
                     const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 }); // Attachment column (G)
                     if (ws[cellRef]) {
-                        ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Attachment' };
+                        ws[cellRef].l = { Target: getPhotoUrl(note.id, note.updated_at), Tooltip: 'View Attachment' };
                     }
                 }
             });
@@ -1374,7 +1828,7 @@ async function exportReportToExcel() {
             'Other Description': note.other_description || '',
             'Additional Notes': note.additional_notes || '',
             'Submitted By': note.submitted_by || '',
-                'Attachment': note.has_image ? getPhotoUrl(note.id) : ''
+                'Attachment': note.has_image ? getPhotoUrl(note.id, note.updated_at) : ''
         }));
         
         const ws = XLSX.utils.json_to_sheet(data);
@@ -1384,7 +1838,7 @@ async function exportReportToExcel() {
             if (note.has_image) {
                 const cellRef = XLSX.utils.encode_cell({ r: index + 1, c: 6 }); // Attachment column (G)
                 if (ws[cellRef]) {
-                    ws[cellRef].l = { Target: getPhotoUrl(note.id), Tooltip: 'View Attachment' };
+                    ws[cellRef].l = { Target: getPhotoUrl(note.id, note.updated_at), Tooltip: 'View Attachment' };
                 }
             }
         });
@@ -1502,7 +1956,7 @@ async function exportReportToPDF() {
                         y: data.cell.y,
                         width: data.cell.width,
                         height: data.cell.height,
-                        url: getPhotoUrl(note.id)
+                        url: getPhotoUrl(note.id, note.updated_at)
                     });
                 }
             }
@@ -1879,6 +2333,175 @@ function setupReportListeners() {
             const format = e.currentTarget.dataset.format;
             exportReportSelectedNotes(format);
         });
+    });
+
+    setupEditModalListeners();
+}
+
+// The modal builds itself here rather than living in dashboard.html, so a
+// browser holding a cached copy of the page still gets it (same approach as the
+// Site Audit delete button).
+function ensureEditModal() {
+    if (document.getElementById('editModal')) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'image-modal hidden';
+    modal.id = 'editModal';
+    modal.innerHTML = `
+        <div class="modal-content edit-modal" style="width: 520px; max-width: 90vw;">
+            <div class="modal-header">
+                <h3>Edit Violation</h3>
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal btn-modal-close" id="editCancelBtn">Cancel</button>
+                    <button type="submit" form="editForm" class="btn-modal btn-modal-download" id="editSaveBtn">Save Changes</button>
+                </div>
+            </div>
+            <div class="modal-body edit-modal-body" style="display: block;">
+                <form id="editForm" class="edit-form">
+                    <div class="form-group">
+                        <label for="editLocation">Site</label>
+                        <div class="select-wrapper">
+                            <select id="editLocation" required>
+                                <option value="">Select a site...</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editDepartment">Department</label>
+                        <div class="select-wrapper">
+                            <select id="editDepartment" required>
+                                <option value="">Select a department...</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Safety">Safety</option>
+                                <option value="Accounting">Accounting</option>
+                                <option value="Human Resources">Human Resources</option>
+                                <option value="IT">IT</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editNoteType">Violation Type</label>
+                        <div class="select-wrapper">
+                            <select id="editNoteType" required>
+                                <option value="">Select a violation type...</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="editOtherDescGroup" style="display: none;">
+                        <label for="editOtherDesc">Describe the violation</label>
+                        <input type="text" id="editOtherDesc" placeholder="Enter description...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editNotes">Additional Notes</label>
+                        <textarea id="editNotes" rows="4" placeholder="Enter any additional details..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Attachment</label>
+                        <div class="photo-upload-container">
+                            <div class="edit-attachment-status">
+                                <span id="editAttachmentStatus">No attachment</span>
+                                <a href="#" target="_blank" class="record-image-badge hidden" id="editAttachmentViewLink">View current</a>
+                            </div>
+                            <div class="photo-buttons">
+                                <button type="button" class="btn-photo" id="editTakePhotoBtn">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                        <circle cx="12" cy="13" r="4"/>
+                                    </svg>
+                                    Take Photo
+                                </button>
+                                <button type="button" class="btn-photo" id="editUploadPhotoBtn">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                    Upload Photo/PDF
+                                </button>
+                            </div>
+                            <input type="file" id="editCameraInput" accept="image/*" capture="environment" style="display: none;">
+                            <input type="file" id="editFileInput" accept="image/*,application/pdf" style="display: none;">
+                            <div class="photo-preview hidden" id="editPhotoPreview">
+                                <img id="editPreviewImage" alt="Attachment preview">
+                                <span class="photo-status">Attachment added</span>
+                            </div>
+                            <button type="button" class="btn-remove-attachment hidden" id="editRemoveAttachmentBtn">Remove attachment</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+}
+
+// ===== Edit Modal Event Listeners =====
+function setupEditModalListeners() {
+    ensureEditModal();
+
+    const editForm = document.getElementById('editForm');
+    if (editForm) {
+        editForm.addEventListener('submit', saveEditedNote);
+    }
+
+    const cancelBtn = document.getElementById('editCancelBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeEditModal);
+    }
+
+    // Changing department reloads the violation types for that department
+    const departmentSelect = document.getElementById('editDepartment');
+    if (departmentSelect) {
+        departmentSelect.addEventListener('change', (e) => {
+            populateEditNoteTypes(e.target.value, null);
+        });
+    }
+
+    const noteTypeSelect = document.getElementById('editNoteType');
+    if (noteTypeSelect) {
+        noteTypeSelect.addEventListener('change', updateEditOtherDescVisibility);
+    }
+
+    // Attachment: camera, file picker, remove
+    const takePhotoBtn = document.getElementById('editTakePhotoBtn');
+    const uploadPhotoBtn = document.getElementById('editUploadPhotoBtn');
+    const cameraInput = document.getElementById('editCameraInput');
+    const fileInput = document.getElementById('editFileInput');
+    const removeAttachmentBtn = document.getElementById('editRemoveAttachmentBtn');
+
+    if (takePhotoBtn && cameraInput) {
+        takePhotoBtn.addEventListener('click', () => cameraInput.click());
+        cameraInput.addEventListener('change', handleEditAttachmentSelect);
+    }
+
+    if (uploadPhotoBtn && fileInput) {
+        uploadPhotoBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleEditAttachmentSelect);
+    }
+
+    if (removeAttachmentBtn) {
+        removeAttachmentBtn.addEventListener('click', removeEditAttachment);
+    }
+
+    // Close on backdrop click or Escape
+    const modal = document.getElementById('editModal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeEditModal();
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && editingNoteId !== null) closeEditModal();
     });
 }
 

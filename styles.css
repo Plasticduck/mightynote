@@ -1001,6 +1001,99 @@ textarea {
     height: 12px;
 }
 
+/* Edit badge — only rendered on violations the signed-in user submitted */
+.record-edit-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--white-10);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.record-edit-badge:hover {
+    background: var(--white-15);
+    border-color: var(--white-15);
+}
+
+.record-edit-badge svg {
+    width: 12px;
+    height: 12px;
+}
+
+.record-edited {
+    margin-right: var(--space-sm);
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+/* ===== Edit Violation Modal ===== */
+/* Both selectors are doubled up so these win over the generic .modal-*
+   rules further down the file (same specificity, later wins). */
+.modal-content.edit-modal {
+    width: 520px;
+    max-width: 100%;
+}
+
+.modal-body.edit-modal-body {
+    display: block;
+    padding: var(--space-lg);
+}
+
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.edit-form textarea {
+    min-height: 90px;
+}
+
+.edit-form-hint {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.edit-attachment-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.btn-remove-attachment {
+    align-self: flex-start;
+    padding: 6px 12px;
+    font-family: var(--font-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--accent-red);
+    background: var(--accent-red-dim);
+    border: 1px solid rgba(255, 69, 58, 0.2);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.btn-remove-attachment:hover {
+    background: var(--accent-red);
+    color: var(--white);
+}
+
 /* Responsive selection bar */
 @media (max-width: 600px) {
     .selection-bar {
@@ -1909,7 +2002,8 @@ textarea {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    z-index: 1000;
+    /* Above modals (z-index 1000) so "Processing image..." etc. stay visible */
+    z-index: 1100;
     transition: transform var(--transition-slow);
 }
 

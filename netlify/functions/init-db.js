@@ -82,6 +82,19 @@ exports.handler = async (event, context) => {
             END $$;
         `;
 
+        // Add updated_at column (set when an author edits their own violation)
+        await sql`
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'notes' AND column_name = 'updated_at'
+                ) THEN
+                    ALTER TABLE notes ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE;
+                END IF;
+            END $$;
+        `;
+
         // Add pdf_attachment column for non-photo PDFs if it doesn't exist
         await sql`
             DO $$

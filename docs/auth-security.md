@@ -67,7 +67,9 @@ login page. They sign in once, get a token, and continue normally.
   /`auth-change-password`. Move to bcrypt/scrypt/argon2.
 - **The other apps** (notes, evaluations, inventory, capital requests, market
   research, staffing, site audit) have the **same** open-endpoint pattern. The
-  `requireAuth` helper is generic — apply it there next.
+  `requireAuth` helper is generic — apply it there next. Two exceptions already
+  use it: `site-audit-delete` (admins only) and `notes-update` (only the author
+  of a violation may edit it — ownership is checked against the token claims).
 - **Roster in the database**: `_lib-roles.js` still needs a code change + deploy
   to add a person. A `roles` table + admin UI would remove that.
 - **CORS** is still `*`. With bearer tokens in localStorage (not cookies) this

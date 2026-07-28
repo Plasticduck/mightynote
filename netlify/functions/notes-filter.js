@@ -70,7 +70,9 @@ exports.handler = async (event, context) => {
                    other_description,
                    additional_notes,
                    submitted_by,
+                   user_id,
                    created_at,
+                   updated_at,
                    CASE WHEN image_pdf IS NOT NULL THEN true ELSE false END AS has_photo,
                    CASE WHEN pdf_attachment IS NOT NULL THEN true ELSE false END AS has_pdf,
                    CASE WHEN image_pdf IS NOT NULL OR pdf_attachment IS NOT NULL THEN true ELSE false END AS has_image
