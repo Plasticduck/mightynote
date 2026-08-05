@@ -7,7 +7,7 @@
 
 # Poll the payables@ M365 shared mailbox every 5 minutes and import invoices.
 [functions."poll-payables-mailbox"]
-  schedule = "*/5 * * * *"
+  
 
 [[redirects]]
   from = "/api/*"
